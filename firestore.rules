@@ -1,8 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow anyone to read the list of players for the scoreboard.
-    // Allow authenticated users to create, update, and delete players.
+    // Allow anyone to read player data for the scoreboard
+    // Only allow authenticated users to create, update, or delete players
     match /players/{playerId} {
       allow read: if true;
       allow write: if request.auth != null;

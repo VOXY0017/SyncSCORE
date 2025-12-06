@@ -57,7 +57,7 @@ export default function ScoreSyncClient() {
       const newPlayer: Player = {
         id: new Date().getTime().toString(), // Simple unique ID
         name: trimmedName,
-        score: 0, // New players start at 0
+        score: 0,
       };
       
       setPlayers(prevPlayers => 
@@ -112,10 +112,11 @@ export default function ScoreSyncClient() {
         <TableCell><Skeleton className="h-6 w-6 rounded-full" /></TableCell>
         <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
         <TableCell><Skeleton className="h-4 w-1/2" /></TableCell>
+        <TableCell><Skeleton className="h-9 w-20" /></TableCell>
         <TableCell className="flex justify-center gap-2">
-            <Skeleton className="h-8 w-8" />
-            <Skeleton className="h-8 w-8" />
-            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-9 w-9" />
+            <Skeleton className="h-9 w-9" />
+            <Skeleton className="h-9 w-9" />
         </TableCell>
       </TableRow>
     ))}
@@ -158,7 +159,8 @@ export default function ScoreSyncClient() {
                 <TableHead className="w-[80px] text-center font-bold">Rank</TableHead>
                 <TableHead className="font-bold">Player</TableHead>
                 <TableHead className="w-[100px] text-center font-bold">Score</TableHead>
-                <TableHead className="min-w-[220px] text-center font-bold">Actions</TableHead>
+                <TableHead className="w-[120px] text-center font-bold">Points</TableHead>
+                <TableHead className="min-w-[150px] text-center font-bold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -172,17 +174,19 @@ export default function ScoreSyncClient() {
                     </TableCell>
                     <TableCell className="font-medium text-lg">{player.name}</TableCell>
                     <TableCell className="text-center font-bold text-xl text-primary">{player.score}</TableCell>
+                    <TableCell>
+                      <Input 
+                          type="number"
+                          placeholder="0"
+                          className="w-20 h-9 mx-auto text-center"
+                          value={pointInputs[player.id] || ''}
+                          onChange={(e) => handlePointInputChange(player.id, e.target.value)}
+                          disabled={isPending}
+                          aria-label={`Points for ${player.name}`}
+                      />
+                    </TableCell>
                     <TableCell className="text-center">
                       <div className="flex justify-center items-center gap-2">
-                         <Input 
-                            type="number"
-                            placeholder="Points"
-                            className="w-20 h-9"
-                            value={pointInputs[player.id] || ''}
-                            onChange={(e) => handlePointInputChange(player.id, e.target.value)}
-                            disabled={isPending}
-                            aria-label={`Points for ${player.name}`}
-                         />
                          <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending} aria-label={`Increase score for ${player.name}`}>
                            <Plus className="h-4 w-4" />
                          </Button>
@@ -198,7 +202,7 @@ export default function ScoreSyncClient() {
                 ))
               ) : (
                  <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                       No players yet. Add one to get started!
                     </TableCell>
                   </TableRow>

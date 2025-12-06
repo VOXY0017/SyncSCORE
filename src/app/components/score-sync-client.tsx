@@ -92,7 +92,8 @@ export default function ScoreSyncClient() {
           
           const changedRanks: string[] = [];
           newRanks.forEach((newRank, id) => {
-            if (oldRanks.get(id) !== newRank) {
+            const oldRank = oldRanks.get(id);
+            if (oldRank !== undefined && oldRank !== newRank) {
               changedRanks.push(id);
             }
           });
@@ -145,7 +146,7 @@ export default function ScoreSyncClient() {
     {[...Array(5)].map((_, i) => (
         <TableRow key={i}>
             <TableCell><Skeleton className="h-4 w-2/4" /></TableCell>
-            <TableCell><Skeleton className="h-9 w-20" /></TableCell>
+            <TableCell className="text-right"><Skeleton className="h-9 w-20 ml-auto" /></TableCell>
             <TableCell className="flex justify-end gap-2">
                 <Skeleton className="h-9 w-9" />
                 <Skeleton className="h-9 w-9" />
@@ -196,7 +197,7 @@ export default function ScoreSyncClient() {
                                     rankChanged.includes(player.id) && 'bg-blue-200 dark:bg-blue-800/30',
                                     index === 0 && 'bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200/80 dark:hover:bg-amber-900/50'
                                 )}
-                                style={{ transform: `translateY(0px)` }}
+                                style={{ transform: 'translateY(0)' }}
                                 >
                                     <TableCell className="text-center font-medium text-lg">
                                     {index === 0 ? <Crown className="w-6 h-6 mx-auto text-yellow-500" /> : index + 1}
@@ -251,7 +252,7 @@ export default function ScoreSyncClient() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Player</TableHead>
-                                    <TableHead className="w-[120px]">Points</TableHead>
+                                    <TableHead className="w-[120px] text-right">Points</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -265,11 +266,11 @@ export default function ScoreSyncClient() {
                                             recentlyUpdated === player.id && 'bg-primary/10'
                                         )}>
                                             <TableCell className="font-medium">{player.name}</TableCell>
-                                            <TableCell>
+                                            <TableCell className='text-right'>
                                                 <Input 
                                                     type="number"
                                                     placeholder="0"
-                                                    className="w-20 h-9 text-center"
+                                                    className="w-20 h-9 text-center ml-auto"
                                                     value={pointInputs[player.id] || ''}
                                                     onChange={(e) => handlePointInputChange(player.id, e.target.value)}
                                                     disabled={isPending}

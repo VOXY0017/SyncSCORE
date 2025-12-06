@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { useState, useTransition, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
 import type { Player } from '@/lib/types';
 
@@ -43,6 +44,8 @@ export default function ScoreSyncClient() {
   const [rankChanges, setRankChanges] = useState<RankChange[]>([]);
   
   const previousPlayerRanks = useRef(new Map<string, number>());
+  const podiumRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const podiumRects = useRef(new Map<string, DOMRect>());
 
   useEffect(() => {
     // Simulate loading data
@@ -62,14 +65,60 @@ export default function ScoreSyncClient() {
       setIsLoading(false);
     }, 1500);
   }, []);
+  
+  const topPlayers = players.slice(0, 3);
+  const otherPlayers = players.slice(3);
+
+  useLayoutEffect(() => {
+    // Capture the initial positions of the podium elements
+    podiumRefs.current.forEach(ref => {
+      if (ref && ref.dataset.id) {
+        podiumRects.current.set(ref.dataset.id, ref.getBoundingClientRect());
+      }
+    });
+  }, [isLoading]);
+
+  useLayoutEffect(() => {
+    if (isLoading || podiumRefs.current.length === 0) return;
+
+    podiumRefs.current.forEach((ref) => {
+      if (!ref || !ref.dataset.id) return;
+      const id = ref.dataset.id;
+      const oldRect = podiumRects.current.get(id);
+      if (!oldRect) return;
+
+      const newRect = ref.getBoundingClientRect();
+      const deltaX = oldRect.left - newRect.left;
+      const deltaY = oldRect.top - newRect.top;
+
+      if (deltaX !== 0 || deltaY !== 0) {
+        requestAnimationFrame(() => {
+          ref.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+          ref.style.transition = 'transform 0s';
+          
+          requestAnimationFrame(() => {
+            ref.style.transition = `transform 0.7s ease-in-out`;
+            ref.style.transform = '';
+          });
+        });
+      }
+    });
+
+    // Update the stored positions for the next render
+    podiumRefs.current.forEach(ref => {
+      if (ref && ref.dataset.id) {
+        podiumRects.current.set(ref.dataset.id, ref.getBoundingClientRect());
+      }
+    });
+
+  }, [topPlayers, isLoading]);
 
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPlayerName.trim()) return;
+    const trimmedName = newPlayerName.trim();
+    if (!trimmedName) return;
 
     startTransition(() => {
-      const trimmedName = newPlayerName.trim();
-      
       if (players.some(p => p.name.toLowerCase() === trimmedName.toLowerCase())) {
         toast({ variant: "destructive", title: "Error", description: "A player with this name already exists." });
         return;
@@ -135,7 +184,12 @@ export default function ScoreSyncClient() {
     if (!playerToDelete) return;
 
     startTransition(() => {
-      setPlayers(prevPlayers => prevPlayers.filter(p => p.id !== playerToDelete.id));
+      setPlayers(prevPlayers => {
+        const remainingPlayers = prevPlayers.filter(p => p.id !== playerToDelete.id);
+        const sortedPlayers = remainingPlayers.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+        previousPlayerRanks.current = new Map(sortedPlayers.map((p, i) => [p.id, i]));
+        return sortedPlayers;
+      });
       toast({ title: "Player Removed", description: `${playerToDelete.name} has been removed.`});
       setDeleteAlertOpen(false);
       setPlayerToDelete(null);
@@ -148,9 +202,6 @@ export default function ScoreSyncClient() {
       setPlayerToDelete(null);
     }
   }
-
-  const topPlayers = players.slice(0, 3);
-  const otherPlayers = players.slice(3);
 
   const PlayerListSkeleton = () => (
     <div className="space-y-4">
@@ -203,9 +254,9 @@ export default function ScoreSyncClient() {
               <>
               {/* Top 3 Players */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8 mb-8">
-                  {topPlayers[1] && <PodiumCard player={topPlayers[1]} rank={2} />}
-                  {topPlayers[0] && <PodiumCard player={topPlayers[0]} rank={1} />}
-                  {topPlayers[2] && <PodiumCard player={topPlayers[2]} rank={3} />}
+                  {topPlayers[1] && <PodiumCard ref={el => podiumRefs.current[1] = el} player={topPlayers[1]} rank={2} />}
+                  {topPlayers[0] && <PodiumCard ref={el => podiumRefs.current[0] = el} player={topPlayers[0]} rank={1} />}
+                  {topPlayers[2] && <PodiumCard ref={el => podiumRefs.current[2] = el} player={topPlayers[2]} rank={3} />}
               </div>
 
               {/* Other Players */}
@@ -355,39 +406,36 @@ function PlayerRow({ player, index, rank, recentlyUpdated, rankChange, onAnimati
     if (rowRef.current) {
         initialRect.current = rowRef.current.getBoundingClientRect();
     }
-  }, [player.id]);
+  }, [player.id, rank]);
 
   useLayoutEffect(() => {
     if (!rankChange || !rowRef.current || !initialRect.current) {
       return;
     }
-
     const newRect = rowRef.current.getBoundingClientRect();
     const oldRect = initialRect.current;
+    
     const deltaY = oldRect.top - newRect.top;
 
     if (deltaY !== 0) {
+      rowRef.current.style.setProperty('--delta-y', `${deltaY}px`);
+      const animationName = rankChange.newRank > rankChange.oldRank ? 'slide-down' : 'slide-up';
+      rowRef.current.style.setProperty('--animation-name', animationName);
+
       requestAnimationFrame(() => {
         if (!rowRef.current) return;
-        rowRef.current.style.transform = `translateY(${deltaY}px)`;
-        rowRef.current.style.transition = 'transform 0s';
-        
-        requestAnimationFrame(() => {
-          if (!rowRef.current) return;
-          // Apply the animation
-          rowRef.current.style.animation = `slide-down 1.5s ease-in-out forwards`;
-          rowRef.current.style.transform = '';
-        });
+        rowRef.current.classList.add('ranking-change');
       });
     }
-    initialRect.current = newRect;
 
   }, [rankChange, player.score]);
 
 
-  const handleTransitionEnd = () => {
+  const handleAnimationEnd = () => {
     if(rowRef.current) {
-      rowRef.current.style.animation = '';
+      rowRef.current.classList.remove('ranking-change');
+      rowRef.current.style.removeProperty('--delta-y');
+      rowRef.current.style.removeProperty('--animation-name');
     }
     onAnimationEnd();
   };
@@ -395,7 +443,7 @@ function PlayerRow({ player, index, rank, recentlyUpdated, rankChange, onAnimati
   return (
     <TableRow
       ref={rowRef}
-      onAnimationEnd={handleTransitionEnd}
+      onAnimationEnd={handleAnimationEnd}
       className={cn(
         'will-change-transform',
         recentlyUpdated === player.id && 'bg-primary/10',
@@ -416,7 +464,7 @@ interface PodiumCardProps {
     rank: number;
 }
 
-function PodiumCard({ player, rank }: PodiumCardProps) {
+const PodiumCard = React.forwardRef<HTMLDivElement, PodiumCardProps>(({ player, rank }, ref) => {
     const rankColors = {
         1: 'border-yellow-400 bg-yellow-400/10 hover:bg-yellow-400/20',
         2: 'border-slate-400 bg-slate-400/10 hover:bg-slate-400/20',
@@ -429,23 +477,24 @@ function PodiumCard({ player, rank }: PodiumCardProps) {
     };
 
     return (
-        <Card className={cn(
-            'transition-all duration-300 border-2',
-            rank === 1 && 'md:scale-110 md:z-10',
-            rankColors[rank as keyof typeof rankColors],
-        )}>
-            <CardHeader className="flex flex-col items-center justify-center p-4">
-                {rankIcon[rank as keyof typeof rankIcon]}
-                <CardTitle className="text-2xl mt-2">{player.name}</CardTitle>
-                <CardDescription className="text-base">Rank #{rank}</CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 text-center">
-                 <p className="text-4xl font-bold text-primary tabular-nums">
-                    {player.score > 0 ? `+${player.score}` : player.score}
-                </p>
-            </CardContent>
-        </Card>
+        <div ref={ref} data-id={player.id}>
+            <Card className={cn(
+                'transition-all duration-300 border-2 h-full',
+                rank === 1 && 'md:scale-110 md:z-10',
+                rankColors[rank as keyof typeof rankColors],
+            )}>
+                <CardHeader className="flex flex-col items-center justify-center p-4">
+                    {rankIcon[rank as keyof typeof rankIcon]}
+                    <CardTitle className="text-2xl mt-2">{player.name}</CardTitle>
+                    <CardDescription className="text-base">Rank #{rank}</CardDescription>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 text-center">
+                    <p className="text-4xl font-bold text-primary tabular-nums">
+                        {player.score > 0 ? `+${player.score}` : player.score}
+                    </p>
+                </CardContent>
+            </Card>
+        </div>
     )
-}
-
-    
+});
+PodiumCard.displayName = 'PodiumCard';

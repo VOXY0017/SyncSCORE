@@ -77,5 +77,5 @@ export default {
       },
     },
   },
-  plugins: [require('tailwindcss-animate'), require('@/lib/tailwind-plugins/bg-dot')],
+  plugins: [require('tailwindcss-animate'), require('./src/lib/tailwind-plugins/bg-dot.js')],
 } satisfies Config;

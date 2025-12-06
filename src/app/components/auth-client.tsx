@@ -26,17 +26,21 @@ export default function AuthClient() {
   const [registerPassword, setRegisterPassword] = useState('');
 
   useEffect(() => {
-    if (user) {
+    // Redirect only after loading is complete and user is confirmed
+    if (!isUserLoading && user) {
       router.push('/');
     }
-  }, [user, router]);
+  }, [user, isUserLoading, router]);
 
+  // While loading, don't render the form to prevent flashes of content
   if (isUserLoading) {
     return <div>Loading...</div>;
   }
   
+  // If user is already logged in, they will be redirected by the effect above.
+  // Returning null prevents the form from flashing.
   if (user) {
-    return null; // Don't render anything if the user is logged in
+    return null;
   }
 
   const handleFirebaseAuthError = (error: any) => {
@@ -72,7 +76,7 @@ export default function AuthClient() {
     startTransition(async () => {
       try {
         await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
-        // onAuthStateChanged in provider will handle the redirect
+        // onAuthStateChanged in provider will handle the redirect via useEffect
       } catch (error) {
         handleFirebaseAuthError(error);
       }
@@ -92,7 +96,7 @@ export default function AuthClient() {
     startTransition(async () => {
       try {
         await createUserWithEmailAndPassword(auth, registerEmail, registerPassword);
-        // onAuthStateChanged in provider will handle the redirect
+        // onAuthStateChanged in provider will handle the redirect via useEffect
       } catch (error) {
         handleFirebaseAuthError(error);
       }

@@ -4,7 +4,7 @@ import { useState, useEffect, useTransition, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Player } from '@/lib/types';
 import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
-import { signOutUser } from '@/firebase/non-blocking-login';
+import { signOut } from 'firebase/auth';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { addPlayer, updatePlayerScore, removePlayer } from '@/app/actions';
 
@@ -47,7 +47,7 @@ export default function ScoreSyncClient() {
   }, [user, isUserLoading, router]);
   
   const playersQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null; // Wait for user
+    if (!firestore || !user) return null; // Wait for user and firestore to be ready
     return query(collection(firestore, 'players'), orderBy('score', 'desc'), orderBy('name', 'asc'));
   }, [firestore, user]);
 
@@ -102,6 +102,7 @@ export default function ScoreSyncClient() {
         toast({ variant: "destructive", title: "Error", description: result.error });
       }
       setDeleteAlertOpen(false);
+      setPlayerToDelete(null);
     });
   };
 
@@ -113,35 +114,36 @@ export default function ScoreSyncClient() {
   }
 
   const handleLogout = () => {
-    signOutUser(auth);
+    signOut(auth); // Direct call to signOut
   };
 
   const PlayerListSkeleton = () => (
     [...Array(5)].map((_, i) => (
-      <div key={i} className="flex items-center space-x-4 p-4">
-        <Skeleton className="h-8 w-8 rounded-full" />
-        <div className="space-y-2 flex-grow">
-          <Skeleton className="h-4 w-3/4" />
-        </div>
-        <Skeleton className="h-8 w-24" />
-      </div>
+      <TableRow key={i}>
+        <TableCell><Skeleton className="h-6 w-6 rounded-full" /></TableCell>
+        <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
+        <TableCell><Skeleton className="h-4 w-1/2" /></TableCell>
+        <TableCell className="flex justify-center gap-2">
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+        </TableCell>
+      </TableRow>
     ))
   );
   
-  // Render skeleton or nothing while checking auth state
+  // While checking auth state or waiting for user, show a full-card skeleton.
   if (isUserLoading || !user) {
     return (
-        <div className="w-full max-w-4xl">
-            <Card className="w-full shadow-2xl shadow-primary/10">
-                <CardHeader>
-                  <Skeleton className="h-10 w-48" />
-                  <Skeleton className="h-4 w-64 mt-2" />
-                </CardHeader>
-                <CardContent>
-                    <div className="p-4"><PlayerListSkeleton /></div>
-                </CardContent>
-            </Card>
-        </div>
+        <Card className="w-full max-w-4xl shadow-2xl shadow-primary/10">
+            <CardHeader>
+              <Skeleton className="h-10 w-48" />
+              <Skeleton className="h-4 w-64 mt-2" />
+            </CardHeader>
+            <CardContent>
+                <div className="p-4"><PlayerListSkeleton /></div>
+            </CardContent>
+        </Card>
     );
   }
 
@@ -159,9 +161,9 @@ export default function ScoreSyncClient() {
           </div>
            <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground hidden sm:inline">{user.email}</span>
-            <Button variant="outline" onClick={handleLogout}>
-              <LogOut className="h-4 w-4" />
-              <span className="sm:hidden ml-2">Logout</span>
+            <Button variant="outline" onClick={handleLogout} size="sm">
+              <LogOut className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Logout</span>
             </Button>
           </div>
         </div>
@@ -182,52 +184,50 @@ export default function ScoreSyncClient() {
             </Button>
           </form>
         <ScrollArea className="h-[55vh] rounded-md border">
-          {isLoading ? (
-            <div className="p-4"><PlayerListSkeleton /></div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[80px] text-center font-bold">Rank</TableHead>
-                  <TableHead className="font-bold">Player</TableHead>
-                  <TableHead className="w-[100px] text-center font-bold">Score</TableHead>
-                  <TableHead className="w-[160px] text-center font-bold">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {players && players.length > 0 ? (
-                  players.map((player, index) => (
-                    <TableRow key={player.id} className={cn(recentlyUpdated === player.id && 'bg-accent/20', 'transition-colors duration-1000 ease-out')}>
-                      <TableCell className="text-center font-medium text-lg">
-                        {index === 0 ? <Crown className="w-6 h-6 mx-auto text-yellow-500" /> : index + 1}
-                      </TableCell>
-                      <TableCell className="font-medium text-lg">{player.name}</TableCell>
-                      <TableCell className="text-center font-bold text-xl text-primary">{player.score}</TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex justify-center items-center gap-2">
-                           <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, 1)} disabled={isPending} aria-label={`Increase score for ${player.name}`}>
-                             <Plus className="h-4 w-4" />
-                           </Button>
-                           <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, -1)} disabled={isPending} aria-label={`Decrease score for ${player.name}`}>
-                             <Minus className="h-4 w-4" />
-                           </Button>
-                           <Button variant="destructive" size="icon" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} aria-label={`Delete player ${player.name}`}>
-                             <Trash2 className="h-4 w-4" />
-                           </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                      No players yet. Add one to get started!
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[80px] text-center font-bold">Rank</TableHead>
+                <TableHead className="font-bold">Player</TableHead>
+                <TableHead className="w-[100px] text-center font-bold">Score</TableHead>
+                <TableHead className="w-[160px] text-center font-bold">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <PlayerListSkeleton />
+              ) : players && players.length > 0 ? (
+                players.map((player, index) => (
+                  <TableRow key={player.id} className={cn(recentlyUpdated === player.id && 'bg-accent/20', 'transition-colors duration-1000 ease-out')}>
+                    <TableCell className="text-center font-medium text-lg">
+                      {index === 0 ? <Crown className="w-6 h-6 mx-auto text-yellow-500" /> : index + 1}
+                    </TableCell>
+                    <TableCell className="font-medium text-lg">{player.name}</TableCell>
+                    <TableCell className="text-center font-bold text-xl text-primary">{player.score}</TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center items-center gap-2">
+                         <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, 1)} disabled={isPending} aria-label={`Increase score for ${player.name}`}>
+                           <Plus className="h-4 w-4" />
+                         </Button>
+                         <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, -1)} disabled={isPending} aria-label={`Decrease score for ${player.name}`}>
+                           <Minus className="h-4 w-4" />
+                         </Button>
+                         <Button variant="destructive" size="icon" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                    No players yet. Add one to get started!
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </ScrollArea>
       </CardContent>
     </Card>
@@ -237,7 +237,7 @@ export default function ScoreSyncClient() {
         <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete <strong>{playerToDelete?.name}</strong> and all their score data.
+            This action cannot be undone. This will permanently delete <strong>{playerToDelete?.name}</strong> and their score data.
             </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

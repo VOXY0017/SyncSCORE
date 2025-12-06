@@ -167,26 +167,26 @@ export default function ScoreSyncClient() {
   );
   
   return (
-    <>
-      <div className="w-full text-center mb-6">
+    <div className="flex flex-col h-full">
+      <div className="w-full text-center mb-6 flex-shrink-0">
           <CardTitle className="text-3xl font-bold text-primary flex items-center justify-center gap-3">
               <Trophy className="h-8 w-8" />
               Score Markas B7
           </CardTitle>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start flex-grow min-h-0">
         {/* Leaderboard Column */}
-        <div className="lg:col-span-1">
-            <Card className="shadow-lg h-full">
-                <CardHeader>
+        <div className="lg:col-span-1 h-full">
+            <Card className="shadow-lg h-full flex flex-col">
+                <CardHeader className='flex-shrink-0'>
                     <CardTitle className="flex items-center gap-2 text-xl">
                         <Medal />
                         Leaderboard
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <ScrollArea className="rounded-md border h-[calc(100vh-250px)]">
+                <CardContent className="flex-grow overflow-hidden">
+                    <ScrollArea className="h-full">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -252,9 +252,9 @@ export default function ScoreSyncClient() {
         </div>
 
         {/* Management Column */}
-        <div className="lg:col-span-1">
-            <Card className="shadow-lg h-full">
-                <CardHeader>
+        <div className="lg:col-span-1 h-full">
+            <Card className="shadow-lg h-full flex flex-col">
+                <CardHeader className='flex-shrink-0'>
                     <CardTitle className="flex items-center justify-between gap-2 text-xl">
                         <span className='flex items-center gap-2'>
                           <Gamepad2 />
@@ -262,8 +262,8 @@ export default function ScoreSyncClient() {
                         </span>
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <div className="flex w-full gap-2 mb-4">
+                <CardContent className="flex-grow flex flex-col min-h-0">
+                    <div className="flex w-full gap-2 mb-4 flex-shrink-0">
                         <Input
                         placeholder="New player name..."
                         value={newPlayerName}
@@ -278,7 +278,7 @@ export default function ScoreSyncClient() {
                         </Button>
                     </div>
 
-                    <ScrollArea className="rounded-md border h-[calc(100vh-250px)]">
+                    <ScrollArea className="flex-grow">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -355,6 +355,6 @@ export default function ScoreSyncClient() {
         </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
-    </>
+    </div>
   );
 }

@@ -19,9 +19,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, Trash2, Trophy, Crown, Gamepad2, Medal } from 'lucide-react';
+import { Plus, Minus, Trash2, Trophy, Crown, Gamepad2, Medal, UserPlus, ArrowUp, ArrowDown, Menu, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 type RankChange = {
   id: string;
@@ -43,13 +44,25 @@ export default function ScoreSyncClient() {
   const [rankChanges, setRankChanges] = useState<RankChange[]>([]);
   
   const previousPlayerRanks = useRef(new Map<string, number>());
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   useEffect(() => {
     // Simulate loading data
     setTimeout(() => {
-      setPlayers([]); // Start with an empty array
+      // Let's add some mock data for a better default look
+      const mockPlayers: Player[] = [
+        { id: '1', name: 'Rizky', score: 150 },
+        { id: '2', name: 'Andi', score: 125 },
+        { id: '3', name: 'Budi', score: 110 },
+        { id: '4', name: 'Citra', score: 95 },
+        { id: '5', name: 'Dewi', score: 80 },
+        { id: '6', name: 'Eka', score: 70 },
+      ].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+      
+      setPlayers(mockPlayers);
+      previousPlayerRanks.current = new Map(mockPlayers.map((p, i) => [p.id, i]));
       setIsLoading(false);
-    }, 1000);
+    }, 1500);
   }, []);
 
   const handleAddPlayer = (e: React.FormEvent) => {
@@ -75,6 +88,7 @@ export default function ScoreSyncClient() {
       previousPlayerRanks.current = new Map(newPlayers.map((p, i) => [p.id, i]));
       setPlayers(newPlayers);
       setNewPlayerName('');
+      toast({ title: "Player Added", description: `${trimmedName} has joined the game!`});
     });
   };
   
@@ -124,6 +138,7 @@ export default function ScoreSyncClient() {
 
     startTransition(() => {
       setPlayers(prevPlayers => prevPlayers.filter(p => p.id !== playerToDelete.id));
+      toast({ title: "Player Removed", description: `${playerToDelete.name} has been removed.`});
       setDeleteAlertOpen(false);
       setPlayerToDelete(null);
     });
@@ -136,28 +151,29 @@ export default function ScoreSyncClient() {
     }
   }
 
+  const topPlayers = players.slice(0, 3);
+  const otherPlayers = players.slice(3);
+
   const PlayerListSkeleton = () => (
-    <>
-    {[...Array(5)].map((_, i) => (
-      <TableRow key={i}>
-        <TableCell><Skeleton className="h-6 w-6 rounded-full" /></TableCell>
-        <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
-        <TableCell><Skeleton className="h-4 w-1/4" /></TableCell>
-        <TableCell><Skeleton className="h-4 w-1/2 mx-auto" /></TableCell>
-      </TableRow>
-    ))}
-    </>
+    <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[...Array(3)].map(i => <Skeleton key={i} className="h-24 rounded-lg" />)}
+        </div>
+        <div className="space-y-2">
+            {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+            ))}
+        </div>
+    </div>
   );
 
   const ManagementSkeleton = () => (
     <>
-    {[...Array(5)].map((_, i) => (
+    {[...Array(8)].map((_, i) => (
         <TableRow key={i}>
             <TableCell><Skeleton className="h-4 w-2/4" /></TableCell>
             <TableCell className="text-right"><Skeleton className="h-9 w-20 ml-auto" /></TableCell>
             <TableCell className="flex justify-end gap-2">
-                <Skeleton className="h-9 w-9" />
-                <Skeleton className="h-9 w-9" />
                 <Skeleton className="h-9 w-9" />
             </TableCell>
         </TableRow>
@@ -166,158 +182,156 @@ export default function ScoreSyncClient() {
   );
   
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <div className="w-full text-center py-4 flex-shrink-0">
-        <CardTitle className="text-3xl font-bold text-primary flex items-center justify-center gap-3">
-          <Trophy className="h-8 w-8" />
-          Score Markas B7
-        </CardTitle>
-      </div>
-
-      <div className="flex-grow flex flex-col lg:flex-row gap-6 min-h-0">
-        {/* Leaderboard Column */}
-        <div className="lg:flex-basis-1/2 h-full flex flex-col">
-          <Card className="shadow-lg h-full flex flex-col">
-            <CardHeader className="flex-shrink-0">
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Medal />
-                Leaderboard
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-grow overflow-hidden">
-              <ScrollArea className="h-full">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[50px] text-center font-bold">Rank</TableHead>
-                      <TableHead className="font-bold">Player</TableHead>
-                      <TableHead className="w-[80px] text-center font-bold">Gap</TableHead>
-                      <TableHead className="w-[100px] text-center font-bold">Score</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      <PlayerListSkeleton />
-                    ) : players && players.length > 0 ? (
-                      players.map((player, index) => {
-                        const scoreGap = index > 0 ? player.score - players[index - 1].score : 0;
-                        const rankChange = rankChanges.find(c => c.id === player.id);
-
-                        return (
-                          <PlayerRow
-                            key={player.id}
-                            player={player}
-                            index={index}
-                            scoreGap={scoreGap}
-                            recentlyUpdated={recentlyUpdated}
-                            rankChange={rankChange}
-                            onAnimationEnd={() => setRankChanges(rc => rc.filter(c => c.id !== player.id))}
-                          />
-                        );
-                      })
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                          No players yet. Add one to get started!
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Management Column */}
-        <div className="lg:flex-basis-1/2 h-full flex flex-col">
-          <Card className="shadow-lg h-full flex flex-col">
-            <CardHeader className="flex-shrink-0">
-              <div className="flex justify-between items-center w-full">
-                <CardTitle className="flex items-center gap-2 text-xl">
+    <div className="min-h-screen w-full bg-background dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2] relative">
+       {/* Pointer gradient */}
+       <div className="absolute pointer-events-none inset-0 flex items-center justify-center dark:bg-black bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
+      
+       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-14 max-w-screen-2xl items-center justify-between">
+          <div className="flex items-center gap-3">
+              <Trophy className="h-7 w-7 text-primary" />
+              <h1 className="text-xl font-bold tracking-tight">Score Markas B7</h1>
+          </div>
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+            <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="md:hidden">
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Manage Players</span>
+                </Button>
+            </SheetTrigger>
+            {/* Desktop trigger */}
+            <Button onClick={() => setIsSheetOpen(true)} className="hidden md:flex items-center gap-2">
+                <Gamepad2 />
+                Manage Points
+            </Button>
+            <SheetContent className="w-full sm:max-w-md flex flex-col">
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-3 text-2xl">
                   <Gamepad2 />
                   Manage Points
-                </CardTitle>
-                <form onSubmit={handleAddPlayer} className="flex w-full max-w-xs items-center">
+                </SheetTitle>
+              </SheetHeader>
+              <div className="flex-grow flex flex-col min-h-0 py-4">
+                <form onSubmit={handleAddPlayer} className="flex w-full items-center gap-2 mb-4">
                   <Input
-                    placeholder="Add new player and press Enter"
+                    placeholder="Add new player..."
                     value={newPlayerName}
                     onChange={(e) => setNewPlayerName(e.target.value)}
                     disabled={isPending}
                     className="w-full"
                     aria-label="New player name"
                   />
+                   <Button type="submit" size="icon" disabled={isPending || !newPlayerName.trim()}>
+                        <UserPlus className="h-4 w-4"/>
+                   </Button>
                 </form>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-grow flex flex-col min-h-0">
-              <ScrollArea className="h-full">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Player</TableHead>
-                      <TableHead className="w-[120px] text-right">Points</TableHead>
-                      <TableHead className="w-[140px] text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      <ManagementSkeleton />
-                    ) : players && players.length > 0 ? (
-                      players.map((player) => (
-                        <TableRow key={player.id} className={cn(
-                          'transition-colors duration-300',
-                          recentlyUpdated === player.id && 'bg-primary/10'
-                        )}>
-                          <TableCell className="font-medium">{player.name}</TableCell>
-                          <TableCell className='text-right'>
-                            <Input
-                              type="number"
-                              placeholder="0"
-                              className="w-20 h-9 text-center ml-auto"
-                              value={pointInputs[player.id] || ''}
-                              onChange={(e) => handlePointInputChange(player.id, e.target.value)}
-                              disabled={isPending}
-                              aria-label={`Points for ${player.name}`}
-                            />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end items-center gap-2">
-                              <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                              <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
-                                <Minus className="h-4 w-4" />
-                              </Button>
-                              <Button variant="destructive" size="icon" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
+                 <ScrollArea className="flex-grow h-0">
+                    <Table>
+                    <TableBody>
+                        {isLoading ? (
+                        <ManagementSkeleton />
+                        ) : players && players.length > 0 ? (
+                        players.map((player) => (
+                            <TableRow key={player.id} className="transition-colors duration-300">
+                                <TableCell className="font-medium">{player.name}</TableCell>
+                                <TableCell className='text-right w-[100px]'>
+                                    <Input
+                                    type="number"
+                                    placeholder="0"
+                                    className="h-9 text-center ml-auto"
+                                    value={pointInputs[player.id] || ''}
+                                    onChange={(e) => handlePointInputChange(player.id, e.target.value)}
+                                    disabled={isPending}
+                                    aria-label={`Points for ${player.name}`}
+                                    />
+                                </TableCell>
+                                <TableCell className="text-right w-[100px] space-x-1">
+                                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))
+                        ) : (
+                        <TableRow>
+                            <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                            Add a player to begin.
+                            </TableCell>
                         </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
-                          Add a player to begin.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+                        )}
+                    </TableBody>
+                    </Table>
+                </ScrollArea>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
-      </div>
+      </header>
 
+      <main className="container max-w-screen-lg mx-auto py-6 sm:py-10">
+        {isLoading ? (
+            <PlayerListSkeleton />
+        ) : (
+            <>
+            {/* Top 3 Players */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8 mb-8">
+                {topPlayers[1] && <PodiumCard player={topPlayers[1]} rank={2} />}
+                {topPlayers[0] && <PodiumCard player={topPlayers[0]} rank={1} />}
+                {topPlayers[2] && <PodiumCard player={topPlayers[2]} rank={3} />}
+            </div>
+
+            {/* Other Players */}
+            {otherPlayers.length > 0 && (
+                 <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                            <Users />
+                            All Players
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                <TableHead className="w-[80px] text-center font-bold">Rank</TableHead>
+                                <TableHead className="font-bold">Player</TableHead>
+                                <TableHead className="w-[120px] text-right font-bold">Score</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {otherPlayers.map((player, index) => {
+                                const rankChange = rankChanges.find(c => c.id === player.id);
+                                const overallRank = index + 4;
+                                return (
+                                    <PlayerRow
+                                    key={player.id}
+                                    player={player}
+                                    index={overallRank - 1}
+                                    rank={overallRank}
+                                    recentlyUpdated={recentlyUpdated}
+                                    rankChange={rankChange}
+                                    onAnimationEnd={() => setRankChanges(rc => rc.filter(c => c.id !== player.id))}
+                                    />
+                                );
+                                })}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            )}
+            </>
+        )}
+      </main>
 
     <AlertDialog open={isDeleteAlertOpen} onOpenChange={handleAlertOpenChange}>
         <AlertDialogContent>
         <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete <strong>{playerToDelete?.name}</strong> and their score data.
+                This action cannot be undone. This will permanently delete <strong>{playerToDelete?.name}</strong> and their score data.
             </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -335,23 +349,21 @@ export default function ScoreSyncClient() {
 interface PlayerRowProps {
   player: Player;
   index: number;
-  scoreGap: number;
+  rank: number;
   recentlyUpdated: string | null;
   rankChange: RankChange | undefined;
   onAnimationEnd: () => void;
 }
 
-function PlayerRow({ player, index, scoreGap, recentlyUpdated, rankChange, onAnimationEnd }: PlayerRowProps) {
+function PlayerRow({ player, index, rank, recentlyUpdated, rankChange, onAnimationEnd }: PlayerRowProps) {
   const rowRef = useRef<HTMLTableRowElement>(null);
-  
-  // A ref to hold the initial bounding rect
   const initialRect = useRef<DOMRect | null>(null);
 
   useLayoutEffect(() => {
     if (rowRef.current) {
         initialRect.current = rowRef.current.getBoundingClientRect();
     }
-  }, [player.id]); // Store position on initial render and when player changes
+  }, [player.id]);
 
   useLayoutEffect(() => {
     if (!rankChange || !rowRef.current || !initialRect.current) {
@@ -360,18 +372,14 @@ function PlayerRow({ player, index, scoreGap, recentlyUpdated, rankChange, onAni
 
     const newRect = rowRef.current.getBoundingClientRect();
     const oldRect = initialRect.current;
-
-    // Calculate the distance the element has moved
     const deltaY = oldRect.top - newRect.top;
 
     if (deltaY !== 0) {
-      // 1. Invert: Move the element back to its old position
       requestAnimationFrame(() => {
         if (!rowRef.current) return;
         rowRef.current.style.transform = `translateY(${deltaY}px)`;
         rowRef.current.style.transition = 'transform 0s';
         
-        // 2. Play: Force a reflow and then animate to the new position
         requestAnimationFrame(() => {
           if (!rowRef.current) return;
           rowRef.current.style.transition = 'transform 0.7s ease-in-out';
@@ -379,11 +387,9 @@ function PlayerRow({ player, index, scoreGap, recentlyUpdated, rankChange, onAni
         });
       });
     }
-
-    // Update the initialRect for the next animation
     initialRect.current = newRect;
 
-  }, [rankChange, player.score]); // Rerun on rank change or score change
+  }, [rankChange, player.score]);
 
 
   const handleTransitionEnd = () => {
@@ -397,21 +403,51 @@ function PlayerRow({ player, index, scoreGap, recentlyUpdated, rankChange, onAni
       className={cn(
         'will-change-transform',
         recentlyUpdated === player.id && 'bg-primary/10',
-        index === 0 && 'bg-amber-200 dark:bg-amber-900/40 hover:bg-amber-300/80 dark:hover:bg-amber-900/60',
-        index === 1 && 'bg-gray-200 dark:bg-gray-700/50 hover:bg-gray-300/80 dark:hover:bg-gray-700/70',
-        index === 2 && 'bg-orange-200 dark:bg-orange-900/40 hover:bg-orange-300/80 dark:hover:bg-orange-900/60'
       )}
     >
-      <TableCell className="text-center font-medium text-lg">
-        {index === 0 ? <Crown className="w-6 h-6 mx-auto text-yellow-500" /> : index + 1}
-      </TableCell>
+      <TableCell className="text-center font-medium text-lg text-muted-foreground">{rank}</TableCell>
       <TableCell className="font-medium text-lg">{player.name}</TableCell>
-      <TableCell className="text-center text-sm text-muted-foreground">
-        {index > 0 && scoreGap < 0 ? `${scoreGap}` : ''}
-      </TableCell>
-      <TableCell className="text-center font-bold text-xl text-primary">
+      <TableCell className="text-right font-bold text-xl text-primary tabular-nums">
         {player.score > 0 ? `+${player.score}` : player.score}
       </TableCell>
     </TableRow>
   );
+}
+
+
+interface PodiumCardProps {
+    player: Player;
+    rank: number;
+}
+
+function PodiumCard({ player, rank }: PodiumCardProps) {
+    const rankColors = {
+        1: 'border-yellow-400 bg-yellow-400/10 hover:bg-yellow-400/20',
+        2: 'border-slate-400 bg-slate-400/10 hover:bg-slate-400/20',
+        3: 'border-orange-400 bg-orange-400/10 hover:bg-orange-400/20'
+    };
+    const rankIcon = {
+        1: <Crown className="h-8 w-8 text-yellow-400" />,
+        2: <Medal className="h-8 w-8 text-slate-400" />,
+        3: <Trophy className="h-8 w-8 text-orange-400" />
+    };
+
+    return (
+        <Card className={cn(
+            'transition-all duration-300 border-2',
+            rank === 1 && 'md:scale-110 md:z-10',
+            rankColors[rank as keyof typeof rankColors],
+        )}>
+            <CardHeader className="flex flex-col items-center justify-center p-4">
+                {rankIcon[rank as keyof typeof rankIcon]}
+                <CardTitle className="text-2xl mt-2">{player.name}</CardTitle>
+                <CardDescription className="text-base">Rank #{rank}</CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 text-center">
+                 <p className="text-4xl font-bold text-primary tabular-nums">
+                    {player.score > 0 ? `+${player.score}` : player.score}
+                </p>
+            </CardContent>
+        </Card>
+    )
 }

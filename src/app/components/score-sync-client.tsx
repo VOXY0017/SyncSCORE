@@ -22,7 +22,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Minus, Trash2, Trophy, Crown, Gamepad2, Medal, UserPlus, ArrowUp, ArrowDown, Menu, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 type RankChange = {
   id: string;
@@ -44,7 +43,6 @@ export default function ScoreSyncClient() {
   const [rankChanges, setRankChanges] = useState<RankChange[]>([]);
   
   const previousPlayerRanks = useRef(new Map<string, number>());
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   useEffect(() => {
     // Simulate loading data
@@ -89,7 +87,6 @@ export default function ScoreSyncClient() {
       setPlayers(newPlayers);
       setNewPlayerName('');
       toast({ title: "Player Added", description: `${trimmedName} has joined the game!`});
-      setIsSheetOpen(false);
     });
   };
   
@@ -183,7 +180,7 @@ export default function ScoreSyncClient() {
   );
   
   return (
-    <div className="min-h-screen w-full bg-background dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2] relative">
+    <div className="min-h-screen w-full bg-background dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2] relative flex flex-col">
        {/* Pointer gradient */}
        <div className="absolute pointer-events-none inset-0 flex items-center justify-center dark:bg-black bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
       
@@ -193,136 +190,130 @@ export default function ScoreSyncClient() {
               <Trophy className="h-7 w-7 text-primary" />
               <h1 className="text-xl font-bold tracking-tight">Score Markas B7</h1>
           </div>
-          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="md:hidden">
-                    <Menu className="h-5 w-5" />
-                    <span className="sr-only">Manage Players</span>
-                </Button>
-            </SheetTrigger>
-            {/* Desktop trigger */}
-            <Button onClick={() => setIsSheetOpen(true)} className="hidden md:flex items-center gap-2">
-                <Gamepad2 />
-                Manage Points
-            </Button>
-            <SheetContent className="w-full sm:max-w-md flex flex-col">
-              <SheetHeader>
-                <SheetTitle className="flex items-center gap-3 text-2xl">
-                  <Gamepad2 />
-                  Manage Points
-                </SheetTitle>
-              </SheetHeader>
-              <div className="flex-grow flex flex-col min-h-0 py-4">
-                <form onSubmit={handleAddPlayer} className="flex w-full max-w-xs items-center gap-2 mb-4">
-                  <Input
-                    placeholder="Add new player and press Enter"
-                    value={newPlayerName}
-                    onChange={(e) => setNewPlayerName(e.target.value)}
-                    disabled={isPending}
-                    className="w-full"
-                    aria-label="New player name"
-                  />
-                </form>
-                 <ScrollArea className="flex-grow h-0">
-                    <Table>
-                    <TableBody>
-                        {isLoading ? (
-                        <ManagementSkeleton />
-                        ) : players && players.length > 0 ? (
-                        players.map((player) => (
-                            <TableRow key={player.id} className="transition-colors duration-300">
-                                <TableCell className="font-medium">{player.name}</TableCell>
-                                <TableCell className='text-right w-[100px]'>
-                                    <Input
-                                    type="number"
-                                    placeholder="0"
-                                    className="h-9 text-center ml-auto"
-                                    value={pointInputs[player.id] || ''}
-                                    onChange={(e) => handlePointInputChange(player.id, e.target.value)}
-                                    disabled={isPending}
-                                    aria-label={`Points for ${player.name}`}
-                                    />
-                                </TableCell>
-                                <TableCell className="text-right w-[100px] space-x-1">
-                                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
-                                        <Plus className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))
-                        ) : (
-                        <TableRow>
-                            <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
-                            Add a player to begin.
-                            </TableCell>
-                        </TableRow>
-                        )}
-                    </TableBody>
-                    </Table>
-                </ScrollArea>
-              </div>
-            </SheetContent>
-          </Sheet>
         </div>
       </header>
 
-      <main className="container max-w-screen-lg mx-auto py-6 sm:py-10">
-        {isLoading ? (
-            <PlayerListSkeleton />
-        ) : (
-            <>
-            {/* Top 3 Players */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8 mb-8">
-                {topPlayers[1] && <PodiumCard player={topPlayers[1]} rank={2} />}
-                {topPlayers[0] && <PodiumCard player={topPlayers[0]} rank={1} />}
-                {topPlayers[2] && <PodiumCard player={topPlayers[2]} rank={3} />}
-            </div>
+      <div className="container flex-grow max-w-screen-2xl mx-auto py-6 sm:py-10 grid md:grid-cols-[1fr_400px] gap-8">
+        <main>
+          {isLoading ? (
+              <PlayerListSkeleton />
+          ) : (
+              <>
+              {/* Top 3 Players */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8 mb-8">
+                  {topPlayers[1] && <PodiumCard player={topPlayers[1]} rank={2} />}
+                  {topPlayers[0] && <PodiumCard player={topPlayers[0]} rank={1} />}
+                  {topPlayers[2] && <PodiumCard player={topPlayers[2]} rank={3} />}
+              </div>
 
-            {/* Other Players */}
-            {otherPlayers.length > 0 && (
-                 <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-xl">
-                            <Users />
-                            All Players
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                <TableHead className="w-[80px] text-center font-bold">Rank</TableHead>
-                                <TableHead className="font-bold">Player</TableHead>
-                                <TableHead className="w-[120px] text-right font-bold">Score</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {otherPlayers.map((player, index) => {
-                                const rankChange = rankChanges.find(c => c.id === player.id);
-                                const overallRank = index + 4;
-                                return (
-                                    <PlayerRow
-                                    key={player.id}
-                                    player={player}
-                                    index={overallRank - 1}
-                                    rank={overallRank}
-                                    recentlyUpdated={recentlyUpdated}
-                                    rankChange={rankChange}
-                                    onAnimationEnd={() => setRankChanges(rc => rc.filter(c => c.id !== player.id))}
-                                    />
-                                );
-                                })}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-            )}
-            </>
-        )}
-      </main>
+              {/* Other Players */}
+              {otherPlayers.length > 0 && (
+                  <Card className="shadow-lg">
+                      <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-xl">
+                              <Users />
+                              All Players
+                          </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                          <Table>
+                              <TableHeader>
+                                  <TableRow>
+                                  <TableHead className="w-[80px] text-center font-bold">Rank</TableHead>
+                                  <TableHead className="font-bold">Player</TableHead>
+                                  <TableHead className="w-[120px] text-right font-bold">Score</TableHead>
+                                  </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                  {otherPlayers.map((player, index) => {
+                                  const rankChange = rankChanges.find(c => c.id === player.id);
+                                  const overallRank = index + 4;
+                                  return (
+                                      <PlayerRow
+                                      key={player.id}
+                                      player={player}
+                                      index={overallRank - 1}
+                                      rank={overallRank}
+                                      recentlyUpdated={recentlyUpdated}
+                                      rankChange={rankChange}
+                                      onAnimationEnd={() => setRankChanges(rc => rc.filter(c => c.id !== player.id))}
+                                      />
+                                  );
+                                  })}
+                              </TableBody>
+                          </Table>
+                      </CardContent>
+                  </Card>
+              )}
+              </>
+          )}
+        </main>
+        
+        <aside className="hidden md:flex flex-col h-full">
+            <Card className="w-full flex-grow flex flex-col min-h-0">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-3 text-2xl">
+                    <Gamepad2 />
+                    Manage Points
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="flex-grow flex flex-col min-h-0 py-4 pt-0">
+                    <form onSubmit={handleAddPlayer} className="flex w-full max-w-xs items-center gap-2 mb-4">
+                    <Input
+                        placeholder="Add new player and press Enter"
+                        value={newPlayerName}
+                        onChange={(e) => setNewPlayerName(e.target.value)}
+                        disabled={isPending}
+                        className="w-full"
+                        aria-label="New player name"
+                    />
+                    </form>
+                    <div className="flex-grow h-0 overflow-hidden">
+                      <ScrollArea className="h-full">
+                          <Table>
+                          <TableBody>
+                              {isLoading ? (
+                              <ManagementSkeleton />
+                              ) : players && players.length > 0 ? (
+                              players.map((player) => (
+                                  <TableRow key={player.id} className="transition-colors duration-300">
+                                      <TableCell className="font-medium">{player.name}</TableCell>
+                                      <TableCell className='text-right w-[100px]'>
+                                          <Input
+                                          type="number"
+                                          placeholder="0"
+                                          className="h-9 text-center ml-auto"
+                                          value={pointInputs[player.id] || ''}
+                                          onChange={(e) => handlePointInputChange(player.id, e.target.value)}
+                                          disabled={isPending}
+                                          aria-label={`Points for ${player.name}`}
+                                          />
+                                      </TableCell>
+                                      <TableCell className="text-right w-[100px] space-x-1">
+                                          <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
+                                              <Plus className="h-4 w-4" />
+                                          </Button>
+                                          <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
+                                              <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                      </TableCell>
+                                  </TableRow>
+                              ))
+                              ) : (
+                              <TableRow>
+                                  <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                                  Add a player to begin.
+                                  </TableCell>
+                              </TableRow>
+                              )}
+                          </TableBody>
+                          </Table>
+                      </ScrollArea>
+                    </div>
+                </CardContent>
+            </Card>
+        </aside>
+      </div>
 
     <AlertDialog open={isDeleteAlertOpen} onOpenChange={handleAlertOpenChange}>
         <AlertDialogContent>

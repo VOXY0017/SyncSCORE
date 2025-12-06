@@ -233,19 +233,15 @@ export default function ScoreSyncClient() {
                             <Gamepad2 />
                             Manage Points
                         </CardTitle>
-                        <form onSubmit={handleAddPlayer} className="flex w-full max-w-sm items-center space-x-2">
+                        <form onSubmit={handleAddPlayer} className="flex w-full max-w-sm items-center">
                             <Input
-                                placeholder="New player name..."
+                                placeholder="Add new player and press Enter"
                                 value={newPlayerName}
                                 onChange={(e) => setNewPlayerName(e.target.value)}
                                 disabled={isPending}
                                 className="w-full"
                                 aria-label="New player name"
                             />
-                            <Button type="submit" disabled={isPending || !newPlayerName.trim()} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                                <UserPlus className="h-4 w-4 mr-2" />
-                                Add
-                            </Button>
                         </form>
                     </div>
                 </CardHeader>

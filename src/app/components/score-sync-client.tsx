@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useTransition, useCallback } from 'react';
+import { useState, useEffect, useTransition, useCallback, useMemo } from 'react';
 import type { Player } from '@/lib/types';
-import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { addPlayer, updatePlayerScore, removePlayer } from '@/app/actions';
 
 import { Button } from '@/components/ui/button';
@@ -28,54 +28,38 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 
 export default function ScoreSyncClient() {
-  const [players, setPlayers] = useState<Player[]>([]);
+  const firestore = useFirestore();
   const [newPlayerName, setNewPlayerName] = useState('');
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [recentlyUpdated, setRecentlyUpdated] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  
+  const playersQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'players'), orderBy('score', 'desc'), orderBy('name', 'asc'));
+  }, [firestore]);
+
+  const { data: players, isLoading, error } = useCollection<Player>(playersQuery);
 
   useEffect(() => {
-    try {
-      const q = query(collection(db, 'players'), orderBy('score', 'desc'), orderBy('name', 'asc'));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const playersData: Player[] = snapshot.docs.map(doc => ({
-          id: doc.id,
-          name: doc.data().name,
-          score: doc.data().score,
-        }));
-        setPlayers(playersData);
-        if(isLoading) setIsLoading(false);
-      }, (error) => {
-        console.error("Error fetching players: ", error);
-        toast({
-          variant: "destructive",
-          title: "Firebase Error",
-          description: "Failed to load player data. Check console and Firebase setup.",
-        });
-        setIsLoading(false);
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Firebase Error",
+        description: "Failed to load player data. Check console and Firebase setup.",
       });
-
-      return () => unsubscribe();
-    } catch(error) {
-       console.error("Firebase initialization error: ", error);
-       toast({
-          variant: "destructive",
-          title: "Configuration Error",
-          description: "Could not connect to Firebase. Please verify your firebaseConfig in src/lib/firebase.ts.",
-        });
-       setIsLoading(false);
     }
-  }, [toast, isLoading]);
+  }, [error, toast]);
+
 
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPlayerName.trim()) return;
+    if (!newPlayerName.trim() || !firestore) return;
 
     startTransition(async () => {
-      const result = await addPlayer(newPlayerName);
+      const result = await addPlayer(firestore, newPlayerName);
       if (result.success) {
         setNewPlayerName('');
       } else {
@@ -90,9 +74,10 @@ export default function ScoreSyncClient() {
   }, []);
 
   const handleScoreChange = (playerId: string, change: 1 | -1) => {
+    if (!firestore) return;
     triggerUpdateAnimation(playerId);
     startTransition(async () => {
-      const result = await updatePlayerScore(playerId, change);
+      const result = await updatePlayerScore(firestore, playerId, change);
       if (!result.success) {
         toast({ variant: "destructive", title: "Error", description: result.error });
       }
@@ -100,10 +85,10 @@ export default function ScoreSyncClient() {
   };
 
   const confirmDeletePlayer = () => {
-    if (!playerToDelete) return;
+    if (!playerToDelete || !firestore) return;
 
     startTransition(async () => {
-      const result = await removePlayer(playerToDelete.id);
+      const result = await removePlayer(firestore, playerToDelete.id);
       if (!result.success) {
         toast({ variant: "destructive", title: "Error", description: result.error });
       }
@@ -173,7 +158,7 @@ export default function ScoreSyncClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {players.length > 0 ? (
+                {players && players.length > 0 ? (
                   players.map((player, index) => (
                     <TableRow key={player.id} className={cn(recentlyUpdated === player.id && 'bg-accent/20', 'transition-colors duration-1000 ease-out')}>
                       <TableCell className="text-center font-medium text-lg">

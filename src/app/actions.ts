@@ -1,16 +1,19 @@
 'use server';
 
-import { db } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, doc, updateDoc, increment, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, increment, Firestore } from 'firebase/firestore';
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
-export async function addPlayer(name: string): Promise<{ success: boolean; error?: string }> {
+// Note: Removed initializeFirebase() from the server action file.
+// The firestore instance will now be passed from the client.
+
+export async function addPlayer(firestore: Firestore, name: string): Promise<{ success: boolean; error?: string }> {
   const trimmedName = name.trim();
   if (!trimmedName) {
     return { success: false, error: 'Player name cannot be empty.' };
   }
 
   try {
-    const playersRef = collection(db, 'players');
+    const playersRef = collection(firestore, 'players');
     const q = query(playersRef, where('name', '==', trimmedName));
     const querySnapshot = await getDocs(q);
 
@@ -18,7 +21,7 @@ export async function addPlayer(name: string): Promise<{ success: boolean; error
       return { success: false, error: 'A player with this name already exists.' };
     }
 
-    await addDoc(playersRef, {
+    addDocumentNonBlocking(playersRef, {
       name: trimmedName,
       score: 0,
     });
@@ -29,14 +32,14 @@ export async function addPlayer(name: string): Promise<{ success: boolean; error
   }
 }
 
-export async function updatePlayerScore(playerId: string, change: 1 | -1): Promise<{ success: boolean; error?: string }> {
+export async function updatePlayerScore(firestore: Firestore, playerId: string, change: 1 | -1): Promise<{ success: boolean; error?: string }> {
   if (!playerId) {
     return { success: false, error: 'Player ID is required.' };
   }
 
   try {
-    const playerDocRef = doc(db, 'players', playerId);
-    await updateDoc(playerDocRef, {
+    const playerDocRef = doc(firestore, 'players', playerId);
+    updateDocumentNonBlocking(playerDocRef, {
       score: increment(change),
     });
     return { success: true };
@@ -46,13 +49,13 @@ export async function updatePlayerScore(playerId: string, change: 1 | -1): Promi
   }
 }
 
-export async function removePlayer(playerId: string): Promise<{ success: boolean; error?: string }> {
+export async function removePlayer(firestore: Firestore, playerId: string): Promise<{ success: boolean; error?: string }> {
   if (!playerId) {
     return { success: false, error: 'Player ID is required.' };
   }
 
   try {
-    await deleteDoc(doc(db, 'players', playerId));
+    deleteDocumentNonBlocking(doc(firestore, 'players', playerId));
     return { success: true };
   } catch (error) {
     console.error("Error deleting player: ", error);

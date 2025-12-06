@@ -116,36 +116,6 @@ export default function ScoreSyncClient() {
     });
   };
   
-  const handleBulkSubtract = () => {
-    // Find the first player with a valid point input
-    const firstValidInputPlayerId = Object.keys(pointInputs).find(
-      (id) => pointInputs[id] && !isNaN(parseInt(pointInputs[id], 10)) && parseInt(pointInputs[id], 10) > 0
-    );
-
-    if (!firstValidInputPlayerId) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Masukkan nilai poin di salah satu pemain untuk dikurangi.',
-      });
-      return;
-    }
-
-    const amount = parseInt(pointInputs[firstValidInputPlayerId], 10);
-
-    startTransition(() => {
-      setPlayers((prevPlayers) => {
-        const updatedPlayers = prevPlayers.map((p) => ({
-          ...p,
-          score: p.score - amount,
-        }));
-        return [...updatedPlayers].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
-      });
-      // Clear all point inputs after bulk operation
-      setPointInputs({});
-    });
-  };
-  
   const handlePointInputChange = (playerId: string, value: string) => {
     setPointInputs(prev => ({...prev, [playerId]: value}));
   }
@@ -308,14 +278,7 @@ export default function ScoreSyncClient() {
                         </Button>
                     </div>
 
-                    <div className="mb-4">
-                        <Button onClick={handleBulkSubtract} disabled={isPending} variant="secondary" className="w-full">
-                            <Minus className="h-4 w-4 mr-2" />
-                            Kurangi Semua Poin (dari nilai di tabel)
-                        </Button>
-                    </div>
-
-                    <ScrollArea className="h-[calc(100vh-420px)] rounded-md border">
+                    <ScrollArea className="h-[calc(100vh-370px)] rounded-md border">
                         <Table>
                             <TableHeader>
                                 <TableRow>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useCallback, useEffect, useRef } from 'react';
+import { useState, useTransition, useCallback, useEffect } from 'react';
 import type { Player } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
@@ -200,7 +200,9 @@ export default function ScoreSyncClient() {
                       {index === 0 ? <Crown className="w-6 h-6 mx-auto text-yellow-500" /> : index + 1}
                     </TableCell>
                     <TableCell className="font-medium text-lg">{player.name}</TableCell>
-                    <TableCell className="text-center font-bold text-xl text-primary">{player.score}</TableCell>
+                    <TableCell className="text-center font-bold text-xl text-primary">
+                      {player.score > 0 ? `+${player.score}` : player.score}
+                    </TableCell>
                     <TableCell>
                       <Input 
                           type="number"
@@ -259,3 +261,5 @@ export default function ScoreSyncClient() {
     </>
   );
 }
+
+    

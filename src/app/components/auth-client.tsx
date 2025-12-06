@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useUser } from '@/firebase';
-import { initiateEmailSignUp, initiateEmailSignIn } from '@/firebase/non-blocking-login';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,9 +31,37 @@ export default function AuthClient() {
     }
   }, [user, router]);
 
-  if (isUserLoading || user) {
+  if (isUserLoading) {
     return <div>Loading...</div>;
   }
+  
+  if (user) {
+    return null; // Don't render anything if the user is logged in
+  }
+
+  const handleFirebaseAuthError = (error: any) => {
+    let description = "An unexpected error occurred.";
+    switch (error.code) {
+      case 'auth/email-already-in-use':
+        description = 'This email address is already in use by another account.';
+        break;
+      case 'auth/invalid-email':
+        description = 'The email address is not valid.';
+        break;
+      case 'auth/weak-password':
+        description = 'The password is too weak. It must be at least 6 characters long.';
+        break;
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+      case 'auth/invalid-credential':
+        description = 'Invalid email or password.';
+        break;
+      default:
+        description = error.message;
+        break;
+    }
+    toast({ variant: 'destructive', title: 'Authentication Error', description });
+  };
   
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,8 +69,13 @@ export default function AuthClient() {
       toast({ variant: 'destructive', title: 'Error', description: 'Email and password are required.' });
       return;
     }
-    startTransition(() => {
-      initiateEmailSignIn(auth, loginEmail, loginPassword);
+    startTransition(async () => {
+      try {
+        await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+        // onAuthStateChanged in provider will handle the redirect
+      } catch (error) {
+        handleFirebaseAuthError(error);
+      }
     });
   };
 
@@ -56,8 +89,13 @@ export default function AuthClient() {
       toast({ variant: 'destructive', title: 'Registration Error', description: 'Password must be at least 6 characters long.' });
       return;
     }
-    startTransition(() => {
-      initiateEmailSignUp(auth, registerEmail, registerPassword);
+    startTransition(async () => {
+      try {
+        await createUserWithEmailAndPassword(auth, registerEmail, registerPassword);
+        // onAuthStateChanged in provider will handle the redirect
+      } catch (error) {
+        handleFirebaseAuthError(error);
+      }
     });
   };
 

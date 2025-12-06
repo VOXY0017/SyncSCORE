@@ -167,8 +167,8 @@ export default function ScoreSyncClient() {
   );
   
   return (
-    <div className="flex flex-col h-full">
-      <div className="w-full text-center mb-6 flex-shrink-0">
+    <div className="flex flex-col h-full min-h-screen">
+      <div className="w-full text-center py-4 flex-shrink-0">
           <CardTitle className="text-3xl font-bold text-primary flex items-center justify-center gap-3">
               <Trophy className="h-8 w-8" />
               Score Markas B7
@@ -255,29 +255,28 @@ export default function ScoreSyncClient() {
         <div className="lg:col-span-1 h-full">
             <Card className="shadow-lg h-full flex flex-col">
                 <CardHeader className='flex-shrink-0'>
-                    <CardTitle className="flex items-center justify-between gap-2 text-xl">
-                        <span className='flex items-center gap-2'>
-                          <Gamepad2 />
-                          Manage Points
-                        </span>
-                    </CardTitle>
+                    <div className="flex justify-between items-center w-full">
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                            <Gamepad2 />
+                            Manage Points
+                        </CardTitle>
+                        <form onSubmit={handleAddPlayer} className="flex w-full max-w-sm items-center space-x-2">
+                            <Input
+                                placeholder="New player name..."
+                                value={newPlayerName}
+                                onChange={(e) => setNewPlayerName(e.target.value)}
+                                disabled={isPending}
+                                className="w-full"
+                                aria-label="New player name"
+                            />
+                            <Button type="submit" disabled={isPending || !newPlayerName.trim()} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                                <UserPlus className="h-4 w-4 mr-2" />
+                                Add
+                            </Button>
+                        </form>
+                    </div>
                 </CardHeader>
                 <CardContent className="flex-grow flex flex-col min-h-0">
-                    <div className="flex w-full gap-2 mb-4 flex-shrink-0">
-                        <Input
-                        placeholder="New player name..."
-                        value={newPlayerName}
-                        onChange={(e) => setNewPlayerName(e.target.value)}
-                        disabled={isPending}
-                        className="w-full"
-                        aria-label="New player name"
-                        />
-                        <Button type="button" onClick={handleAddPlayer} disabled={isPending || !newPlayerName.trim()} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                            <UserPlus className="h-4 w-4 mr-2" />
-                            Add
-                        </Button>
-                    </div>
-
                     <ScrollArea className="flex-grow">
                         <Table>
                             <TableHeader>

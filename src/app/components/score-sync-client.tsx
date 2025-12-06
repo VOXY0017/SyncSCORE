@@ -135,12 +135,12 @@ export default function ScoreSyncClient() {
         <TableCell><Skeleton className="h-6 w-6 rounded-full" /></TableCell>
         <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
         <TableCell><Skeleton className="h-4 w-1/2" /></TableCell>
-        <TableCell><Skeleton className="h-9 w-20" /></TableCell>
-        <TableCell className="flex justify-center gap-2">
+        <TableCell className="flex justify-end gap-2">
             <Skeleton className="h-9 w-9" />
             <Skeleton className="h-9 w-9" />
             <Skeleton className="h-9 w-9" />
         </TableCell>
+        <TableCell><Skeleton className="h-9 w-20" /></TableCell>
       </TableRow>
     ))}
     </>
@@ -182,8 +182,8 @@ export default function ScoreSyncClient() {
                 <TableHead className="w-[80px] text-center font-bold">Rank</TableHead>
                 <TableHead className="font-bold">Player</TableHead>
                 <TableHead className="w-[100px] text-center font-bold">Score</TableHead>
+                <TableHead className="w-[150px] text-right font-bold pr-4">Actions</TableHead>
                 <TableHead className="w-[120px] text-center font-bold">Points</TableHead>
-                <TableHead className="min-w-[150px] text-center font-bold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -196,7 +196,7 @@ export default function ScoreSyncClient() {
                       recentlyUpdated === player.id && 'bg-accent/20',
                       rankChanged.includes(player.id) && 'bg-blue-200 dark:bg-blue-800/30'
                   )}
-                  style={{ transform: `translateY(${index * 0}px)` }}
+                  style={{ transform: `translateY(0px)` }}
                   >
                     <TableCell className="text-center font-medium text-lg">
                       {index === 0 ? <Crown className="w-6 h-6 mx-auto text-yellow-500" /> : index + 1}
@@ -204,6 +204,19 @@ export default function ScoreSyncClient() {
                     <TableCell className="font-medium text-lg">{player.name}</TableCell>
                     <TableCell className="text-center font-bold text-xl text-primary">
                       {player.score > 0 ? `+${player.score}` : player.score}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end items-center gap-2">
+                         <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
+                           <Plus className="h-4 w-4" />
+                         </Button>
+                         <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
+                           <Minus className="h-4 w-4" />
+                         </Button>
+                         <Button variant="destructive" size="icon" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Input 
@@ -215,19 +228,6 @@ export default function ScoreSyncClient() {
                           disabled={isPending}
                           aria-label={`Points for ${player.name}`}
                       />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex justify-center items-center gap-2">
-                         <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
-                           <Plus className="h-4 w-4" />
-                         </Button>
-                         <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
-                           <Minus className="h-4 w-4" />
-                         </Button>
-                         <Button variant="destructive" size="icon" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
-                           <Trash2 className="h-4 w-4" />
-                         </Button>
-                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -263,7 +263,5 @@ export default function ScoreSyncClient() {
     </>
   );
 }
-
-    
 
     

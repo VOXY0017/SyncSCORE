@@ -1,12 +1,7 @@
 'use client';
 
-import { useState, useEffect, useTransition, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useTransition, useCallback, useEffect } from 'react';
 import type { Player } from '@/lib/types';
-import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
-import { signOut } from 'firebase/auth';
-import { collection, query, orderBy } from 'firebase/firestore';
-import { addPlayer, updatePlayerScore, removePlayer } from '@/app/actions';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,56 +19,58 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, Trash2, Trophy, Crown, UserPlus, LogOut } from 'lucide-react';
+import { Plus, Minus, Trash2, Trophy, Crown, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Initial dummy data for the scoreboard
+const initialPlayers: Player[] = [
+  { id: '1', name: 'Alice', score: 10 },
+  { id: '2', name: 'Bob', score: 8 },
+  { id: '3', name: 'Charlie', score: 12 },
+];
+
+
 export default function ScoreSyncClient() {
-  const auth = useAuth();
-  const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
-  const router = useRouter();
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [newPlayerName, setNewPlayerName] = useState('');
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [recentlyUpdated, setRecentlyUpdated] = useState<string | null>(null);
-  
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isUserLoading, router]);
-  
-  const playersQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null; // Wait for user and firestore to be ready
-    return query(collection(firestore, 'players'), orderBy('score', 'desc'), orderBy('name', 'asc'));
-  }, [firestore, user]);
-
-  const { data: players, isLoading, error } = useCollection<Player>(playersQuery);
 
   useEffect(() => {
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Firebase Error",
-        description: error.message || "Failed to load player data. Check console and Firebase setup.",
-      });
-    }
-  }, [error, toast]);
+    // Simulate loading data
+    setTimeout(() => {
+      setPlayers(initialPlayers.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name)));
+      setIsLoading(false);
+    }, 1000);
+  }, []);
 
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPlayerName.trim() || !firestore) return;
+    if (!newPlayerName.trim()) return;
 
-    startTransition(async () => {
-      const result = await addPlayer(firestore, newPlayerName);
-      if (result.success) {
-        setNewPlayerName('');
-      } else {
-        toast({ variant: "destructive", title: "Error", description: result.error });
+    startTransition(() => {
+      const trimmedName = newPlayerName.trim();
+      
+      if (players.some(p => p.name.toLowerCase() === trimmedName.toLowerCase())) {
+        toast({ variant: "destructive", title: "Error", description: "A player with this name already exists." });
+        return;
       }
+      
+      const newPlayer: Player = {
+        id: new Date().getTime().toString(), // Simple unique ID
+        name: trimmedName,
+        score: 0,
+      };
+      
+      setPlayers(prevPlayers => 
+        [...prevPlayers, newPlayer].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+      );
+      setNewPlayerName('');
     });
   };
   
@@ -83,24 +80,21 @@ export default function ScoreSyncClient() {
   }, []);
 
   const handleScoreChange = (playerId: string, change: 1 | -1) => {
-    if (!firestore) return;
     triggerUpdateAnimation(playerId);
-    startTransition(async () => {
-      const result = await updatePlayerScore(firestore, playerId, change);
-      if (!result.success) {
-        toast({ variant: "destructive", title: "Error", description: result.error });
-      }
+    startTransition(() => {
+       setPlayers(prevPlayers => 
+        prevPlayers.map(p => 
+          p.id === playerId ? { ...p, score: p.score + change } : p
+        ).sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+      );
     });
   };
 
   const confirmDeletePlayer = () => {
-    if (!playerToDelete || !firestore) return;
+    if (!playerToDelete) return;
 
-    startTransition(async () => {
-      const result = await removePlayer(firestore, playerToDelete.id);
-      if (!result.success) {
-        toast({ variant: "destructive", title: "Error", description: result.error });
-      }
+    startTransition(() => {
+      setPlayers(prevPlayers => prevPlayers.filter(p => p.id !== playerToDelete.id));
       setDeleteAlertOpen(false);
       setPlayerToDelete(null);
     });
@@ -113,12 +107,8 @@ export default function ScoreSyncClient() {
     }
   }
 
-  const handleLogout = () => {
-    signOut(auth); // Direct call to signOut
-  };
-
   const PlayerListSkeleton = () => (
-    [...Array(5)].map((_, i) => (
+    [...Array(3)].map((_, i) => (
       <TableRow key={i}>
         <TableCell><Skeleton className="h-6 w-6 rounded-full" /></TableCell>
         <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
@@ -132,25 +122,6 @@ export default function ScoreSyncClient() {
     ))
   );
   
-  // While checking auth state or waiting for user, show a full-card skeleton.
-  if (isUserLoading || !user) {
-    return (
-        <Card className="w-full max-w-4xl shadow-2xl shadow-primary/10">
-            <CardHeader>
-              <Skeleton className="h-10 w-48" />
-              <Skeleton className="h-4 w-64 mt-2" />
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableBody>
-                  <PlayerListSkeleton />
-                </TableBody>
-              </Table>
-            </CardContent>
-        </Card>
-    );
-  }
-
   return (
     <>
     <Card className="w-full shadow-2xl shadow-primary/10">
@@ -161,14 +132,7 @@ export default function ScoreSyncClient() {
               <Trophy className="h-8 w-8" />
               ScoreSync
             </CardTitle>
-            <CardDescription className="mt-1">Real-time multiplayer scoreboard powered by Firebase</CardDescription>
-          </div>
-           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground hidden sm:inline">{user.email}</span>
-            <Button variant="outline" onClick={handleLogout} size="sm">
-              <LogOut className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Logout</span>
-            </Button>
+            <CardDescription className="mt-1">A simple client-side scoreboard</CardDescription>
           </div>
         </div>
       </CardHeader>

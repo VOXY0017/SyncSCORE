@@ -23,14 +23,6 @@ import { Plus, Minus, Trash2, Trophy, Crown, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Initial dummy data for the scoreboard
-const initialPlayers: Player[] = [
-  { id: '1', name: 'Alice', score: 10 },
-  { id: '2', name: 'Bob', score: 8 },
-  { id: '3', name: 'Charlie', score: 12 },
-];
-
-
 export default function ScoreSyncClient() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,7 +37,7 @@ export default function ScoreSyncClient() {
   useEffect(() => {
     // Simulate loading data
     setTimeout(() => {
-      setPlayers(initialPlayers.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name)));
+      setPlayers([]); // Start with an empty array
       setIsLoading(false);
     }, 1000);
   }, []);
@@ -65,7 +57,7 @@ export default function ScoreSyncClient() {
       const newPlayer: Player = {
         id: new Date().getTime().toString(), // Simple unique ID
         name: trimmedName,
-        score: 0,
+        score: 0, // New players start at 0
       };
       
       setPlayers(prevPlayers => 
@@ -236,5 +228,3 @@ export default function ScoreSyncClient() {
     </>
   );
 }
-
-    

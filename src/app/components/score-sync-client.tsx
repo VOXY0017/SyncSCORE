@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useCallback, useEffect } from 'react';
+import { useState, useTransition, useCallback, useEffect, useRef } from 'react';
 import type { Player } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,12 @@ import { Plus, Minus, Trash2, Trophy, Crown, UserPlus, Gamepad2, Medal } from 'l
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
+type RankChange = {
+  id: string;
+  oldRank: number;
+  newRank: number;
+};
+
 export default function ScoreSyncClient() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,8 +38,10 @@ export default function ScoreSyncClient() {
   const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [recentlyUpdated, setRecentlyUpdated] = useState<string | null>(null);
-  const [rankChanged, setRankChanged] = useState<string[]>([]);
+  const [rankChanged, setRankChanged] = useState<RankChange[]>([]);
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
+  const playerRowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
+
 
   useEffect(() => {
     // Simulate loading data
@@ -90,11 +98,11 @@ export default function ScoreSyncClient() {
           
           const newRanks = new Map(sortedPlayers.map((p, i) => [p.id, i]));
           
-          const changedRanks: string[] = [];
+          const changedRanks: RankChange[] = [];
           newRanks.forEach((newRank, id) => {
             const oldRank = oldRanks.get(id);
             if (oldRank !== undefined && oldRank !== newRank) {
-              changedRanks.push(id);
+              changedRanks.push({ id, oldRank, newRank });
             }
           });
 
@@ -105,6 +113,7 @@ export default function ScoreSyncClient() {
 
           return sortedPlayers;
        });
+       setPointInputs(prev => ({...prev, [playerId]: ''}));
     });
   };
   
@@ -190,14 +199,28 @@ export default function ScoreSyncClient() {
                             {isLoading ? (
                                 <PlayerListSkeleton />
                             ) : players && players.length > 0 ? (
-                                players.map((player, index) => (
-                                <TableRow key={player.id} className={cn(
-                                    'transition-all duration-500 ease-in-out',
-                                    recentlyUpdated === player.id && 'bg-primary/10',
-                                    rankChanged.includes(player.id) && 'bg-blue-200 dark:bg-blue-800/30',
-                                    index === 0 && 'bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200/80 dark:hover:bg-amber-900/50'
-                                )}
-                                style={{ transform: 'translateY(0)' }}
+                                players.map((player, index) => {
+                                const rankChangeInfo = rankChanged.find(p => p.id === player.id);
+                                const isChangingRank = !!rankChangeInfo;
+                                const rowHeight = playerRowRefs.current[player.id]?.offsetHeight || 48; // Default height
+
+                                return (
+                                <TableRow 
+                                    key={player.id} 
+                                    ref={el => playerRowRefs.current[player.id] = el}
+                                    className={cn(
+                                        'transition-all duration-500 ease-in-out',
+                                        recentlyUpdated === player.id && 'bg-primary/10',
+                                        isChangingRank ? 'bg-blue-200 dark:bg-blue-800/30' : '',
+                                        index === 0 && 'bg-amber-200 dark:bg-amber-900/40 hover:bg-amber-300/80 dark:hover:bg-amber-900/60',
+                                        index === 1 && 'bg-gray-200 dark:bg-gray-700/50 hover:bg-gray-300/80 dark:hover:bg-gray-700/70',
+                                        index === 2 && 'bg-orange-200 dark:bg-orange-900/40 hover:bg-orange-300/80 dark:hover:bg-orange-900/60'
+                                    )}
+                                    style={{ 
+                                        transform: isChangingRank ? `translateY(${(rankChangeInfo.oldRank - rankChangeInfo.newRank) * rowHeight}px)` : 'translateY(0)',
+                                        zIndex: isChangingRank ? 10 : 1,
+                                        position: 'relative'
+                                    }}
                                 >
                                     <TableCell className="text-center font-medium text-lg">
                                     {index === 0 ? <Crown className="w-6 h-6 mx-auto text-yellow-500" /> : index + 1}
@@ -207,7 +230,8 @@ export default function ScoreSyncClient() {
                                     {player.score > 0 ? `+${player.score}` : player.score}
                                     </TableCell>
                                 </TableRow>
-                                ))
+                                );
+                                })
                             ) : (
                                 <TableRow>
                                     <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">

@@ -41,6 +41,7 @@ export default function ScoreSyncClient() {
   const [rankChanged, setRankChanged] = useState<RankChange[]>([]);
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
   const playerRowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
+  const [bulkSubtractAmount, setBulkSubtractAmount] = useState('');
 
 
   useEffect(() => {
@@ -116,6 +117,25 @@ export default function ScoreSyncClient() {
        setPointInputs(prev => ({...prev, [playerId]: ''}));
     });
   };
+
+  const handleBulkSubtract = () => {
+    const amount = parseInt(bulkSubtractAmount, 10);
+    if (isNaN(amount) || amount <= 0) {
+        toast({ variant: "destructive", title: "Error", description: "Please enter a valid number to subtract." });
+        return;
+    }
+
+    startTransition(() => {
+        setPlayers(prevPlayers => {
+            const updatedPlayers = prevPlayers.map(p => ({
+                ...p,
+                score: p.score - amount
+            }));
+            return [...updatedPlayers].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+        });
+        setBulkSubtractAmount('');
+    });
+};
   
   const handlePointInputChange = (playerId: string, value: string) => {
     setPointInputs(prev => ({...prev, [playerId]: value}));
@@ -187,7 +207,7 @@ export default function ScoreSyncClient() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <ScrollArea className="h-[calc(100vh-280px)] rounded-md border">
+                    <ScrollArea className="h-[calc(100vh-340px)] rounded-md border">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -256,9 +276,11 @@ export default function ScoreSyncClient() {
         <div className="lg:col-span-1">
             <Card className="shadow-lg h-full">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-xl">
-                        <Gamepad2 />
-                        Manage Points
+                    <CardTitle className="flex items-center justify-between gap-2 text-xl">
+                        <span className='flex items-center gap-2'>
+                          <Gamepad2 />
+                          Manage Points
+                        </span>
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -277,7 +299,24 @@ export default function ScoreSyncClient() {
                         </Button>
                     </form>
 
-                    <ScrollArea className="h-[calc(100vh-280px)] rounded-md border">
+                     <div className="flex w-full gap-2 mb-4">
+                        <Input
+                            type="number"
+                            placeholder="Poin untuk dikurangi"
+                            value={bulkSubtractAmount}
+                            onChange={(e) => setBulkSubtractAmount(e.target.value)}
+                            disabled={isPending}
+                            className="w-full"
+                            aria-label="Bulk subtract points"
+                        />
+                        <Button onClick={handleBulkSubtract} disabled={isPending || !bulkSubtractAmount.trim()} variant="secondary">
+                            <Minus className="h-4 w-4 mr-2" />
+                            Kurangi Semua
+                        </Button>
+                    </div>
+
+
+                    <ScrollArea className="h-[calc(100vh-420px)] rounded-md border">
                         <Table>
                             <TableHeader>
                                 <TableRow>

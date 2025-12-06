@@ -66,7 +66,7 @@ export default function AuthClient() {
             <CardDescription>Login or create an account to start tracking scores.</CardDescription>
         </CardHeader>
         <CardContent>
-            <Tabs defaultValue="login" className="w-full">
+            <Tabs defaultValue="register" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Login</TabsTrigger>
                 <TabsTrigger value="register">Register</TabsTrigger>

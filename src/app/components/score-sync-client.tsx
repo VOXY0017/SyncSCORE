@@ -167,9 +167,9 @@ export default function ScoreSyncClient() {
             <CardDescription className="mt-1">A simple client-side scoreboard</CardDescription>
         </div>
     </div>
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Leaderboard Column */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-1">
             <Card className="shadow-lg">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-xl">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useUser } from '@/firebase';
 import { initiateEmailSignUp, initiateEmailSignIn } from '@/firebase/non-blocking-login';
@@ -25,13 +25,14 @@ export default function AuthClient() {
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
 
-  if (isUserLoading) {
-    return <div>Loading...</div>;
-  }
+  useEffect(() => {
+    if (user) {
+      router.push('/');
+    }
+  }, [user, router]);
 
-  if (user) {
-    router.push('/');
-    return null;
+  if (isUserLoading || user) {
+    return <div>Loading...</div>;
   }
   
   const handleLogin = (e: React.FormEvent) => {

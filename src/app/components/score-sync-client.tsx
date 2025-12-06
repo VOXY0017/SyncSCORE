@@ -192,10 +192,12 @@ export default function ScoreSyncClient() {
               ) : players && players.length > 0 ? (
                 players.map((player, index) => (
                   <TableRow key={player.id} className={cn(
-                      'transition-colors duration-1000 ease-out',
+                      'transition-all duration-500 ease-in-out',
                       recentlyUpdated === player.id && 'bg-accent/20',
                       rankChanged.includes(player.id) && 'bg-blue-200 dark:bg-blue-800/30'
-                  )}>
+                  )}
+                  style={{ transform: `translateY(${index * 0}px)` }}
+                  >
                     <TableCell className="text-center font-medium text-lg">
                       {index === 0 ? <Crown className="w-6 h-6 mx-auto text-yellow-500" /> : index + 1}
                     </TableCell>
@@ -261,5 +263,7 @@ export default function ScoreSyncClient() {
     </>
   );
 }
+
+    
 
     

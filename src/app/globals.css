@@ -88,18 +88,10 @@ body {
 }
 
 @layer utilities {
-  @keyframes slide-down {
-    from { transform: translateY(var(--slide-distance)); z-index: 10; }
-    to { transform: translateY(0); z-index: 10; }
-  }
-  @keyframes slide-up {
-    from { transform: translateY(var(--slide-distance)); z-index: 10; }
-    to { transform: translateY(0); z-index: 10; }
-  }
-  .animate-slide-down {
-    animation: slide-down 2s ease-in-out forwards;
-  }
-  .animate-slide-up {
-    animation: slide-up 2s ease-in-out forwards;
+  .is-moving {
+    opacity: 0.7;
+    z-index: 10;
   }
 }
+
+    

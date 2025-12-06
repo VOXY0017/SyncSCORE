@@ -39,7 +39,6 @@ export default function ScoreSyncClient() {
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [recentlyUpdated, setRecentlyUpdated] = useState<string | null>(null);
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
-  const playerRowRefs = useRef<Record<string, { el: HTMLTableRowElement | null, rank: number }>>({});
   
   const [rankChanges, setRankChanges] = useState<RankChange[]>([]);
   
@@ -105,7 +104,9 @@ export default function ScoreSyncClient() {
             return acc;
           }, [] as RankChange[]);
           
-          setRankChanges(newChanges);
+          if (newChanges.length > 0) {
+            setRankChanges(newChanges);
+          }
           previousPlayerRanks.current = new Map(sortedPlayers.map((p, i) => [p.id, i]));
 
           return sortedPlayers;
@@ -343,30 +344,49 @@ interface PlayerRowProps {
 function PlayerRow({ player, index, scoreGap, recentlyUpdated, rankChange, onAnimationEnd }: PlayerRowProps) {
   const rowRef = useRef<HTMLTableRowElement>(null);
   const [animationClass, setAnimationClass] = useState('');
-  const [slideDistance, setSlideDistance] = useState(0);
+  
+  // A ref to hold the initial bounding rect
+  const initialRect = useRef<DOMRect | null>(null);
 
   useLayoutEffect(() => {
-    if (rankChange && rowRef.current) {
-        const rankDiff = rankChange.newRank - rankChange.oldRank;
-        const rowHeight = rowRef.current.offsetHeight;
-        const distance = rankDiff * rowHeight;
-        
-        // This is the inverse transform
-        const slideStartDistance = -distance;
-        setSlideDistance(slideStartDistance);
-
-        // Defer setting the class to allow the transform to apply first
-        requestAnimationFrame(() => {
-            if (distance > 0) {
-                setAnimationClass('animate-slide-down');
-            } else {
-                setAnimationClass('animate-slide-up');
-            }
-        });
+    if (rowRef.current) {
+        initialRect.current = rowRef.current.getBoundingClientRect();
     }
-  }, [rankChange]);
+  }, [player.id]); // Store position on initial render and when player changes
 
-  const handleAnimationEnd = () => {
+  useLayoutEffect(() => {
+    if (!rankChange || !rowRef.current || !initialRect.current) {
+      return;
+    }
+
+    const newRect = rowRef.current.getBoundingClientRect();
+    const oldRect = initialRect.current;
+
+    // Calculate the distance the element has moved
+    const deltaY = oldRect.top - newRect.top;
+
+    if (deltaY !== 0) {
+      // 1. Invert: Move the element back to its old position
+      rowRef.current.style.transform = `translateY(${deltaY}px)`;
+      rowRef.current.style.transition = 'none';
+
+      // 2. Play: Force a reflow and then animate to the new position
+      requestAnimationFrame(() => {
+        if (!rowRef.current) return;
+        rowRef.current.style.transition = 'transform 0.7s ease-in-out, opacity 0.7s ease-in-out';
+        rowRef.current.style.transform = '';
+        rowRef.current.style.opacity = '1';
+        setAnimationClass('is-moving');
+      });
+    }
+
+    // Update the initialRect for the next animation
+    initialRect.current = newRect;
+
+  }, [rankChange, player.score]); // Rerun on rank change or score change
+
+
+  const handleTransitionEnd = () => {
     setAnimationClass('');
     onAnimationEnd();
   };
@@ -374,18 +394,15 @@ function PlayerRow({ player, index, scoreGap, recentlyUpdated, rankChange, onAni
   return (
     <TableRow
       ref={rowRef}
-      onAnimationEnd={handleAnimationEnd}
+      onTransitionEnd={handleTransitionEnd}
       className={cn(
-        'relative',
+        'will-change-transform',
         animationClass,
         recentlyUpdated === player.id && 'bg-primary/10',
         index === 0 && 'bg-amber-200 dark:bg-amber-900/40 hover:bg-amber-300/80 dark:hover:bg-amber-900/60',
         index === 1 && 'bg-gray-200 dark:bg-gray-700/50 hover:bg-gray-300/80 dark:hover:bg-gray-700/70',
         index === 2 && 'bg-orange-200 dark:bg-orange-900/40 hover:bg-orange-300/80 dark:hover:bg-orange-900/60'
       )}
-      style={{
-        ['--slide-distance' as any]: `${slideDistance}px`,
-      }}
     >
       <TableCell className="text-center font-medium text-lg">
         {index === 0 ? <Crown className="w-6 h-6 mx-auto text-yellow-500" /> : index + 1}
@@ -400,3 +417,5 @@ function PlayerRow({ player, index, scoreGap, recentlyUpdated, rankChange, onAni
     </TableRow>
   );
 }
+
+    

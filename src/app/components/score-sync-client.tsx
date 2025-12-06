@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useTransition, useCallback, useMemo } from 'react';
 import type { Player } from '@/lib/types';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { addPlayer, updatePlayerScore, removePlayer } from '@/app/actions';
 
@@ -28,6 +29,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 
 export default function ScoreSyncClient() {
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const [newPlayerName, setNewPlayerName] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -35,6 +38,12 @@ export default function ScoreSyncClient() {
   const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [recentlyUpdated, setRecentlyUpdated] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      initiateAnonymousSignIn(auth);
+    }
+  }, [user, isUserLoading, auth]);
   
   const playersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -145,7 +154,7 @@ export default function ScoreSyncClient() {
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[60vh] rounded-md border">
-          {isLoading ? (
+          {isLoading || isUserLoading ? (
             <div className="p-4"><PlayerListSkeleton /></div>
           ) : (
             <Table>

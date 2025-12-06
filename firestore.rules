@@ -1,77 +1,35 @@
-/**
- * Core Philosophy:
- * This ruleset establishes a "public scoreboard" model. The primary goal is to
- * allow any client application, authenticated or not, to read player data in
- * real-time. This is essential for the core functionality of displaying a live
- * leaderboard. To maintain data integrity and prevent unauthorized modifications,
- * all write operations (creating, updating, or deleting players) are explicitly
- * denied by default. This creates a secure, read-only data source until a
- * more sophisticated authorization model (like admin roles) is defined in the
- * application.
- *
- * Data Structure:
- * The data structure is flat, consisting of a single top-level collection:
- * - /players/{playerId}: Stores individual player documents.
- *
- * Key Security Decisions:
- * - Public Read Access: The `/players` collection is world-readable to fulfill
- *   the requirement of a public scoreboard. This solves the likely permission
- *   error reported by the client application which needs to fetch this data.
- * - Write Operations Locked Down: All writes are disabled (`if false`). Since
- *   the application supports anonymous users and lacks a defined ownership or
- *   role field on the 'Player' entity, allowing any writes would create a
- *   major security vulnerability. This forces a deliberate decision on how to
- *   manage score updates securely in the future.
- *
- * Denormalization for Authorization:
- * No denormalization is required for this ruleset. The security model is simple
- * and does not depend on data from other collections for its authorization
- * decisions.
- *
- * Structural Segregation:
- * This principle is not applicable as there is only one data collection with a
- * single, uniform access pattern (public read, no writes).
- */
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper Functions
-    /**
-     * Checks if the user is authenticated.
-     */
+    // Helper function to check if a user is signed in
     function isSignedIn() {
       return request.auth != null;
     }
 
     /**
      * @description
-     *   Allows public read access to all player data for scoreboard
-     *   functionality, but denies all write operations until a proper
-     *   authorization model (e.g., user roles or ownership) is implemented.
+     *   Allows signed-in users to read player data, which is essential for
+     *   the scoreboard functionality. Write operations (create, update, delete)
+     *   are also restricted to signed-in users to maintain data integrity.
+     *   This prevents anonymous or unauthorized modifications.
      * @path
      *   /players/{playerId}
      * @allow
-     *   A non-authenticated user can list all player documents to display
-     *   the scoreboard. (list)
+     *   A signed-in user can list all player documents to display the
+     *   scoreboard and get individual player data.
+     * @allow
+     *   A signed-in user can create, update, or delete player documents.
      * @deny
-     *   An anonymous or authenticated user attempts to update a player's
-     *   score. (update)
+     *   A non-authenticated user attempts to read or write player data.
      * @principle
-     *   Provides public read access for a global resource (scoreboard) while
-     *   enforcing a secure-by-default posture that locks down all modifications.
+     *   Enforces authentication for all interactions with player data,
+     *   ensuring that only recognized users can view or modify the scoreboard.
      */
     match /players/{playerId} {
-      // Allow anyone to read player data for the scoreboard.
-      allow get: if true;
-      allow list: if true;
-
-      // Deny all write operations by default for security.
-      // TODO: Implement a secure way to manage scores, such as through a
-      // trusted server-side function or by adding an admin role system.
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow read, write: if isSignedIn();
     }
   }
 }

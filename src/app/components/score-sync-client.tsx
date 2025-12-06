@@ -144,6 +144,7 @@ export default function ScoreSyncClient() {
       <TableRow key={i}>
         <TableCell><Skeleton className="h-6 w-6 rounded-full" /></TableCell>
         <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
+        <TableCell><Skeleton className="h-4 w-1/4" /></TableCell>
         <TableCell><Skeleton className="h-4 w-1/2 mx-auto" /></TableCell>
       </TableRow>
     ))}
@@ -190,8 +191,9 @@ export default function ScoreSyncClient() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-[80px] text-center font-bold">Rank</TableHead>
+                                    <TableHead className="w-[50px] text-center font-bold">Rank</TableHead>
                                     <TableHead className="font-bold">Player</TableHead>
+                                    <TableHead className="w-[80px] text-center font-bold">Gap</TableHead>
                                     <TableHead className="w-[100px] text-center font-bold">Score</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -203,6 +205,7 @@ export default function ScoreSyncClient() {
                                 const rankChangeInfo = rankChanged.find(p => p.id === player.id);
                                 const isChangingRank = !!rankChangeInfo;
                                 const rowHeight = playerRowRefs.current[player.id]?.offsetHeight || 48; // Default height
+                                const scoreGap = index > 0 ? player.score - players[index - 1].score : 0;
 
                                 return (
                                 <TableRow 
@@ -226,6 +229,9 @@ export default function ScoreSyncClient() {
                                     {index === 0 ? <Crown className="w-6 h-6 mx-auto text-yellow-500" /> : index + 1}
                                     </TableCell>
                                     <TableCell className="font-medium text-lg">{player.name}</TableCell>
+                                    <TableCell className="text-center text-sm text-muted-foreground">
+                                        {index > 0 && scoreGap < 0 ? `${scoreGap}` : ''}
+                                    </TableCell>
                                     <TableCell className="text-center font-bold text-xl text-primary">
                                     {player.score > 0 ? `+${player.score}` : player.score}
                                     </TableCell>
@@ -234,7 +240,7 @@ export default function ScoreSyncClient() {
                                 })
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                                     No players yet. Add one to get started!
                                     </TableCell>
                                 </TableRow>

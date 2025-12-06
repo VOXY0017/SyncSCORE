@@ -3,36 +3,9 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * @description
-     *   The `players` collection can be publicly read by any user to display
-     *   the scoreboard. This allows unauthenticated access.
-     * @path
-     *   /players
-     * @allow
-     *   - `list`: Any user can list all players for the scoreboard.
-     * @principle
-     *   Allows public access for listing player data.
-     */
-    match /players {
-      allow list;
-    }
-
-    /**
-     * @description
-     *   Individual player documents can be publicly read and written to by any
-     *   user to view details or modify scores. This allows unauthenticated access.
-     * @path
-     *   /players/{playerId}
-     * @allow
-     *   - `get`: Any user can retrieve individual player data.
-     *   - `write`: Any user can create, update, or delete player documents.
-     * @principle
-     *   Allows public access for all interactions with player data.
-     */
     match /players/{playerId} {
-      allow get, write;
+      // Allow anyone to read, write, create, update, and delete any player document.
+      allow read, write;
     }
   }
 }

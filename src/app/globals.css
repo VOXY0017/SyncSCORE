@@ -86,3 +86,20 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  @keyframes slide-down {
+    from { transform: translateY(var(--slide-distance)); z-index: 10; }
+    to { transform: translateY(0); z-index: 10; }
+  }
+  @keyframes slide-up {
+    from { transform: translateY(var(--slide-distance)); z-index: 10; }
+    to { transform: translateY(0); z-index: 10; }
+  }
+  .animate-slide-down {
+    animation: slide-down 0.5s ease-in-out forwards;
+  }
+  .animate-slide-up {
+    animation: slide-up 0.5s ease-in-out forwards;
+  }
+}

@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, Trash2, Trophy, Crown, UserPlus, Gamepad2, Medal } from 'lucide-react';
+import { Plus, Minus, Trash2, Trophy, Crown, Gamepad2, Medal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -39,9 +39,11 @@ export default function ScoreSyncClient() {
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [recentlyUpdated, setRecentlyUpdated] = useState<string | null>(null);
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
-  const playerRowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
+  const playerRowRefs = useRef<Record<string, { el: HTMLTableRowElement | null, rank: number }>>({});
   
-  const previousPlayerMap = useRef(new Map<string, { rank: number; rect: DOMRect }>());
+  const [rankChanges, setRankChanges] = useState<RankChange[]>([]);
+  
+  const previousPlayerRanks = useRef(new Map<string, number>());
 
   useEffect(() => {
     // Simulate loading data
@@ -50,18 +52,6 @@ export default function ScoreSyncClient() {
       setIsLoading(false);
     }, 1000);
   }, []);
-
-  useLayoutEffect(() => {
-    const playerMap = new Map();
-    players.forEach((player, index) => {
-      const row = playerRowRefs.current[player.id];
-      if (row) {
-        const rect = row.getBoundingClientRect();
-        playerMap.set(player.id, { rank: index, rect });
-      }
-    });
-    previousPlayerMap.current = playerMap;
-  }, [players]);
 
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,9 +71,10 @@ export default function ScoreSyncClient() {
         score: 0,
       };
       
-      setPlayers(prevPlayers => 
-        [...prevPlayers, newPlayer].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
-      );
+      const newPlayers = [...players, newPlayer].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+      
+      previousPlayerRanks.current = new Map(newPlayers.map((p, i) => [p.id, i]));
+      setPlayers(newPlayers);
       setNewPlayerName('');
     });
   };
@@ -105,6 +96,18 @@ export default function ScoreSyncClient() {
           );
           
           const sortedPlayers = [...updatedPlayers].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+
+          const newChanges = sortedPlayers.reduce((acc, player, newRank) => {
+            const oldRank = previousPlayerRanks.current.get(player.id);
+            if (oldRank !== undefined && oldRank !== newRank) {
+              acc.push({ id: player.id, oldRank, newRank });
+            }
+            return acc;
+          }, [] as RankChange[]);
+          
+          setRankChanges(newChanges);
+          previousPlayerRanks.current = new Map(sortedPlayers.map((p, i) => [p.id, i]));
+
           return sortedPlayers;
        });
        setPointInputs(prev => ({...prev, [playerId]: ''}));
@@ -197,6 +200,7 @@ export default function ScoreSyncClient() {
                             ) : players && players.length > 0 ? (
                                 players.map((player, index) => {
                                 const scoreGap = index > 0 ? player.score - players[index - 1].score : 0;
+                                const rankChange = rankChanges.find(c => c.id === player.id);
 
                                 return (
                                 <PlayerRow
@@ -205,8 +209,8 @@ export default function ScoreSyncClient() {
                                     index={index}
                                     scoreGap={scoreGap}
                                     recentlyUpdated={recentlyUpdated}
-                                    previousPlayerMap={previousPlayerMap.current}
-                                    playerRowRefs={playerRowRefs}
+                                    rankChange={rankChange}
+                                    onAnimationEnd={() => setRankChanges(rc => rc.filter(c => c.id !== player.id))}
                                 />
                                 );
                                 })
@@ -332,46 +336,55 @@ interface PlayerRowProps {
   index: number;
   scoreGap: number;
   recentlyUpdated: string | null;
-  previousPlayerMap: Map<string, { rank: number; rect: DOMRect }>;
-  playerRowRefs: React.MutableRefObject<Record<string, HTMLTableRowElement | null>>;
+  rankChange: RankChange | undefined;
+  onAnimationEnd: () => void;
 }
 
-function PlayerRow({ player, index, scoreGap, recentlyUpdated, previousPlayerMap, playerRowRefs }: PlayerRowProps) {
+function PlayerRow({ player, index, scoreGap, recentlyUpdated, rankChange, onAnimationEnd }: PlayerRowProps) {
   const rowRef = useRef<HTMLTableRowElement>(null);
-  const [deltaY, setDeltaY] = useState(0);
+  const [animationClass, setAnimationClass] = useState('');
+  const [slideDistance, setSlideDistance] = useState(0);
 
   useLayoutEffect(() => {
-    const previousState = previousPlayerMap.get(player.id);
-    const currentRow = rowRef.current;
+    if (rankChange && rowRef.current) {
+        const rankDiff = rankChange.newRank - rankChange.oldRank;
+        const rowHeight = rowRef.current.offsetHeight;
+        const distance = rankDiff * rowHeight;
+        
+        // This is the inverse transform
+        const slideStartDistance = -distance;
+        setSlideDistance(slideStartDistance);
 
-    if (previousState && currentRow) {
-      const newRect = currentRow.getBoundingClientRect();
-      const delta = previousState.rect.top - newRect.top;
-      if (delta !== 0) {
-        setDeltaY(delta);
+        // Defer setting the class to allow the transform to apply first
         requestAnimationFrame(() => {
-          setDeltaY(0);
+            if (distance > 0) {
+                setAnimationClass('animate-slide-down');
+            } else {
+                setAnimationClass('animate-slide-up');
+            }
         });
-      }
     }
-  }, [player.id, previousPlayerMap]);
+  }, [rankChange]);
 
-  useEffect(() => {
-    playerRowRefs.current[player.id] = rowRef.current;
-  }, [player.id, playerRowRefs]);
+  const handleAnimationEnd = () => {
+    setAnimationClass('');
+    onAnimationEnd();
+  };
 
   return (
     <TableRow
       ref={rowRef}
+      onAnimationEnd={handleAnimationEnd}
       className={cn(
-        'transition-transform duration-500 ease-in-out',
+        'relative',
+        animationClass,
         recentlyUpdated === player.id && 'bg-primary/10',
         index === 0 && 'bg-amber-200 dark:bg-amber-900/40 hover:bg-amber-300/80 dark:hover:bg-amber-900/60',
         index === 1 && 'bg-gray-200 dark:bg-gray-700/50 hover:bg-gray-300/80 dark:hover:bg-gray-700/70',
         index === 2 && 'bg-orange-200 dark:bg-orange-900/40 hover:bg-orange-300/80 dark:hover:bg-orange-900/60'
       )}
       style={{
-        transform: `translateY(${deltaY}px)`,
+        ['--slide-distance' as any]: `${slideDistance}px`,
       }}
     >
       <TableCell className="text-center font-medium text-lg">

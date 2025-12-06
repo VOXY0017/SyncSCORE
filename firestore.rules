@@ -3,8 +3,8 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read and write access to the 'players' collection for everyone.
-    // This will solve any permission issues for the scoreboard.
+    // Izinkan akses baca dan tulis secara penuh ke collection 'players' untuk semua orang.
+    // Ini akan menyelesaikan semua masalah izin untuk papan skor.
     match /players/{document=**} {
       allow read, write: if true;
     }

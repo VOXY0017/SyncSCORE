@@ -141,7 +141,11 @@ export default function ScoreSyncClient() {
               <Skeleton className="h-4 w-64 mt-2" />
             </CardHeader>
             <CardContent>
-                <div className="p-4"><PlayerListSkeleton /></div>
+              <Table>
+                <TableBody>
+                  <PlayerListSkeleton />
+                </TableBody>
+              </Table>
             </CardContent>
         </Card>
     );

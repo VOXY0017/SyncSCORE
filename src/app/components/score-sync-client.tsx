@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, Trash2, Trophy, Crown, Gamepad2, Medal, UserPlus, ArrowUp, ArrowDown, Menu, Users } from 'lucide-react';
+import { Plus, Minus, Trash2, Trophy, Crown, Gamepad2, Medal, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -173,6 +173,8 @@ export default function ScoreSyncClient() {
             <TableCell className="text-right"><Skeleton className="h-9 w-20 ml-auto" /></TableCell>
             <TableCell className="flex justify-end gap-2">
                 <Skeleton className="h-9 w-9" />
+                <Skeleton className="h-9 w-9" />
+                <Skeleton className="h-9 w-9" />
             </TableCell>
         </TableRow>
     ))}
@@ -251,23 +253,23 @@ export default function ScoreSyncClient() {
         
         <aside className="hidden md:flex flex-col h-full">
             <Card className="w-full flex-grow flex flex-col min-h-0">
-                <CardHeader>
+                <CardHeader className="flex-row items-center justify-between">
                     <CardTitle className="flex items-center gap-3 text-2xl">
-                    <Gamepad2 />
-                    Manage Points
+                        <Gamepad2 />
+                        Manage Points
                     </CardTitle>
+                    <form onSubmit={handleAddPlayer} className="flex w-full max-w-xs items-center gap-2">
+                        <Input
+                            placeholder="Add new player and press Enter"
+                            value={newPlayerName}
+                            onChange={(e) => setNewPlayerName(e.target.value)}
+                            disabled={isPending}
+                            className="w-full"
+                            aria-label="New player name"
+                        />
+                    </form>
                 </CardHeader>
                 <CardContent className="flex-grow flex flex-col min-h-0 py-4 pt-0">
-                    <form onSubmit={handleAddPlayer} className="flex w-full max-w-xs items-center gap-2 mb-4">
-                    <Input
-                        placeholder="Add new player and press Enter"
-                        value={newPlayerName}
-                        onChange={(e) => setNewPlayerName(e.target.value)}
-                        disabled={isPending}
-                        className="w-full"
-                        aria-label="New player name"
-                    />
-                    </form>
                     <div className="flex-grow h-0 overflow-hidden">
                       <ScrollArea className="h-full">
                           <Table>
@@ -289,9 +291,12 @@ export default function ScoreSyncClient() {
                                           aria-label={`Points for ${player.name}`}
                                           />
                                       </TableCell>
-                                      <TableCell className="text-right w-[100px] space-x-1">
+                                      <TableCell className="text-right w-[140px] space-x-1">
                                           <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
                                               <Plus className="h-4 w-4" />
+                                          </Button>
+                                          <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
+                                              <Minus className="h-4 w-4" />
                                           </Button>
                                           <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
                                               <Trash2 className="h-4 w-4" />

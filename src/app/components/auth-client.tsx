@@ -51,6 +51,10 @@ export default function AuthClient() {
       toast({ variant: 'destructive', title: 'Error', description: 'Email and password are required.' });
       return;
     }
+    if (registerPassword.length < 6) {
+      toast({ variant: 'destructive', title: 'Registration Error', description: 'Password must be at least 6 characters long.' });
+      return;
+    }
     startTransition(() => {
       initiateEmailSignUp(auth, registerEmail, registerPassword);
     });

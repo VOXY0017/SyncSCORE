@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, Trash2, Trophy, Crown, UserPlus } from 'lucide-react';
+import { Plus, Minus, Trash2, Trophy, Crown, UserPlus, Gamepad2, Medal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -135,114 +135,178 @@ export default function ScoreSyncClient() {
         <TableCell><Skeleton className="h-6 w-6 rounded-full" /></TableCell>
         <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
         <TableCell><Skeleton className="h-4 w-1/2" /></TableCell>
-        <TableCell className="flex justify-end gap-2">
-            <Skeleton className="h-9 w-9" />
-            <Skeleton className="h-9 w-9" />
-            <Skeleton className="h-9 w-9" />
-        </TableCell>
-        <TableCell><Skeleton className="h-9 w-20" /></TableCell>
       </TableRow>
+    ))}
+    </>
+  );
+
+  const ManagementSkeleton = () => (
+    <>
+    {[...Array(3)].map((_, i) => (
+        <TableRow key={i}>
+            <TableCell><Skeleton className="h-4 w-2/4" /></TableCell>
+            <TableCell><Skeleton className="h-9 w-20" /></TableCell>
+            <TableCell className="flex justify-end gap-2">
+                <Skeleton className="h-9 w-9" />
+                <Skeleton className="h-9 w-9" />
+                <Skeleton className="h-9 w-9" />
+            </TableCell>
+        </TableRow>
     ))}
     </>
   );
   
   return (
     <>
-    <Card className="w-full shadow-2xl shadow-primary/10">
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex-grow">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+        <div>
             <CardTitle className="text-3xl font-bold text-primary flex items-center gap-2">
-              <Trophy className="h-8 w-8" />
-              ScoreSync
+            <Trophy className="h-8 w-8" />
+            ScoreSync
             </CardTitle>
             <CardDescription className="mt-1">A simple client-side scoreboard</CardDescription>
-          </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleAddPlayer} className="flex w-full gap-2 mb-4">
-            <Input
-              placeholder="New player name..."
-              value={newPlayerName}
-              onChange={(e) => setNewPlayerName(e.target.value)}
-              disabled={isPending}
-              className="w-full"
-              aria-label="New player name"
-            />
-            <Button type="submit" disabled={isPending || !newPlayerName.trim()} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-              <UserPlus className="h-4 w-4 mr-2" />
-              Add Player
-            </Button>
-          </form>
-        <ScrollArea className="h-[calc(100vh-250px)] rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[80px] text-center font-bold">Rank</TableHead>
-                <TableHead className="font-bold">Player</TableHead>
-                <TableHead className="w-[100px] text-center font-bold">Score</TableHead>
-                <TableHead className="w-[150px] text-right font-bold pr-4">Actions</TableHead>
-                <TableHead className="w-[120px] text-center font-bold">Points</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <PlayerListSkeleton />
-              ) : players && players.length > 0 ? (
-                players.map((player, index) => (
-                  <TableRow key={player.id} className={cn(
-                      'transition-all duration-500 ease-in-out',
-                      recentlyUpdated === player.id && 'bg-accent/20',
-                      rankChanged.includes(player.id) && 'bg-blue-200 dark:bg-blue-800/30'
-                  )}
-                  style={{ transform: `translateY(0px)` }}
-                  >
-                    <TableCell className="text-center font-medium text-lg">
-                      {index === 0 ? <Crown className="w-6 h-6 mx-auto text-yellow-500" /> : index + 1}
-                    </TableCell>
-                    <TableCell className="font-medium text-lg">{player.name}</TableCell>
-                    <TableCell className="text-center font-bold text-xl text-primary">
-                      {player.score > 0 ? `+${player.score}` : player.score}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end items-center gap-2">
-                         <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
-                           <Plus className="h-4 w-4" />
-                         </Button>
-                         <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
-                           <Minus className="h-4 w-4" />
-                         </Button>
-                         <Button variant="destructive" size="icon" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
-                           <Trash2 className="h-4 w-4" />
-                         </Button>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Input 
-                          type="number"
-                          placeholder="0"
-                          className="w-20 h-9 mx-auto text-center"
-                          value={pointInputs[player.id] || ''}
-                          onChange={(e) => handlePointInputChange(player.id, e.target.value)}
-                          disabled={isPending}
-                          aria-label={`Points for ${player.name}`}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                 <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                      No players yet. Add one to get started!
-                    </TableCell>
-                  </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </ScrollArea>
-      </CardContent>
-    </Card>
+    </div>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Leaderboard Column */}
+        <div className="lg:col-span-2">
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                        <Medal />
+                        Leaderboard
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <ScrollArea className="h-[calc(100vh-250px)] rounded-md border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[80px] text-center font-bold">Rank</TableHead>
+                                    <TableHead className="font-bold">Player</TableHead>
+                                    <TableHead className="w-[100px] text-center font-bold">Score</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                            {isLoading ? (
+                                <PlayerListSkeleton />
+                            ) : players && players.length > 0 ? (
+                                players.map((player, index) => (
+                                <TableRow key={player.id} className={cn(
+                                    'transition-all duration-500 ease-in-out',
+                                    recentlyUpdated === player.id && 'bg-accent/20',
+                                    rankChanged.includes(player.id) && 'bg-blue-200 dark:bg-blue-800/30'
+                                )}
+                                style={{ transform: `translateY(0px)` }}
+                                >
+                                    <TableCell className="text-center font-medium text-lg">
+                                    {index === 0 ? <Crown className="w-6 h-6 mx-auto text-yellow-500" /> : index + 1}
+                                    </TableCell>
+                                    <TableCell className="font-medium text-lg">{player.name}</TableCell>
+                                    <TableCell className="text-center font-bold text-xl text-primary">
+                                    {player.score > 0 ? `+${player.score}` : player.score}
+                                    </TableCell>
+                                </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                                    No players yet. Add one to get started!
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                            </TableBody>
+                        </Table>
+                    </ScrollArea>
+                </CardContent>
+            </Card>
+        </div>
+
+        {/* Management Column */}
+        <div className="lg:col-span-1">
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                        <Gamepad2 />
+                        Manage Points
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleAddPlayer} className="flex w-full gap-2 mb-4">
+                        <Input
+                        placeholder="New player name..."
+                        value={newPlayerName}
+                        onChange={(e) => setNewPlayerName(e.target.value)}
+                        disabled={isPending}
+                        className="w-full"
+                        aria-label="New player name"
+                        />
+                        <Button type="submit" disabled={isPending || !newPlayerName.trim()} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Add
+                        </Button>
+                    </form>
+
+                    <ScrollArea className="h-[calc(100vh-328px)] rounded-md border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Player</TableHead>
+                                    <TableHead className="w-[120px]">Points</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoading ? (
+                                    <ManagementSkeleton />
+                                ) : players && players.length > 0 ? (
+                                    players.map((player) => (
+                                        <TableRow key={player.id} className={cn(
+                                            'transition-colors duration-300',
+                                            recentlyUpdated === player.id && 'bg-accent/20'
+                                        )}>
+                                            <TableCell className="font-medium">{player.name}</TableCell>
+                                            <TableCell>
+                                                <Input 
+                                                    type="number"
+                                                    placeholder="0"
+                                                    className="w-20 h-9 text-center"
+                                                    value={pointInputs[player.id] || ''}
+                                                    onChange={(e) => handlePointInputChange(player.id, e.target.value)}
+                                                    disabled={isPending}
+                                                    aria-label={`Points for ${player.name}`}
+                                                />
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex justify-end items-center gap-2">
+                                                    <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
+                                                        <Plus className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
+                                                        <Minus className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button variant="destructive" size="icon" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                                        Add a player to begin.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </ScrollArea>
+                </CardContent>
+            </Card>
+        </div>
+    </div>
+
 
     <AlertDialog open={isDeleteAlertOpen} onOpenChange={handleAlertOpenChange}>
         <AlertDialogContent>

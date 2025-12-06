@@ -3,8 +3,8 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /players/{playerId} {
-      // Allow anyone to read, write, create, update, and delete any player document.
+    match /players/{document=**} {
+      // Allow anyone to read and write to the entire players collection and all subcollections.
       allow read, write;
     }
   }

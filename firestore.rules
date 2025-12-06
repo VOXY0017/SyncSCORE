@@ -12,12 +12,27 @@ service cloud.firestore {
     /**
      * @description
      *   The `players` collection can be read by any signed-in user to display
-     *   the scoreboard. Write operations (create, update, delete) are also
-     *   restricted to signed-in users to maintain data integrity.
+     *   the scoreboard.
+     * @path
+     *   /players
+     * @allow
+     *   - `list`: Signed-in users can list all players for the scoreboard.
+     * @deny
+     *   Unauthenticated users cannot list player data.
+     * @principle
+     *   Enforces authentication for listing player data.
+     */
+    match /players {
+      allow list: if isSignedIn();
+    }
+
+    /**
+     * @description
+     *   Individual player documents can be read and written to by any signed-in
+     *   user to view details or modify scores.
      * @path
      *   /players/{playerId}
      * @allow
-     *   - `list`: Signed-in users can list all players for the scoreboard.
      *   - `get`: Signed-in users can retrieve individual player data.
      *   - `write`: Signed-in users can create, update, or delete player documents.
      * @deny
@@ -27,7 +42,7 @@ service cloud.firestore {
      *   ensuring that only recognized users can view or modify the scoreboard.
      */
     match /players/{playerId} {
-      allow list, get, write: if isSignedIn();
+      allow get, write: if isSignedIn();
     }
   }
 }

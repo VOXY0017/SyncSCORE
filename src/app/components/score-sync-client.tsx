@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useCallback, useEffect } from 'react';
+import { useState, useTransition, useCallback, useEffect, useRef } from 'react';
 import type { Player } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,7 @@ export default function ScoreSyncClient() {
   const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [recentlyUpdated, setRecentlyUpdated] = useState<string | null>(null);
+  const [rankChanged, setRankChanged] = useState<string[]>([]);
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -74,13 +75,35 @@ export default function ScoreSyncClient() {
 
   const handleScoreChange = (playerId: string, change: number) => {
     if (isNaN(change) || change === 0) return;
+    
     triggerUpdateAnimation(playerId);
+
     startTransition(() => {
-       setPlayers(prevPlayers => 
-        prevPlayers.map(p => 
-          p.id === playerId ? { ...p, score: p.score + change } : p
-        ).sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
-      );
+       setPlayers(prevPlayers => {
+          const oldRanks = new Map(prevPlayers.map((p, i) => [p.id, i]));
+
+          const updatedPlayers = prevPlayers.map(p => 
+            p.id === playerId ? { ...p, score: p.score + change } : p
+          );
+          
+          const sortedPlayers = [...updatedPlayers].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+          
+          const newRanks = new Map(sortedPlayers.map((p, i) => [p.id, i]));
+          
+          const changedRanks: string[] = [];
+          newRanks.forEach((newRank, id) => {
+            if (oldRanks.get(id) !== newRank) {
+              changedRanks.push(id);
+            }
+          });
+
+          if (changedRanks.length > 0) {
+            setRankChanged(changedRanks);
+            setTimeout(() => setRankChanged([]), 1500);
+          }
+
+          return sortedPlayers;
+       });
     });
   };
   
@@ -152,7 +175,7 @@ export default function ScoreSyncClient() {
               Add Player
             </Button>
           </form>
-        <ScrollArea className="h-[55vh] rounded-md border">
+        <ScrollArea className="h-[calc(100vh-250px)] rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -168,7 +191,11 @@ export default function ScoreSyncClient() {
                 <PlayerListSkeleton />
               ) : players && players.length > 0 ? (
                 players.map((player, index) => (
-                  <TableRow key={player.id} className={cn(recentlyUpdated === player.id && 'bg-accent/20', 'transition-colors duration-1000 ease-out')}>
+                  <TableRow key={player.id} className={cn(
+                      'transition-colors duration-1000 ease-out',
+                      recentlyUpdated === player.id && 'bg-accent/20',
+                      rankChanged.includes(player.id) && 'bg-blue-200 dark:bg-blue-800/30'
+                  )}>
                     <TableCell className="text-center font-medium text-lg">
                       {index === 0 ? <Crown className="w-6 h-6 mx-auto text-yellow-500" /> : index + 1}
                     </TableCell>
@@ -187,10 +214,10 @@ export default function ScoreSyncClient() {
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex justify-center items-center gap-2">
-                         <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending} aria-label={`Increase score for ${player.name}`}>
+                         <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
                            <Plus className="h-4 w-4" />
                          </Button>
-                         <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending} aria-label={`Decrease score for ${player.name}`}>
+                         <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
                            <Minus className="h-4 w-4" />
                          </Button>
                          <Button variant="destructive" size="icon" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>

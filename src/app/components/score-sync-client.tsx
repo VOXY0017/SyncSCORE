@@ -158,19 +158,17 @@ export default function ScoreSyncClient() {
   
   return (
     <>
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-        <div>
-            <CardTitle className="text-3xl font-bold text-primary flex items-center gap-2">
-            <Trophy className="h-8 w-8" />
-            ScoreSync
-            </CardTitle>
-            <CardDescription className="mt-1">A simple client-side scoreboard</CardDescription>
-        </div>
-    </div>
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="w-full text-center mb-6">
+          <CardTitle className="text-3xl font-bold text-primary flex items-center justify-center gap-3">
+              <Trophy className="h-8 w-8" />
+              Score Markas B7
+          </CardTitle>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Leaderboard Column */}
         <div className="lg:col-span-1">
-            <Card className="shadow-lg">
+            <Card className="shadow-lg h-full">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-xl">
                         <Medal />
@@ -178,7 +176,7 @@ export default function ScoreSyncClient() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <ScrollArea className="h-[calc(100vh-320px)] rounded-md border">
+                    <ScrollArea className="h-[calc(100vh-280px)] rounded-md border">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -225,7 +223,7 @@ export default function ScoreSyncClient() {
 
         {/* Management Column */}
         <div className="lg:col-span-1">
-            <Card className="shadow-lg">
+            <Card className="shadow-lg h-full">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-xl">
                         <Gamepad2 />
@@ -248,7 +246,7 @@ export default function ScoreSyncClient() {
                         </Button>
                     </form>
 
-                    <ScrollArea className="h-[calc(100vh-320px)] rounded-md border">
+                    <ScrollArea className="h-[calc(100vh-280px)] rounded-md border">
                         <Table>
                             <TableHeader>
                                 <TableRow>

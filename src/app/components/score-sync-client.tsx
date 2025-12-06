@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useCallback, useEffect, useRef } from 'react';
+import { useState, useTransition, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
 import type { Player } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
@@ -38,9 +38,10 @@ export default function ScoreSyncClient() {
   const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [recentlyUpdated, setRecentlyUpdated] = useState<string | null>(null);
-  const [rankChanged, setRankChanged] = useState<RankChange[]>([]);
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
   const playerRowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
+  
+  const previousPlayerMap = useRef(new Map<string, { rank: number; rect: DOMRect }>());
 
   useEffect(() => {
     // Simulate loading data
@@ -49,6 +50,18 @@ export default function ScoreSyncClient() {
       setIsLoading(false);
     }, 1000);
   }, []);
+
+  useLayoutEffect(() => {
+    const playerMap = new Map();
+    players.forEach((player, index) => {
+      const row = playerRowRefs.current[player.id];
+      if (row) {
+        const rect = row.getBoundingClientRect();
+        playerMap.set(player.id, { rank: index, rect });
+      }
+    });
+    previousPlayerMap.current = playerMap;
+  }, [players]);
 
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,29 +100,11 @@ export default function ScoreSyncClient() {
 
     startTransition(() => {
        setPlayers(prevPlayers => {
-          const oldRanks = new Map(prevPlayers.map((p, i) => [p.id, i]));
-
           const updatedPlayers = prevPlayers.map(p => 
             p.id === playerId ? { ...p, score: p.score + change } : p
           );
           
           const sortedPlayers = [...updatedPlayers].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
-          
-          const newRanks = new Map(sortedPlayers.map((p, i) => [p.id, i]));
-          
-          const changedRanks: RankChange[] = [];
-          newRanks.forEach((newRank, id) => {
-            const oldRank = oldRanks.get(id);
-            if (oldRank !== undefined && oldRank !== newRank) {
-              changedRanks.push({ id, oldRank, newRank });
-            }
-          });
-
-          if (changedRanks.length > 0) {
-            setRankChanged(changedRanks);
-            setTimeout(() => setRankChanged([]), 1500);
-          }
-
           return sortedPlayers;
        });
        setPointInputs(prev => ({...prev, [playerId]: ''}));
@@ -201,40 +196,18 @@ export default function ScoreSyncClient() {
                                 <PlayerListSkeleton />
                             ) : players && players.length > 0 ? (
                                 players.map((player, index) => {
-                                const rankChangeInfo = rankChanged.find(p => p.id === player.id);
-                                const isChangingRank = !!rankChangeInfo;
-                                const rowHeight = playerRowRefs.current[player.id]?.offsetHeight || 48; // Default height
                                 const scoreGap = index > 0 ? player.score - players[index - 1].score : 0;
 
                                 return (
-                                <TableRow 
-                                    key={player.id} 
-                                    ref={el => playerRowRefs.current[player.id] = el}
-                                    className={cn(
-                                        'transition-all duration-500 ease-in-out',
-                                        recentlyUpdated === player.id && 'bg-primary/10',
-                                        isChangingRank ? 'bg-blue-200 dark:bg-blue-800/30' : '',
-                                        index === 0 && 'bg-amber-200 dark:bg-amber-900/40 hover:bg-amber-300/80 dark:hover:bg-amber-900/60',
-                                        index === 1 && 'bg-gray-200 dark:bg-gray-700/50 hover:bg-gray-300/80 dark:hover:bg-gray-700/70',
-                                        index === 2 && 'bg-orange-200 dark:bg-orange-900/40 hover:bg-orange-300/80 dark:hover:bg-orange-900/60'
-                                    )}
-                                    style={{ 
-                                        transform: isChangingRank ? `translateY(${(rankChangeInfo.oldRank - rankChangeInfo.newRank) * rowHeight}px)` : 'translateY(0)',
-                                        zIndex: isChangingRank ? 10 : 1,
-                                        position: 'relative'
-                                    }}
-                                >
-                                    <TableCell className="text-center font-medium text-lg">
-                                    {index === 0 ? <Crown className="w-6 h-6 mx-auto text-yellow-500" /> : index + 1}
-                                    </TableCell>
-                                    <TableCell className="font-medium text-lg">{player.name}</TableCell>
-                                    <TableCell className="text-center text-sm text-muted-foreground">
-                                        {index > 0 && scoreGap < 0 ? `${scoreGap}` : ''}
-                                    </TableCell>
-                                    <TableCell className="text-center font-bold text-xl text-primary">
-                                    {player.score > 0 ? `+${player.score}` : player.score}
-                                    </TableCell>
-                                </TableRow>
+                                <PlayerRow
+                                    key={player.id}
+                                    player={player}
+                                    index={index}
+                                    scoreGap={scoreGap}
+                                    recentlyUpdated={recentlyUpdated}
+                                    previousPlayerMap={previousPlayerMap.current}
+                                    playerRowRefs={playerRowRefs}
+                                />
                                 );
                                 })
                             ) : (
@@ -277,7 +250,7 @@ export default function ScoreSyncClient() {
                     </div>
                 </CardHeader>
                 <CardContent className="flex-grow flex flex-col min-h-0">
-                    <ScrollArea className="flex-grow">
+                    <ScrollArea className="h-full">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -355,5 +328,66 @@ export default function ScoreSyncClient() {
         </AlertDialogContent>
     </AlertDialog>
     </div>
+  );
+}
+
+interface PlayerRowProps {
+  player: Player;
+  index: number;
+  scoreGap: number;
+  recentlyUpdated: string | null;
+  previousPlayerMap: Map<string, { rank: number; rect: DOMRect }>;
+  playerRowRefs: React.MutableRefObject<Record<string, HTMLTableRowElement | null>>;
+}
+
+function PlayerRow({ player, index, scoreGap, recentlyUpdated, previousPlayerMap, playerRowRefs }: PlayerRowProps) {
+  const rowRef = useRef<HTMLTableRowElement>(null);
+  const [deltaY, setDeltaY] = useState(0);
+
+  useLayoutEffect(() => {
+    const previousState = previousPlayerMap.get(player.id);
+    const currentRow = rowRef.current;
+
+    if (previousState && currentRow) {
+      const newRect = currentRow.getBoundingClientRect();
+      const delta = previousState.rect.top - newRect.top;
+      if (delta !== 0) {
+        setDeltaY(delta);
+        requestAnimationFrame(() => {
+          setDeltaY(0);
+        });
+      }
+    }
+  }, [player.id, previousPlayerMap]);
+
+  useEffect(() => {
+    playerRowRefs.current[player.id] = rowRef.current;
+  }, [player.id, playerRowRefs]);
+
+  return (
+    <TableRow
+      ref={rowRef}
+      className={cn(
+        'transition-transform duration-500 ease-in-out',
+        recentlyUpdated === player.id && 'bg-primary/10',
+        index === 0 && 'bg-amber-200 dark:bg-amber-900/40 hover:bg-amber-300/80 dark:hover:bg-amber-900/60',
+        index === 1 && 'bg-gray-200 dark:bg-gray-700/50 hover:bg-gray-300/80 dark:hover:bg-gray-700/70',
+        index === 2 && 'bg-orange-200 dark:bg-orange-900/40 hover:bg-orange-300/80 dark:hover:bg-orange-900/60'
+      )}
+      style={{
+        transform: `translateY(${deltaY}px)`,
+      }}
+    >
+      <TableCell className="text-center font-medium text-lg">
+        {index === 0 ? <Crown className="w-6 h-6 mx-auto text-yellow-500" /> : index + 1}
+      </TableCell>
+      <TableCell className="font-medium text-lg">{player.name}</TableCell>
+      <TableCell className="text-center text-sm text-muted-foreground">
+        {index > 0 && scoreGap < 0 ? `${scoreGap}` : ''}
+      </TableCell>
+      <TableCell className="text-center font-bold text-xl text-primary">
+        {player.score > 0 ? `+${player.score}` : player.score}
+      </TableCell>
+    </TableRow>
   );
 }

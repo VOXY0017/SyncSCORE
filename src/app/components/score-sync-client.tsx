@@ -41,8 +41,6 @@ export default function ScoreSyncClient() {
   const [rankChanged, setRankChanged] = useState<RankChange[]>([]);
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
   const playerRowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
-  const [bulkSubtractAmount, setBulkSubtractAmount] = useState('');
-
 
   useEffect(() => {
     // Simulate loading data
@@ -117,25 +115,36 @@ export default function ScoreSyncClient() {
        setPointInputs(prev => ({...prev, [playerId]: ''}));
     });
   };
-
+  
   const handleBulkSubtract = () => {
-    const amount = parseInt(bulkSubtractAmount, 10);
-    if (isNaN(amount) || amount <= 0) {
-        toast({ variant: "destructive", title: "Error", description: "Please enter a valid number to subtract." });
-        return;
+    // Find the first player with a valid point input
+    const firstValidInputPlayerId = Object.keys(pointInputs).find(
+      (id) => pointInputs[id] && !isNaN(parseInt(pointInputs[id], 10)) && parseInt(pointInputs[id], 10) > 0
+    );
+
+    if (!firstValidInputPlayerId) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Masukkan nilai poin di salah satu pemain untuk dikurangi.',
+      });
+      return;
     }
 
+    const amount = parseInt(pointInputs[firstValidInputPlayerId], 10);
+
     startTransition(() => {
-        setPlayers(prevPlayers => {
-            const updatedPlayers = prevPlayers.map(p => ({
-                ...p,
-                score: p.score - amount
-            }));
-            return [...updatedPlayers].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
-        });
-        setBulkSubtractAmount('');
+      setPlayers((prevPlayers) => {
+        const updatedPlayers = prevPlayers.map((p) => ({
+          ...p,
+          score: p.score - amount,
+        }));
+        return [...updatedPlayers].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+      });
+      // Clear all point inputs after bulk operation
+      setPointInputs({});
     });
-};
+  };
   
   const handlePointInputChange = (playerId: string, value: string) => {
     setPointInputs(prev => ({...prev, [playerId]: value}));
@@ -284,7 +293,7 @@ export default function ScoreSyncClient() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <form onSubmit={handleAddPlayer} className="flex w-full gap-2 mb-4">
+                    <div className="flex w-full gap-2 mb-4">
                         <Input
                         placeholder="New player name..."
                         value={newPlayerName}
@@ -293,28 +302,18 @@ export default function ScoreSyncClient() {
                         className="w-full"
                         aria-label="New player name"
                         />
-                        <Button type="submit" disabled={isPending || !newPlayerName.trim()} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Add
-                        </Button>
-                    </form>
-
-                     <div className="flex w-full gap-2 mb-4">
-                        <Input
-                            type="number"
-                            placeholder="Poin untuk dikurangi"
-                            value={bulkSubtractAmount}
-                            onChange={(e) => setBulkSubtractAmount(e.target.value)}
-                            disabled={isPending}
-                            className="w-full"
-                            aria-label="Bulk subtract points"
-                        />
-                        <Button onClick={handleBulkSubtract} disabled={isPending || !bulkSubtractAmount.trim()} variant="secondary">
-                            <Minus className="h-4 w-4 mr-2" />
-                            Kurangi Semua
+                        <Button type="button" onClick={handleAddPlayer} disabled={isPending || !newPlayerName.trim()} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            Add
                         </Button>
                     </div>
 
+                    <div className="mb-4">
+                        <Button onClick={handleBulkSubtract} disabled={isPending} variant="secondary" className="w-full">
+                            <Minus className="h-4 w-4 mr-2" />
+                            Kurangi Semua Poin (dari nilai di tabel)
+                        </Button>
+                    </div>
 
                     <ScrollArea className="h-[calc(100vh-420px)] rounded-md border">
                         <Table>
@@ -322,7 +321,7 @@ export default function ScoreSyncClient() {
                                 <TableRow>
                                     <TableHead>Player</TableHead>
                                     <TableHead className="w-[120px] text-right">Points</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="w-[140px] text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>

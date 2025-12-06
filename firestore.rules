@@ -4,45 +4,35 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if a user is signed in
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
     /**
      * @description
-     *   The `players` collection can be read by any signed-in user to display
-     *   the scoreboard.
+     *   The `players` collection can be publicly read by any user to display
+     *   the scoreboard. This allows unauthenticated access.
      * @path
      *   /players
      * @allow
-     *   - `list`: Signed-in users can list all players for the scoreboard.
-     * @deny
-     *   Unauthenticated users cannot list player data.
+     *   - `list`: Any user can list all players for the scoreboard.
      * @principle
-     *   Enforces authentication for listing player data.
+     *   Allows public access for listing player data.
      */
     match /players {
-      allow list: if isSignedIn();
+      allow list;
     }
 
     /**
      * @description
-     *   Individual player documents can be read and written to by any signed-in
-     *   user to view details or modify scores.
+     *   Individual player documents can be publicly read and written to by any
+     *   user to view details or modify scores. This allows unauthenticated access.
      * @path
      *   /players/{playerId}
      * @allow
-     *   - `get`: Signed-in users can retrieve individual player data.
-     *   - `write`: Signed-in users can create, update, or delete player documents.
-     * @deny
-     *   Unauthenticated users cannot read or write any player data.
+     *   - `get`: Any user can retrieve individual player data.
+     *   - `write`: Any user can create, update, or delete player documents.
      * @principle
-     *   Enforces authentication for all interactions with player data,
-     *   ensuring that only recognized users can view or modify the scoreboard.
+     *   Allows public access for all interactions with player data.
      */
     match /players/{playerId} {
-      allow get, write: if isSignedIn();
+      allow get, write;
     }
   }
 }

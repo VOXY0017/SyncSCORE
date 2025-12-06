@@ -251,14 +251,16 @@ export default function ScoreSyncClient() {
           )}
         </main>
         
-        <aside className="hidden md:flex flex-col h-full">
-            <Card className="w-full flex-grow flex flex-col min-h-0">
+        <aside>
+            <Card className="w-full sticky top-24">
                 <CardHeader className="flex-row items-center justify-between">
                     <CardTitle className="flex items-center gap-3 text-2xl">
                         <Gamepad2 />
                         Manage Points
                     </CardTitle>
-                    <form onSubmit={handleAddPlayer} className="flex w-full max-w-xs items-center gap-2">
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleAddPlayer} className="flex w-full max-w-xs items-center gap-2 mb-4">
                         <Input
                             placeholder="Add new player and press Enter"
                             value={newPlayerName}
@@ -268,53 +270,49 @@ export default function ScoreSyncClient() {
                             aria-label="New player name"
                         />
                     </form>
-                </CardHeader>
-                <CardContent className="flex-grow flex flex-col min-h-0 py-4 pt-0">
-                    <div className="flex-grow h-0 overflow-hidden">
-                      <ScrollArea className="h-full">
-                          <Table>
-                          <TableBody>
-                              {isLoading ? (
-                              <ManagementSkeleton />
-                              ) : players && players.length > 0 ? (
-                              players.map((player) => (
-                                  <TableRow key={player.id} className="transition-colors duration-300">
-                                      <TableCell className="font-medium">{player.name}</TableCell>
-                                      <TableCell className='text-right w-[100px]'>
-                                          <Input
-                                          type="number"
-                                          placeholder="0"
-                                          className="h-9 text-center ml-auto"
-                                          value={pointInputs[player.id] || ''}
-                                          onChange={(e) => handlePointInputChange(player.id, e.target.value)}
-                                          disabled={isPending}
-                                          aria-label={`Points for ${player.name}`}
-                                          />
-                                      </TableCell>
-                                      <TableCell className="text-right w-[140px] space-x-1">
-                                          <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
-                                              <Plus className="h-4 w-4" />
-                                          </Button>
-                                          <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
-                                              <Minus className="h-4 w-4" />
-                                          </Button>
-                                          <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
-                                              <Trash2 className="h-4 w-4" />
-                                          </Button>
-                                      </TableCell>
-                                  </TableRow>
-                              ))
-                              ) : (
-                              <TableRow>
-                                  <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
-                                  Add a player to begin.
-                                  </TableCell>
-                              </TableRow>
-                              )}
-                          </TableBody>
-                          </Table>
-                      </ScrollArea>
-                    </div>
+                    <ScrollArea className="h-[calc(100vh-22rem)]">
+                        <Table>
+                        <TableBody>
+                            {isLoading ? (
+                            <ManagementSkeleton />
+                            ) : players && players.length > 0 ? (
+                            players.map((player) => (
+                                <TableRow key={player.id} className="transition-colors duration-300">
+                                    <TableCell className="font-medium">{player.name}</TableCell>
+                                    <TableCell className='text-right w-[100px]'>
+                                        <Input
+                                        type="number"
+                                        placeholder="0"
+                                        className="h-9 text-center ml-auto"
+                                        value={pointInputs[player.id] || ''}
+                                        onChange={(e) => handlePointInputChange(player.id, e.target.value)}
+                                        disabled={isPending}
+                                        aria-label={`Points for ${player.name}`}
+                                        />
+                                    </TableCell>
+                                    <TableCell className="text-right w-[140px] space-x-1">
+                                        <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
+                                            <Minus className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                            ) : (
+                            <TableRow>
+                                <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                                Add a player to begin.
+                                </TableCell>
+                            </TableRow>
+                            )}
+                        </TableBody>
+                        </Table>
+                    </ScrollArea>
                 </CardContent>
             </Card>
         </aside>
@@ -376,7 +374,8 @@ function PlayerRow({ player, index, rank, recentlyUpdated, rankChange, onAnimati
         
         requestAnimationFrame(() => {
           if (!rowRef.current) return;
-          rowRef.current.style.animation = `slide-down 0.7s ease-in-out forwards`;
+          // Apply the animation
+          rowRef.current.style.animation = `slide-down 1.5s ease-in-out forwards`;
           rowRef.current.style.transform = '';
         });
       });
@@ -448,3 +447,5 @@ function PodiumCard({ player, rank }: PodiumCardProps) {
         </Card>
     )
 }
+
+    

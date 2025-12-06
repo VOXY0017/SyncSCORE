@@ -233,7 +233,7 @@ export default function ScoreSyncClient() {
                             <Gamepad2 />
                             Manage Points
                         </CardTitle>
-                        <form onSubmit={handleAddPlayer} className="flex w-full max-w-sm items-center">
+                        <form onSubmit={handleAddPlayer} className="flex w-full max-w-xs items-center">
                             <Input
                                 placeholder="Add new player and press Enter"
                                 value={newPlayerName}

@@ -97,9 +97,9 @@ body {
     to { transform: translateY(0); z-index: 10; }
   }
   .animate-slide-down {
-    animation: slide-down 0.7s ease-in-out forwards;
+    animation: slide-down 2s ease-in-out forwards;
   }
   .animate-slide-up {
-    animation: slide-up 0.7s ease-in-out forwards;
+    animation: slide-up 2s ease-in-out forwards;
   }
 }

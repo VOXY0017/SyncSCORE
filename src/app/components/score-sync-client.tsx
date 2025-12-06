@@ -166,150 +166,150 @@ export default function ScoreSyncClient() {
   );
   
   return (
-    <div className="flex flex-col h-full min-h-screen">
+    <div className="flex flex-col h-screen overflow-hidden">
       <div className="w-full text-center py-4 flex-shrink-0">
-          <CardTitle className="text-3xl font-bold text-primary flex items-center justify-center gap-3">
-              <Trophy className="h-8 w-8" />
-              Score Markas B7
-          </CardTitle>
+        <CardTitle className="text-3xl font-bold text-primary flex items-center justify-center gap-3">
+          <Trophy className="h-8 w-8" />
+          Score Markas B7
+        </CardTitle>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start flex-grow min-h-0">
+      <div className="flex-grow flex flex-col lg:flex-row gap-6 min-h-0">
         {/* Leaderboard Column */}
-        <div className="lg:col-span-1 h-full">
-            <Card className="shadow-lg h-full flex flex-col">
-                <CardHeader className='flex-shrink-0'>
-                    <CardTitle className="flex items-center gap-2 text-xl">
-                        <Medal />
-                        Leaderboard
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="flex-grow overflow-hidden">
-                    <ScrollArea className="h-full">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[50px] text-center font-bold">Rank</TableHead>
-                                    <TableHead className="font-bold">Player</TableHead>
-                                    <TableHead className="w-[80px] text-center font-bold">Gap</TableHead>
-                                    <TableHead className="w-[100px] text-center font-bold">Score</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                            {isLoading ? (
-                                <PlayerListSkeleton />
-                            ) : players && players.length > 0 ? (
-                                players.map((player, index) => {
-                                const scoreGap = index > 0 ? player.score - players[index - 1].score : 0;
-                                const rankChange = rankChanges.find(c => c.id === player.id);
+        <div className="lg:flex-basis-1/2 h-full flex flex-col">
+          <Card className="shadow-lg h-full flex flex-col">
+            <CardHeader className="flex-shrink-0">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Medal />
+                Leaderboard
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-grow overflow-hidden">
+              <ScrollArea className="h-full">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[50px] text-center font-bold">Rank</TableHead>
+                      <TableHead className="font-bold">Player</TableHead>
+                      <TableHead className="w-[80px] text-center font-bold">Gap</TableHead>
+                      <TableHead className="w-[100px] text-center font-bold">Score</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      <PlayerListSkeleton />
+                    ) : players && players.length > 0 ? (
+                      players.map((player, index) => {
+                        const scoreGap = index > 0 ? player.score - players[index - 1].score : 0;
+                        const rankChange = rankChanges.find(c => c.id === player.id);
 
-                                return (
-                                <PlayerRow
-                                    key={player.id}
-                                    player={player}
-                                    index={index}
-                                    scoreGap={scoreGap}
-                                    recentlyUpdated={recentlyUpdated}
-                                    rankChange={rankChange}
-                                    onAnimationEnd={() => setRankChanges(rc => rc.filter(c => c.id !== player.id))}
-                                />
-                                );
-                                })
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                                    No players yet. Add one to get started!
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                            </TableBody>
-                        </Table>
-                    </ScrollArea>
-                </CardContent>
-            </Card>
+                        return (
+                          <PlayerRow
+                            key={player.id}
+                            player={player}
+                            index={index}
+                            scoreGap={scoreGap}
+                            recentlyUpdated={recentlyUpdated}
+                            rankChange={rankChange}
+                            onAnimationEnd={() => setRankChanges(rc => rc.filter(c => c.id !== player.id))}
+                          />
+                        );
+                      })
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                          No players yet. Add one to get started!
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Management Column */}
-        <div className="lg:col-span-1 h-full">
-            <Card className="shadow-lg h-full flex flex-col">
-                <CardHeader className='flex-shrink-0'>
-                    <div className="flex justify-between items-center w-full">
-                        <CardTitle className="flex items-center gap-2 text-xl">
-                            <Gamepad2 />
-                            Manage Points
-                        </CardTitle>
-                        <form onSubmit={handleAddPlayer} className="flex w-full max-w-xs items-center">
+        <div className="lg:flex-basis-1/2 h-full flex flex-col">
+          <Card className="shadow-lg h-full flex flex-col">
+            <CardHeader className="flex-shrink-0">
+              <div className="flex justify-between items-center w-full">
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Gamepad2 />
+                  Manage Points
+                </CardTitle>
+                <form onSubmit={handleAddPlayer} className="flex w-full max-w-xs items-center">
+                  <Input
+                    placeholder="Add new player and press Enter"
+                    value={newPlayerName}
+                    onChange={(e) => setNewPlayerName(e.target.value)}
+                    disabled={isPending}
+                    className="w-full"
+                    aria-label="New player name"
+                  />
+                </form>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-grow flex flex-col min-h-0">
+              <ScrollArea className="h-full">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Player</TableHead>
+                      <TableHead className="w-[120px] text-right">Points</TableHead>
+                      <TableHead className="w-[140px] text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      <ManagementSkeleton />
+                    ) : players && players.length > 0 ? (
+                      players.map((player) => (
+                        <TableRow key={player.id} className={cn(
+                          'transition-colors duration-300',
+                          recentlyUpdated === player.id && 'bg-primary/10'
+                        )}>
+                          <TableCell className="font-medium">{player.name}</TableCell>
+                          <TableCell className='text-right'>
                             <Input
-                                placeholder="Add new player and press Enter"
-                                value={newPlayerName}
-                                onChange={(e) => setNewPlayerName(e.target.value)}
-                                disabled={isPending}
-                                className="w-full"
-                                aria-label="New player name"
+                              type="number"
+                              placeholder="0"
+                              className="w-20 h-9 text-center ml-auto"
+                              value={pointInputs[player.id] || ''}
+                              onChange={(e) => handlePointInputChange(player.id, e.target.value)}
+                              disabled={isPending}
+                              aria-label={`Points for ${player.name}`}
                             />
-                        </form>
-                    </div>
-                </CardHeader>
-                <CardContent className="flex-grow flex flex-col min-h-0">
-                    <ScrollArea className="h-full">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Player</TableHead>
-                                    <TableHead className="w-[120px] text-right">Points</TableHead>
-                                    <TableHead className="w-[140px] text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {isLoading ? (
-                                    <ManagementSkeleton />
-                                ) : players && players.length > 0 ? (
-                                    players.map((player) => (
-                                        <TableRow key={player.id} className={cn(
-                                            'transition-colors duration-300',
-                                            recentlyUpdated === player.id && 'bg-primary/10'
-                                        )}>
-                                            <TableCell className="font-medium">{player.name}</TableCell>
-                                            <TableCell className='text-right'>
-                                                <Input 
-                                                    type="number"
-                                                    placeholder="0"
-                                                    className="w-20 h-9 text-center ml-auto"
-                                                    value={pointInputs[player.id] || ''}
-                                                    onChange={(e) => handlePointInputChange(player.id, e.target.value)}
-                                                    disabled={isPending}
-                                                    aria-label={`Points for ${player.name}`}
-                                                />
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex justify-end items-center gap-2">
-                                                    <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
-                                                        <Plus className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
-                                                        <Minus className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button variant="destructive" size="icon" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
-                                        Add a player to begin.
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </ScrollArea>
-                </CardContent>
-            </Card>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end items-center gap-2">
+                              <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                              <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
+                                <Minus className="h-4 w-4" />
+                              </Button>
+                              <Button variant="destructive" size="icon" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                          Add a player to begin.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </CardContent>
+          </Card>
         </div>
-    </div>
+      </div>
 
 
     <AlertDialog open={isDeleteAlertOpen} onOpenChange={handleAlertOpenChange}>
@@ -343,7 +343,6 @@ interface PlayerRowProps {
 
 function PlayerRow({ player, index, scoreGap, recentlyUpdated, rankChange, onAnimationEnd }: PlayerRowProps) {
   const rowRef = useRef<HTMLTableRowElement>(null);
-  const [animationClass, setAnimationClass] = useState('');
   
   // A ref to hold the initial bounding rect
   const initialRect = useRef<DOMRect | null>(null);
@@ -367,16 +366,17 @@ function PlayerRow({ player, index, scoreGap, recentlyUpdated, rankChange, onAni
 
     if (deltaY !== 0) {
       // 1. Invert: Move the element back to its old position
-      rowRef.current.style.transform = `translateY(${deltaY}px)`;
-      rowRef.current.style.transition = 'none';
-
-      // 2. Play: Force a reflow and then animate to the new position
       requestAnimationFrame(() => {
         if (!rowRef.current) return;
-        rowRef.current.style.transition = 'transform 0.7s ease-in-out, opacity 0.7s ease-in-out';
-        rowRef.current.style.transform = '';
-        rowRef.current.style.opacity = '1';
-        setAnimationClass('is-moving');
+        rowRef.current.style.transform = `translateY(${deltaY}px)`;
+        rowRef.current.style.transition = 'transform 0s';
+        
+        // 2. Play: Force a reflow and then animate to the new position
+        requestAnimationFrame(() => {
+          if (!rowRef.current) return;
+          rowRef.current.style.transition = 'transform 0.7s ease-in-out';
+          rowRef.current.style.transform = '';
+        });
       });
     }
 
@@ -387,7 +387,6 @@ function PlayerRow({ player, index, scoreGap, recentlyUpdated, rankChange, onAni
 
 
   const handleTransitionEnd = () => {
-    setAnimationClass('');
     onAnimationEnd();
   };
 
@@ -397,7 +396,6 @@ function PlayerRow({ player, index, scoreGap, recentlyUpdated, rankChange, onAni
       onTransitionEnd={handleTransitionEnd}
       className={cn(
         'will-change-transform',
-        animationClass,
         recentlyUpdated === player.id && 'bg-primary/10',
         index === 0 && 'bg-amber-200 dark:bg-amber-900/40 hover:bg-amber-300/80 dark:hover:bg-amber-900/60',
         index === 1 && 'bg-gray-200 dark:bg-gray-700/50 hover:bg-gray-300/80 dark:hover:bg-gray-700/70',
@@ -417,5 +415,3 @@ function PlayerRow({ player, index, scoreGap, recentlyUpdated, rankChange, onAni
     </TableRow>
   );
 }
-
-    

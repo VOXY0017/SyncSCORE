@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useTransition, useCallback, useMemo } from 'react';
+import { useState, useEffect, useTransition, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Player } from '@/lib/types';
 import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
-import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
+import { signOutUser } from '@/firebase/non-blocking-login';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { addPlayer, updatePlayerScore, removePlayer } from '@/app/actions';
 
@@ -23,15 +24,15 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, Trash2, Trophy, Crown, UserPlus } from 'lucide-react';
+import { Plus, Minus, Trash2, Trophy, Crown, UserPlus, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-
 
 export default function ScoreSyncClient() {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const router = useRouter();
   const [newPlayerName, setNewPlayerName] = useState('');
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -41,14 +42,14 @@ export default function ScoreSyncClient() {
   
   useEffect(() => {
     if (!isUserLoading && !user) {
-      initiateAnonymousSignIn(auth);
+      router.push('/login');
     }
-  }, [user, isUserLoading, auth]);
+  }, [user, isUserLoading, router]);
   
   const playersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null; // Wait for user
     return query(collection(firestore, 'players'), orderBy('score', 'desc'), orderBy('name', 'asc'));
-  }, [firestore]);
+  }, [firestore, user]);
 
   const { data: players, isLoading, error } = useCollection<Player>(playersQuery);
 
@@ -57,11 +58,10 @@ export default function ScoreSyncClient() {
       toast({
         variant: "destructive",
         title: "Firebase Error",
-        description: "Failed to load player data. Check console and Firebase setup.",
+        description: error.message || "Failed to load player data. Check console and Firebase setup.",
       });
     }
   }, [error, toast]);
-
 
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,6 +112,10 @@ export default function ScoreSyncClient() {
     }
   }
 
+  const handleLogout = () => {
+    signOutUser(auth);
+  };
+
   const PlayerListSkeleton = () => (
     [...Array(5)].map((_, i) => (
       <div key={i} className="flex items-center space-x-4 p-4">
@@ -123,38 +127,62 @@ export default function ScoreSyncClient() {
       </div>
     ))
   );
+  
+  // Render skeleton or nothing while checking auth state
+  if (isUserLoading || !user) {
+    return (
+        <div className="w-full max-w-4xl">
+            <Card className="w-full shadow-2xl shadow-primary/10">
+                <CardHeader>
+                  <Skeleton className="h-10 w-48" />
+                  <Skeleton className="h-4 w-64 mt-2" />
+                </CardHeader>
+                <CardContent>
+                    <div className="p-4"><PlayerListSkeleton /></div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+  }
 
   return (
     <>
     <Card className="w-full shadow-2xl shadow-primary/10">
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
+          <div className="flex-grow">
             <CardTitle className="text-3xl font-bold text-primary flex items-center gap-2">
               <Trophy className="h-8 w-8" />
               ScoreSync
             </CardTitle>
             <CardDescription className="mt-1">Real-time multiplayer scoreboard powered by Firebase</CardDescription>
           </div>
-          <form onSubmit={handleAddPlayer} className="flex w-full sm:w-auto gap-2">
+           <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground hidden sm:inline">{user.email}</span>
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="h-4 w-4" />
+              <span className="sm:hidden ml-2">Logout</span>
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleAddPlayer} className="flex w-full gap-2 mb-4">
             <Input
               placeholder="New player name..."
               value={newPlayerName}
               onChange={(e) => setNewPlayerName(e.target.value)}
               disabled={isPending}
-              className="w-full sm:w-48"
+              className="w-full"
               aria-label="New player name"
             />
             <Button type="submit" disabled={isPending || !newPlayerName.trim()} className="bg-accent hover:bg-accent/90 text-accent-foreground">
               <UserPlus className="h-4 w-4 mr-2" />
-              Add
+              Add Player
             </Button>
           </form>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[60vh] rounded-md border">
-          {isLoading || isUserLoading ? (
+        <ScrollArea className="h-[55vh] rounded-md border">
+          {isLoading ? (
             <div className="p-4"><PlayerListSkeleton /></div>
           ) : (
             <Table>

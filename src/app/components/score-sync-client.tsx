@@ -186,7 +186,7 @@ export default function ScoreSyncClient() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <ScrollArea className="rounded-md border">
+                    <ScrollArea className="rounded-md border h-[calc(100vh-250px)]">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -278,7 +278,7 @@ export default function ScoreSyncClient() {
                         </Button>
                     </div>
 
-                    <ScrollArea className="rounded-md border">
+                    <ScrollArea className="rounded-md border h-[calc(100vh-250px)]">
                         <Table>
                             <TableHeader>
                                 <TableRow>

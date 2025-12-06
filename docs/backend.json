@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "Player": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Player",
+      "type": "object",
+      "description": "Represents a player in the ScoreSync application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Player entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the player."
+        },
+        "score": {
+          "type": "number",
+          "description": "The player's score."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "score"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "players/{playerId}",
+        "definition": {
+          "entityName": "Player",
+          "schema": {
+            "$ref": "#/backend/entities/Player"
+          },
+          "description": "Stores player data including name and score.",
+          "params": [
+            {
+              "name": "playerId",
+              "description": "Unique identifier for the player document."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support a real-time, multi-player score system (ScoreSync). The primary collection is `players`, which stores player data. Each player document contains `name` and `score` fields. The structure prioritizes simplicity and efficiency for real-time updates and ranking.  Authorization Independence is achieved because the `players` collection does not rely on data from other collections for access control, thus no denormalization is needed.  QAPs are supported because listing players and their scores is the core function.  Future security rules can be easily implemented to restrict score updates and deletion based on user roles."
+  }
+}

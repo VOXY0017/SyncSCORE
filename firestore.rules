@@ -1,10 +1,12 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow anyone to read player data for the scoreboard
-    // Only allow authenticated users to create, update, or delete players
     match /players/{playerId} {
+      // Izinkan siapa saja untuk membaca (get, list) data pemain.
+      // Ini diperlukan agar papan skor dapat ditampilkan.
       allow read: if true;
+
+      // Izinkan hanya pengguna yang sudah login untuk membuat, mengubah, atau menghapus data.
       allow write: if request.auth != null;
     }
   }

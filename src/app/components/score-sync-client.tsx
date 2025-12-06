@@ -40,6 +40,7 @@ export default function ScoreSyncClient() {
   const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [recentlyUpdated, setRecentlyUpdated] = useState<string | null>(null);
+  const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
 
   useEffect(() => {
     // Simulate loading data
@@ -79,7 +80,8 @@ export default function ScoreSyncClient() {
     setTimeout(() => setRecentlyUpdated(null), 1500);
   }, []);
 
-  const handleScoreChange = (playerId: string, change: 1 | -1) => {
+  const handleScoreChange = (playerId: string, change: number) => {
+    if (isNaN(change) || change === 0) return;
     triggerUpdateAnimation(playerId);
     startTransition(() => {
        setPlayers(prevPlayers => 
@@ -89,6 +91,10 @@ export default function ScoreSyncClient() {
       );
     });
   };
+  
+  const handlePointInputChange = (playerId: string, value: string) => {
+    setPointInputs(prev => ({...prev, [playerId]: value}));
+  }
 
   const confirmDeletePlayer = () => {
     if (!playerToDelete) return;
@@ -108,7 +114,8 @@ export default function ScoreSyncClient() {
   }
 
   const PlayerListSkeleton = () => (
-    [...Array(3)].map((_, i) => (
+    <>
+    {[...Array(3)].map((_, i) => (
       <TableRow key={i}>
         <TableCell><Skeleton className="h-6 w-6 rounded-full" /></TableCell>
         <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
@@ -119,7 +126,8 @@ export default function ScoreSyncClient() {
             <Skeleton className="h-8 w-8" />
         </TableCell>
       </TableRow>
-    ))
+    ))}
+    </>
   );
   
   return (
@@ -158,7 +166,7 @@ export default function ScoreSyncClient() {
                 <TableHead className="w-[80px] text-center font-bold">Rank</TableHead>
                 <TableHead className="font-bold">Player</TableHead>
                 <TableHead className="w-[100px] text-center font-bold">Score</TableHead>
-                <TableHead className="w-[160px] text-center font-bold">Actions</TableHead>
+                <TableHead className="min-w-[220px] text-center font-bold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -174,10 +182,19 @@ export default function ScoreSyncClient() {
                     <TableCell className="text-center font-bold text-xl text-primary">{player.score}</TableCell>
                     <TableCell className="text-center">
                       <div className="flex justify-center items-center gap-2">
-                         <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, 1)} disabled={isPending} aria-label={`Increase score for ${player.name}`}>
+                         <Input 
+                            type="number"
+                            placeholder="Points"
+                            className="w-20 h-9"
+                            value={pointInputs[player.id] || ''}
+                            onChange={(e) => handlePointInputChange(player.id, e.target.value)}
+                            disabled={isPending}
+                            aria-label={`Points for ${player.name}`}
+                         />
+                         <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending} aria-label={`Increase score for ${player.name}`}>
                            <Plus className="h-4 w-4" />
                          </Button>
-                         <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, -1)} disabled={isPending} aria-label={`Decrease score for ${player.name}`}>
+                         <Button variant="outline" size="icon" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending} aria-label={`Decrease score for ${player.name}`}>
                            <Minus className="h-4 w-4" />
                          </Button>
                          <Button variant="destructive" size="icon" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
@@ -188,11 +205,11 @@ export default function ScoreSyncClient() {
                   </TableRow>
                 ))
               ) : (
-                <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                    No players yet. Add one to get started!
-                  </TableCell>
-                </TableRow>
+                 <TableRow>
+                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                      No players yet. Add one to get started!
+                    </TableCell>
+                  </TableRow>
               )}
             </TableBody>
           </Table>
@@ -219,3 +236,5 @@ export default function ScoreSyncClient() {
     </>
   );
 }
+
+    

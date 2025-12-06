@@ -89,6 +89,7 @@ export default function ScoreSyncClient() {
       setPlayers(newPlayers);
       setNewPlayerName('');
       toast({ title: "Player Added", description: `${trimmedName} has joined the game!`});
+      setIsSheetOpen(false);
     });
   };
   
@@ -157,7 +158,7 @@ export default function ScoreSyncClient() {
   const PlayerListSkeleton = () => (
     <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[...Array(3)].map(i => <Skeleton key={i} className="h-24 rounded-lg" />)}
+            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}
         </div>
         <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
@@ -212,18 +213,15 @@ export default function ScoreSyncClient() {
                 </SheetTitle>
               </SheetHeader>
               <div className="flex-grow flex flex-col min-h-0 py-4">
-                <form onSubmit={handleAddPlayer} className="flex w-full items-center gap-2 mb-4">
+                <form onSubmit={handleAddPlayer} className="flex w-full max-w-xs items-center gap-2 mb-4">
                   <Input
-                    placeholder="Add new player..."
+                    placeholder="Add new player and press Enter"
                     value={newPlayerName}
                     onChange={(e) => setNewPlayerName(e.target.value)}
                     disabled={isPending}
                     className="w-full"
                     aria-label="New player name"
                   />
-                   <Button type="submit" size="icon" disabled={isPending || !newPlayerName.trim()}>
-                        <UserPlus className="h-4 w-4"/>
-                   </Button>
                 </form>
                  <ScrollArea className="flex-grow h-0">
                     <Table>
@@ -382,7 +380,7 @@ function PlayerRow({ player, index, rank, recentlyUpdated, rankChange, onAnimati
         
         requestAnimationFrame(() => {
           if (!rowRef.current) return;
-          rowRef.current.style.transition = 'transform 0.7s ease-in-out';
+          rowRef.current.style.animation = `slide-down 0.7s ease-in-out forwards`;
           rowRef.current.style.transform = '';
         });
       });
@@ -393,13 +391,16 @@ function PlayerRow({ player, index, rank, recentlyUpdated, rankChange, onAnimati
 
 
   const handleTransitionEnd = () => {
+    if(rowRef.current) {
+      rowRef.current.style.animation = '';
+    }
     onAnimationEnd();
   };
 
   return (
     <TableRow
       ref={rowRef}
-      onTransitionEnd={handleTransitionEnd}
+      onAnimationEnd={handleTransitionEnd}
       className={cn(
         'will-change-transform',
         recentlyUpdated === player.id && 'bg-primary/10',

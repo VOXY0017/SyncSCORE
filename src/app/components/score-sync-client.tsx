@@ -130,11 +130,11 @@ export default function ScoreSyncClient() {
 
   const PlayerListSkeleton = () => (
     <>
-    {[...Array(3)].map((_, i) => (
+    {[...Array(5)].map((_, i) => (
       <TableRow key={i}>
         <TableCell><Skeleton className="h-6 w-6 rounded-full" /></TableCell>
         <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
-        <TableCell><Skeleton className="h-4 w-1/2" /></TableCell>
+        <TableCell><Skeleton className="h-4 w-1/2 mx-auto" /></TableCell>
       </TableRow>
     ))}
     </>
@@ -142,7 +142,7 @@ export default function ScoreSyncClient() {
 
   const ManagementSkeleton = () => (
     <>
-    {[...Array(3)].map((_, i) => (
+    {[...Array(5)].map((_, i) => (
         <TableRow key={i}>
             <TableCell><Skeleton className="h-4 w-2/4" /></TableCell>
             <TableCell><Skeleton className="h-9 w-20" /></TableCell>
@@ -178,7 +178,7 @@ export default function ScoreSyncClient() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <ScrollArea className="h-[calc(100vh-250px)] rounded-md border">
+                    <ScrollArea className="h-[calc(100vh-320px)] rounded-md border">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -194,8 +194,9 @@ export default function ScoreSyncClient() {
                                 players.map((player, index) => (
                                 <TableRow key={player.id} className={cn(
                                     'transition-all duration-500 ease-in-out',
-                                    recentlyUpdated === player.id && 'bg-accent/20',
-                                    rankChanged.includes(player.id) && 'bg-blue-200 dark:bg-blue-800/30'
+                                    recentlyUpdated === player.id && 'bg-primary/10',
+                                    rankChanged.includes(player.id) && 'bg-blue-200 dark:bg-blue-800/30',
+                                    index === 0 && 'bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200/80 dark:hover:bg-amber-900/50'
                                 )}
                                 style={{ transform: `translateY(0px)` }}
                                 >
@@ -247,7 +248,7 @@ export default function ScoreSyncClient() {
                         </Button>
                     </form>
 
-                    <ScrollArea className="h-[calc(100vh-328px)] rounded-md border">
+                    <ScrollArea className="h-[calc(100vh-320px)] rounded-md border">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -263,7 +264,7 @@ export default function ScoreSyncClient() {
                                     players.map((player) => (
                                         <TableRow key={player.id} className={cn(
                                             'transition-colors duration-300',
-                                            recentlyUpdated === player.id && 'bg-accent/20'
+                                            recentlyUpdated === player.id && 'bg-primary/10'
                                         )}>
                                             <TableCell className="font-medium">{player.name}</TableCell>
                                             <TableCell>

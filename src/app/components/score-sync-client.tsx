@@ -49,14 +49,7 @@ export default function ScoreSyncClient() {
     // Simulate loading data
     setTimeout(() => {
       // Let's add some mock data for a better default look
-      const mockPlayers: Player[] = [
-        { id: '1', name: 'Rizky', score: 150 },
-        { id: '2', name: 'Andi', score: 125 },
-        { id: '3', name: 'Budi', score: 110 },
-        { id: '4', name: 'Citra', score: 95 },
-        { id: '5', name: 'Dewi', score: 80 },
-        { id: '6', name: 'Eka', score: 70 },
-      ].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+      const mockPlayers: Player[] = [].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
       
       setPlayers(mockPlayers);
       previousPlayerRanks.current = new Map(mockPlayers.map((p, i) => [p.id, i]));

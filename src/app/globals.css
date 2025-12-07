@@ -57,25 +57,14 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
-  .ranking-change {
-    animation: var(--animation-name) 1.5s ease-in-out;
+  .ranking-change-active {
+    animation: var(--animation-name) var(--animation-duration) ease-in-out;
   }
 
-  @keyframes slide-down {
+  @keyframes ranking-change {
       from {
           transform: translateY(var(--delta-y));
-          opacity: 0.8;
-      }
-      to {
-          transform: translateY(0);
-          opacity: 1;
-      }
-  }
-
-  @keyframes slide-up {
-      from {
-          transform: translateY(var(--delta-y));
-          opacity: 0.8;
+          opacity: 0.5;
       }
       to {
           transform: translateY(0);

@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useState, useTransition, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
 import type { Player } from '@/lib/types';
+import { ThemeToggle } from './theme-toggle';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -182,6 +183,7 @@ export default function ScoreSyncClient() {
               <Trophy className="h-7 w-7 text-primary" />
               <h1 className="text-xl font-bold tracking-tight">Score Markas B7</h1>
           </div>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -348,12 +350,12 @@ function PlayerRow({ player, rank, gap, recentlyUpdated, rankChange, onAnimation
 
     if (deltaY !== 0) {
       rowRef.current.style.setProperty('--delta-y', `${deltaY}px`);
-      const animationName = rankChange.newRank > rankChange.oldRank ? 'slide-down' : 'slide-up';
-      rowRef.current.style.setProperty('--animation-name', animationName);
+      rowRef.current.style.setProperty('--animation-name', 'ranking-change');
+      rowRef.current.style.setProperty('--animation-duration', '1.5s');
 
       requestAnimationFrame(() => {
         if (!rowRef.current) return;
-        rowRef.current.classList.add('ranking-change');
+        rowRef.current.classList.add('ranking-change-active');
       });
     }
 
@@ -362,9 +364,10 @@ function PlayerRow({ player, rank, gap, recentlyUpdated, rankChange, onAnimation
 
   const handleAnimationEnd = () => {
     if(rowRef.current) {
-      rowRef.current.classList.remove('ranking-change');
+      rowRef.current.classList.remove('ranking-change-active');
       rowRef.current.style.removeProperty('--delta-y');
       rowRef.current.style.removeProperty('--animation-name');
+      rowRef.current.style.removeProperty('--animation-duration');
     }
     onAnimationEnd();
   };

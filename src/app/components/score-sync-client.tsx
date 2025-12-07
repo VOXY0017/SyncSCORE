@@ -6,7 +6,7 @@ import type { Player } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   AlertDialog,
@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, Trash2, Trophy, Crown, Gamepad2, Medal, Users } from 'lucide-react';
+import { Plus, Minus, Trash2, Trophy, Gamepad2, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -44,8 +44,6 @@ export default function ScoreSyncClient() {
   const [rankChanges, setRankChanges] = useState<RankChange[]>([]);
   
   const previousPlayerRanks = useRef(new Map<string, number>());
-  const podiumRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const podiumRects = useRef(new Map<string, DOMRect>());
 
   useEffect(() => {
     // Simulate loading data
@@ -65,53 +63,6 @@ export default function ScoreSyncClient() {
       setIsLoading(false);
     }, 1500);
   }, []);
-  
-  const topPlayers = players.slice(0, 3);
-  const otherPlayers = players.slice(3);
-
-  useLayoutEffect(() => {
-    // Capture the initial positions of the podium elements
-    podiumRefs.current.forEach(ref => {
-      if (ref && ref.dataset.id) {
-        podiumRects.current.set(ref.dataset.id, ref.getBoundingClientRect());
-      }
-    });
-  }, [isLoading]);
-
-  useLayoutEffect(() => {
-    if (isLoading || podiumRefs.current.length === 0) return;
-
-    podiumRefs.current.forEach((ref) => {
-      if (!ref || !ref.dataset.id) return;
-      const id = ref.dataset.id;
-      const oldRect = podiumRects.current.get(id);
-      if (!oldRect) return;
-
-      const newRect = ref.getBoundingClientRect();
-      const deltaX = oldRect.left - newRect.left;
-      const deltaY = oldRect.top - newRect.top;
-
-      if (deltaX !== 0 || deltaY !== 0) {
-        requestAnimationFrame(() => {
-          ref.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-          ref.style.transition = 'transform 0s';
-          
-          requestAnimationFrame(() => {
-            ref.style.transition = `transform 0.7s ease-in-out`;
-            ref.style.transform = '';
-          });
-        });
-      }
-    });
-
-    // Update the stored positions for the next render
-    podiumRefs.current.forEach(ref => {
-      if (ref && ref.dataset.id) {
-        podiumRects.current.set(ref.dataset.id, ref.getBoundingClientRect());
-      }
-    });
-
-  }, [topPlayers, isLoading]);
 
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
@@ -204,15 +155,10 @@ export default function ScoreSyncClient() {
   }
 
   const PlayerListSkeleton = () => (
-    <div className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}
-        </div>
-        <div className="space-y-2">
-            {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-            ))}
-        </div>
+    <div className="space-y-2 mt-4">
+        {[...Array(8)].map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+        ))}
     </div>
   );
 
@@ -248,58 +194,48 @@ export default function ScoreSyncClient() {
 
       <div className="container flex-grow max-w-screen-2xl mx-auto py-6 sm:py-10 grid md:grid-cols-[1fr_400px] gap-8">
         <main>
-          {isLoading ? (
-              <PlayerListSkeleton />
-          ) : (
-              <>
-              {/* Top 3 Players */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8 mb-8">
-                  {topPlayers[1] && <PodiumCard ref={el => podiumRefs.current[1] = el} player={topPlayers[1]} rank={2} />}
-                  {topPlayers[0] && <PodiumCard ref={el => podiumRefs.current[0] = el} player={topPlayers[0]} rank={1} />}
-                  {topPlayers[2] && <PodiumCard ref={el => podiumRefs.current[2] = el} player={topPlayers[2]} rank={3} />}
-              </div>
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                        <Users />
+                        Leaderboard
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {isLoading ? (
+                        <PlayerListSkeleton />
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                <TableHead className="w-[80px] text-center font-bold">Rank</TableHead>
+                                <TableHead className="font-bold">Player</TableHead>
+                                <TableHead className="w-[120px] text-right font-bold">Score</TableHead>
+                                <TableHead className="w-[120px] text-right font-bold">Gap</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {players.map((player, index) => {
+                                const rankChange = rankChanges.find(c => c.id === player.id);
+                                const gap = index > 0 ? players[index - 1].score - player.score : null;
 
-              {/* Other Players */}
-              {otherPlayers.length > 0 && (
-                  <Card className="shadow-lg">
-                      <CardHeader>
-                          <CardTitle className="flex items-center gap-2 text-xl">
-                              <Users />
-                              All Players
-                          </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                          <Table>
-                              <TableHeader>
-                                  <TableRow>
-                                  <TableHead className="w-[80px] text-center font-bold">Rank</TableHead>
-                                  <TableHead className="font-bold">Player</TableHead>
-                                  <TableHead className="w-[120px] text-right font-bold">Score</TableHead>
-                                  </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                  {otherPlayers.map((player, index) => {
-                                  const rankChange = rankChanges.find(c => c.id === player.id);
-                                  const overallRank = index + 4;
-                                  return (
-                                      <PlayerRow
-                                      key={player.id}
-                                      player={player}
-                                      index={overallRank - 1}
-                                      rank={overallRank}
-                                      recentlyUpdated={recentlyUpdated}
-                                      rankChange={rankChange}
-                                      onAnimationEnd={() => setRankChanges(rc => rc.filter(c => c.id !== player.id))}
-                                      />
-                                  );
-                                  })}
-                              </TableBody>
-                          </Table>
-                      </CardContent>
-                  </Card>
-              )}
-              </>
-          )}
+                                return (
+                                    <PlayerRow
+                                    key={player.id}
+                                    player={player}
+                                    rank={index + 1}
+                                    gap={gap}
+                                    recentlyUpdated={recentlyUpdated}
+                                    rankChange={rankChange}
+                                    onAnimationEnd={() => setRankChanges(rc => rc.filter(c => c.id !== player.id))}
+                                    />
+                                );
+                                })}
+                            </TableBody>
+                        </Table>
+                    )}
+                </CardContent>
+            </Card>
         </main>
         
         <aside>
@@ -311,7 +247,7 @@ export default function ScoreSyncClient() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <form onSubmit={handleAddPlayer} className="flex w-full max-w-xs items-center gap-2 mb-4">
+                    <form onSubmit={handleAddPlayer} className="flex w-full max-w-sm items-center gap-2 mb-4">
                         <Input
                             placeholder="Add new player and press Enter"
                             value={newPlayerName}
@@ -391,14 +327,14 @@ export default function ScoreSyncClient() {
 
 interface PlayerRowProps {
   player: Player;
-  index: number;
   rank: number;
+  gap: number | null;
   recentlyUpdated: string | null;
   rankChange: RankChange | undefined;
   onAnimationEnd: () => void;
 }
 
-function PlayerRow({ player, index, rank, recentlyUpdated, rankChange, onAnimationEnd }: PlayerRowProps) {
+function PlayerRow({ player, rank, gap, recentlyUpdated, rankChange, onAnimationEnd }: PlayerRowProps) {
   const rowRef = useRef<HTMLTableRowElement>(null);
   const initialRect = useRef<DOMRect | null>(null);
 
@@ -440,6 +376,15 @@ function PlayerRow({ player, index, rank, recentlyUpdated, rankChange, onAnimati
     onAnimationEnd();
   };
 
+  const getRankClasses = (rank: number) => {
+    switch (rank) {
+      case 1: return "text-yellow-400 font-bold";
+      case 2: return "text-slate-400 font-semibold";
+      case 3: return "text-orange-400 font-medium";
+      default: return "text-muted-foreground";
+    }
+  };
+
   return (
     <TableRow
       ref={rowRef}
@@ -449,52 +394,16 @@ function PlayerRow({ player, index, rank, recentlyUpdated, rankChange, onAnimati
         recentlyUpdated === player.id && 'bg-primary/10',
       )}
     >
-      <TableCell className="text-center font-medium text-lg text-muted-foreground">{rank}</TableCell>
+      <TableCell className={cn("text-center font-medium text-lg", getRankClasses(rank))}>
+        {rank}
+      </TableCell>
       <TableCell className="font-medium text-lg">{player.name}</TableCell>
       <TableCell className="text-right font-bold text-xl text-primary tabular-nums">
         {player.score > 0 ? `+${player.score}` : player.score}
       </TableCell>
+      <TableCell className="text-right text-sm text-muted-foreground tabular-nums">
+        {gap !== null ? `-${gap}` : '–'}
+      </TableCell>
     </TableRow>
   );
 }
-
-
-interface PodiumCardProps {
-    player: Player;
-    rank: number;
-}
-
-const PodiumCard = React.forwardRef<HTMLDivElement, PodiumCardProps>(({ player, rank }, ref) => {
-    const rankColors = {
-        1: 'border-yellow-400 bg-yellow-400/10 hover:bg-yellow-400/20',
-        2: 'border-slate-400 bg-slate-400/10 hover:bg-slate-400/20',
-        3: 'border-orange-400 bg-orange-400/10 hover:bg-orange-400/20'
-    };
-    const rankIcon = {
-        1: <Crown className="h-8 w-8 text-yellow-400" />,
-        2: <Medal className="h-8 w-8 text-slate-400" />,
-        3: <Trophy className="h-8 w-8 text-orange-400" />
-    };
-
-    return (
-        <div ref={ref} data-id={player.id}>
-            <Card className={cn(
-                'transition-all duration-300 border-2 h-full',
-                rank === 1 && 'md:scale-110 md:z-10',
-                rankColors[rank as keyof typeof rankColors],
-            )}>
-                <CardHeader className="flex flex-col items-center justify-center p-4">
-                    {rankIcon[rank as keyof typeof rankIcon]}
-                    <CardTitle className="text-2xl mt-2">{player.name}</CardTitle>
-                    <CardDescription className="text-base">Rank #{rank}</CardDescription>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 text-center">
-                    <p className="text-4xl font-bold text-primary tabular-nums">
-                        {player.score > 0 ? `+${player.score}` : player.score}
-                    </p>
-                </CardContent>
-            </Card>
-        </div>
-    )
-});
-PodiumCard.displayName = 'PodiumCard';

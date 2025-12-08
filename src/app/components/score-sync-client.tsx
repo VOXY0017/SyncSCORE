@@ -195,7 +195,7 @@ export default function ScoreSyncClient() {
                             aria-label="New player name"
                         />
                     </form>
-                    <ScrollArea className="h-[calc(100vh-20rem)]">
+                    <ScrollArea>
                         <Table>
                         <TableBody>
                             {isLoading ? (

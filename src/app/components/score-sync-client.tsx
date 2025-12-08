@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, Trash2, Trophy, Gamepad2, Users, LogOut } from 'lucide-react';
+import { Plus, Minus, Trash2, Trophy, Gamepad2, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -92,11 +92,6 @@ export default function ScoreSyncClient() {
     }
   }
 
-  const handleSignOut = () => {
-    // Fake sign out
-    toast({ title: "Signed Out", description: "You have been logged out." });
-  };
-
   const PlayerListSkeleton = () => (
     <>
         {[...Array(4)].map((_, i) => (
@@ -137,10 +132,6 @@ export default function ScoreSyncClient() {
               <h1 className="text-xl font-bold tracking-tight">ScoreSync</h1>
           </div>
           <div className='flex items-center gap-2'>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                <LogOut className="mr-2 h-4 w-4"/>
-                Logout
-            </Button>
             <ThemeToggle />
           </div>
         </div>
@@ -200,22 +191,23 @@ export default function ScoreSyncClient() {
         
         <aside>
             <Card className="w-full sticky top-24 h-fit">
-                <CardHeader className="flex-row items-center justify-between">
-                    <CardTitle className="flex items-center gap-3 text-2xl">
+                <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-lg">
                         <Gamepad2 />
                         Manage Points
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <form onSubmit={handleAddPlayer} className="flex w-full max-w-sm items-center gap-2 mb-4">
+                    <form onSubmit={handleAddPlayer} className="flex w-full items-center gap-2 mb-4">
                         <Input
-                            placeholder="Add new player and press Enter"
+                            placeholder="Add new player..."
                             value={newPlayerName}
                             onChange={(e) => setNewPlayerName(e.target.value)}
                             disabled={isPending}
-                            className="w-full"
+                            className="h-9"
                             aria-label="New player name"
                         />
+                         <Button type="submit" size="sm" disabled={!newPlayerName.trim() || isPending}>Add</Button>
                     </form>
                     <ScrollArea className="h-[calc(100vh-22rem)]">
                         <Table>
@@ -224,27 +216,27 @@ export default function ScoreSyncClient() {
                             <ManagementSkeleton />
                             ) : players && players.length > 0 ? (
                             players.map((player) => (
-                                <TableRow key={player.id} className="transition-colors duration-300">
-                                    <TableCell className="font-medium">{player.name}</TableCell>
-                                    <TableCell className='text-right w-[100px]'>
+                                <TableRow key={player.id}>
+                                    <TableCell className="font-medium p-2">{player.name}</TableCell>
+                                    <TableCell className='text-right w-[80px] p-2'>
                                         <Input
                                         type="number"
-                                        placeholder="0"
-                                        className="h-9 text-center ml-auto"
+                                        placeholder="Pts"
+                                        className="h-8 text-center ml-auto"
                                         value={pointInputs[player.id] || ''}
                                         onChange={(e) => handlePointInputChange(player.id, e.target.value)}
                                         disabled={isPending}
                                         aria-label={`Points for ${player.name}`}
                                         />
                                     </TableCell>
-                                    <TableCell className="text-right w-[140px] space-x-1">
-                                        <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
+                                    <TableCell className="text-right w-[110px] space-x-1 p-2">
+                                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
                                             <Plus className="h-4 w-4" />
                                         </Button>
-                                        <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
+                                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
                                             <Minus className="h-4 w-4" />
                                         </Button>
-                                        <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
+                                        <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </TableCell>

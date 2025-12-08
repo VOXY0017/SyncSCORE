@@ -24,12 +24,7 @@ import { Plus, Minus, X, Trophy, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const initialPlayers: Player[] = [
-    { id: '1', name: 'Alice', score: 150 },
-    { id: '2', name: 'Bob', score: 120 },
-    { id: '3', name: 'Charlie', score: 95 },
-    { id: '4', name: 'Diana', score: 80 },
-];
+const initialPlayers: Player[] = [];
 
 export default function ScoreSyncClient() {
   const [players, setPlayers] = useState<Player[]>(initialPlayers);

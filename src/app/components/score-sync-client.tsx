@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useTransition, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
+import { useState, useTransition, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Player } from '@/lib/types';
 import { ThemeToggle } from './theme-toggle';
 
@@ -21,102 +22,68 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, Trash2, Trophy, Gamepad2, Users } from 'lucide-react';
+import { Plus, Minus, Trash2, Trophy, Gamepad2, Users, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-
-type RankChange = {
-  id: string;
-  oldRank: number;
-  newRank: number;
-};
+import { useAuth, useCollection, useFirestore, useUser, signOutUser, useMemoFirebase } from '@/firebase';
+import { addPlayer, removePlayer, updatePlayerScore } from '../actions';
+import { collection, query, orderBy } from 'firebase/firestore';
 
 export default function ScoreSyncClient() {
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
+
+  const playersQuery = useMemoFirebase(
+    () =>
+      firestore
+        ? query(
+            collection(firestore, 'players'),
+            orderBy('score', 'desc'),
+            orderBy('name', 'asc')
+          )
+        : null,
+    [firestore]
+  );
+  
+  const { data: players, isLoading: isPlayersLoading } = useCollection<Player>(playersQuery);
+
   const [newPlayerName, setNewPlayerName] = useState('');
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
-  const [recentlyUpdated, setRecentlyUpdated] = useState<string | null>(null);
+  
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
   
-  const [rankChanges, setRankChanges] = useState<RankChange[]>([]);
-  
-  const previousPlayerRanks = useRef(new Map<string, number>());
-
-  useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      // Let's add some mock data for a better default look
-      const mockPlayers: Player[] = [].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
-      
-      setPlayers(mockPlayers);
-      previousPlayerRanks.current = new Map(mockPlayers.map((p, i) => [p.id, i]));
-      setIsLoading(false);
-    }, 1500);
-  }, []);
+  React.useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
 
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = newPlayerName.trim();
-    if (!trimmedName) return;
+    if (!trimmedName || !firestore) return;
 
-    startTransition(() => {
-      if (players.some(p => p.name.toLowerCase() === trimmedName.toLowerCase())) {
-        toast({ variant: "destructive", title: "Error", description: "A player with this name already exists." });
-        return;
+    startTransition(async () => {
+      const result = await addPlayer(firestore, trimmedName);
+      if (result.success) {
+        setNewPlayerName('');
+        toast({ title: "Player Added", description: `${trimmedName} has joined the game!`});
+      } else {
+        toast({ variant: "destructive", title: "Error", description: result.error });
       }
-      
-      const newPlayer: Player = {
-        id: new Date().getTime().toString(), // Simple unique ID
-        name: trimmedName,
-        score: 0,
-      };
-      
-      const newPlayers = [...players, newPlayer].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
-      
-      previousPlayerRanks.current = new Map(newPlayers.map((p, i) => [p.id, i]));
-      setPlayers(newPlayers);
-      setNewPlayerName('');
-      toast({ title: "Player Added", description: `${trimmedName} has joined the game!`});
     });
   };
-  
-  const triggerUpdateAnimation = useCallback((playerId: string) => {
-    setRecentlyUpdated(playerId);
-    setTimeout(() => setRecentlyUpdated(null), 1500);
-  }, []);
 
   const handleScoreChange = (playerId: string, change: number) => {
-    if (isNaN(change) || change === 0) return;
+    if (isNaN(change) || change === 0 || !firestore) return;
     
-    triggerUpdateAnimation(playerId);
-
-    startTransition(() => {
-       setPlayers(prevPlayers => {
-          const updatedPlayers = prevPlayers.map(p => 
-            p.id === playerId ? { ...p, score: p.score + change } : p
-          );
-          
-          const sortedPlayers = [...updatedPlayers].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
-
-          const newChanges = sortedPlayers.reduce((acc, player, newRank) => {
-            const oldRank = previousPlayerRanks.current.get(player.id);
-            if (oldRank !== undefined && oldRank !== newRank) {
-              acc.push({ id: player.id, oldRank, newRank });
-            }
-            return acc;
-          }, [] as RankChange[]);
-          
-          if (newChanges.length > 0) {
-            setRankChanges(newChanges);
-          }
-          previousPlayerRanks.current = new Map(sortedPlayers.map((p, i) => [p.id, i]));
-
-          return sortedPlayers;
-       });
+    startTransition(async () => {
+       await updatePlayerScore(firestore, playerId, change);
        setPointInputs(prev => ({...prev, [playerId]: ''}));
     });
   };
@@ -126,16 +93,15 @@ export default function ScoreSyncClient() {
   }
 
   const confirmDeletePlayer = () => {
-    if (!playerToDelete) return;
+    if (!playerToDelete || !firestore) return;
 
-    startTransition(() => {
-      setPlayers(prevPlayers => {
-        const remainingPlayers = prevPlayers.filter(p => p.id !== playerToDelete.id);
-        const sortedPlayers = remainingPlayers.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
-        previousPlayerRanks.current = new Map(sortedPlayers.map((p, i) => [p.id, i]));
-        return sortedPlayers;
-      });
-      toast({ title: "Player Removed", description: `${playerToDelete.name} has been removed.`});
+    startTransition(async () => {
+      const result = await removePlayer(firestore, playerToDelete.id);
+      if(result.success) {
+        toast({ title: "Player Removed", description: `${playerToDelete.name} has been removed.`});
+      } else {
+        toast({ variant: "destructive", title: "Error", description: result.error });
+      }
       setDeleteAlertOpen(false);
       setPlayerToDelete(null);
     });
@@ -147,6 +113,15 @@ export default function ScoreSyncClient() {
       setPlayerToDelete(null);
     }
   }
+
+  const handleSignOut = () => {
+    if (auth) {
+      signOutUser(auth);
+      router.push('/login');
+    }
+  };
+
+  const isLoading = isUserLoading || isPlayersLoading;
 
   const PlayerListSkeleton = () => (
     <div className="space-y-2 mt-4">
@@ -171,10 +146,20 @@ export default function ScoreSyncClient() {
     ))}
     </>
   );
+
+  if (isUserLoading || !user) {
+    return (
+        <div className="flex items-center justify-center min-h-screen w-full bg-background dark:bg-black">
+            <div className="flex items-center gap-2 text-muted-foreground">
+                <Trophy className="h-6 w-6 animate-spin" />
+                <span>Loading Scoreboard...</span>
+            </div>
+        </div>
+    )
+  }
   
   return (
     <div className="min-h-screen w-full bg-background dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2] relative flex flex-col">
-       {/* Pointer gradient */}
        <div className="absolute pointer-events-none inset-0 flex items-center justify-center dark:bg-black bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
       
        <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -183,13 +168,19 @@ export default function ScoreSyncClient() {
               <Trophy className="h-7 w-7 text-primary" />
               <h1 className="text-xl font-bold tracking-tight">Score Markas B7</h1>
           </div>
-          <ThemeToggle />
+          <div className='flex items-center gap-2'>
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                <LogOut className="mr-2 h-4 w-4"/>
+                Logout
+            </Button>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
       <div className="container flex-grow max-w-screen-2xl mx-auto py-6 sm:py-10 grid md:grid-cols-[1fr_400px] gap-8">
         <main>
-            <Card className="shadow-lg">
+            <Card className="shadow-lg h-full">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-xl">
                         <Users />
@@ -197,9 +188,7 @@ export default function ScoreSyncClient() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {isLoading ? (
-                        <PlayerListSkeleton />
-                    ) : (
+                    <ScrollArea className="h-[calc(100vh-14rem)]">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -210,31 +199,39 @@ export default function ScoreSyncClient() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {players.map((player, index) => {
-                                const rankChange = rankChanges.find(c => c.id === player.id);
-                                const gap = index > 0 ? players[index - 1].score - player.score : null;
-
-                                return (
-                                    <PlayerRow
-                                    key={player.id}
-                                    player={player}
-                                    rank={index + 1}
-                                    gap={gap}
-                                    recentlyUpdated={recentlyUpdated}
-                                    rankChange={rankChange}
-                                    onAnimationEnd={() => setRankChanges(rc => rc.filter(c => c.id !== player.id))}
-                                    />
-                                );
-                                })}
+                                {isLoading ? <PlayerListSkeleton /> : (
+                                    players && players.map((player, index) => {
+                                        const gap = index > 0 && players ? players[index - 1].score - player.score : null;
+                                        return (
+                                            <TableRow key={player.id}>
+                                              <TableCell className={cn("text-center font-medium text-lg", 
+                                                index === 0 ? "text-yellow-400" :
+                                                index === 1 ? "text-slate-400" :
+                                                index === 2 ? "text-orange-400" :
+                                                "text-muted-foreground"
+                                              )}>
+                                                {index + 1}
+                                              </TableCell>
+                                              <TableCell className="font-medium text-lg">{player.name}</TableCell>
+                                              <TableCell className="text-right font-bold text-xl text-primary tabular-nums">
+                                                {player.score > 0 ? `+${player.score}` : player.score}
+                                              </TableCell>
+                                              <TableCell className="text-right text-sm text-muted-foreground tabular-nums">
+                                                {gap !== null ? `-${gap}` : '–'}
+                                              </TableCell>
+                                            </TableRow>
+                                        );
+                                    })
+                                )}
                             </TableBody>
                         </Table>
-                    )}
+                    </ScrollArea>
                 </CardContent>
             </Card>
         </main>
         
         <aside>
-            <Card className="w-full sticky top-24">
+            <Card className="w-full sticky top-24 h-fit">
                 <CardHeader className="flex-row items-center justify-between">
                     <CardTitle className="flex items-center gap-3 text-2xl">
                         <Gamepad2 />
@@ -320,86 +317,3 @@ export default function ScoreSyncClient() {
   );
 }
 
-interface PlayerRowProps {
-  player: Player;
-  rank: number;
-  gap: number | null;
-  recentlyUpdated: string | null;
-  rankChange: RankChange | undefined;
-  onAnimationEnd: () => void;
-}
-
-function PlayerRow({ player, rank, gap, recentlyUpdated, rankChange, onAnimationEnd }: PlayerRowProps) {
-  const rowRef = useRef<HTMLTableRowElement>(null);
-  const initialRect = useRef<DOMRect | null>(null);
-
-  useLayoutEffect(() => {
-    if (rowRef.current) {
-        initialRect.current = rowRef.current.getBoundingClientRect();
-    }
-  }, [player.id, rank]);
-
-  useLayoutEffect(() => {
-    if (!rankChange || !rowRef.current || !initialRect.current) {
-      return;
-    }
-    const newRect = rowRef.current.getBoundingClientRect();
-    const oldRect = initialRect.current;
-    
-    const deltaY = oldRect.top - newRect.top;
-
-    if (deltaY !== 0) {
-      rowRef.current.style.setProperty('--delta-y', `${deltaY}px`);
-      rowRef.current.style.setProperty('--animation-name', 'ranking-change');
-      rowRef.current.style.setProperty('--animation-duration', '1.5s');
-
-      requestAnimationFrame(() => {
-        if (!rowRef.current) return;
-        rowRef.current.classList.add('ranking-change-active');
-      });
-    }
-
-  }, [rankChange, player.score]);
-
-
-  const handleAnimationEnd = () => {
-    if(rowRef.current) {
-      rowRef.current.classList.remove('ranking-change-active');
-      rowRef.current.style.removeProperty('--delta-y');
-      rowRef.current.style.removeProperty('--animation-name');
-      rowRef.current.style.removeProperty('--animation-duration');
-    }
-    onAnimationEnd();
-  };
-
-  const getRankClasses = (rank: number) => {
-    switch (rank) {
-      case 1: return "text-yellow-400 font-bold";
-      case 2: return "text-slate-400 font-semibold";
-      case 3: return "text-orange-400 font-medium";
-      default: return "text-muted-foreground";
-    }
-  };
-
-  return (
-    <TableRow
-      ref={rowRef}
-      onAnimationEnd={handleAnimationEnd}
-      className={cn(
-        'will-change-transform',
-        recentlyUpdated === player.id && 'bg-primary/10',
-      )}
-    >
-      <TableCell className={cn("text-center font-medium text-lg", getRankClasses(rank))}>
-        {rank}
-      </TableCell>
-      <TableCell className="font-medium text-lg">{player.name}</TableCell>
-      <TableCell className="text-right font-bold text-xl text-primary tabular-nums">
-        {player.score > 0 ? `+${player.score}` : player.score}
-      </TableCell>
-      <TableCell className="text-right text-sm text-muted-foreground tabular-nums">
-        {gap !== null ? `-${gap}` : '–'}
-      </TableCell>
-    </TableRow>
-  );
-}

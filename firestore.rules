@@ -11,5 +11,16 @@ service cloud.firestore {
       // Disallow all write operations (create, update, delete).
       allow write: if false;
     }
+
+    match /users/{userId} {
+      // Only the authenticated user can create their own profile document.
+      allow create: if request.auth != null && request.auth.uid == userId;
+
+      // Only the authenticated user can read or update their own document.
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+
+      // Nobody can delete a user profile through the client.
+      allow delete: if false;
+    }
   }
 }

@@ -24,6 +24,28 @@
         "name",
         "score"
       ]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "type": "object",
+      "description": "Represents a user's profile data stored in Firestore.",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The user's unique ID from Firebase Authentication."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the user account was created."
+        }
+      },
+      "required": ["uid", "email", "createdAt"]
     }
   },
   "auth": {
@@ -49,8 +71,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores public profile information for a user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Corresponds to the user's Firebase Auth UID."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to support a real-time, multi-player score system (ScoreSync). The primary collection is `players`, which stores player data. Each player document contains `name` and `score` fields. The structure prioritizes simplicity and efficiency for real-time updates and ranking.  Authorization Independence is achieved because the `players` collection does not rely on data from other collections for access control, thus no denormalization is needed.  QAPs are supported because listing players and their scores is the core function.  Future security rules can be easily implemented to restrict score updates and deletion based on user roles."
+    "reasoning": "The Firestore structure is designed to support a real-time, multi-player score system (ScoreSync). The `players` collection stores game-specific data. A separate `users` collection is introduced to store user profile information, linking back to Firebase Authentication via the UID. This separation keeps user data distinct from game data, improving organization and security. Security rules can now be defined on a per-collection basis (e.g., only users can edit their own profiles, while game scores might have different rules)."
   }
 }

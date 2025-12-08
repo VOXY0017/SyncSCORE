@@ -2,8 +2,10 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +18,7 @@ import { Trophy } from 'lucide-react';
 export default function AuthClient() {
   console.log('AuthClient: Komponen dirender');
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
@@ -110,8 +113,22 @@ export default function AuthClient() {
     startTransition(async () => {
       try {
         console.log('AuthClient: Memanggil createUserWithEmailAndPassword');
-        await createUserWithEmailAndPassword(auth, registerEmail, registerPassword);
-        console.log('AuthClient: Registrasi berhasil, menunggu redirect dari onAuthStateChanged.');
+        const userCredential = await createUserWithEmailAndPassword(auth, registerEmail, registerPassword);
+        const newUser = userCredential.user;
+        console.log('AuthClient: Registrasi Auth berhasil, pengguna dibuat:', newUser);
+
+        if (newUser && firestore) {
+          console.log('AuthClient: Menyimpan data pengguna ke Firestore...');
+          const userDocRef = doc(firestore, 'users', newUser.uid);
+          await setDoc(userDocRef, {
+            uid: newUser.uid,
+            email: newUser.email,
+            createdAt: serverTimestamp(),
+          });
+           console.log('AuthClient: Data pengguna berhasil disimpan di Firestore.');
+        }
+        
+        console.log('AuthClient: Registrasi selesai, menunggu redirect dari onAuthStateChanged.');
         // onAuthStateChanged in provider will handle the redirect via useEffect
       } catch (error) {
         handleFirebaseAuthError(error);

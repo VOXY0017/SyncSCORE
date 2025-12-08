@@ -100,7 +100,7 @@ export default function ScoreSyncClient() {
     
     startTransition(async () => {
        console.log('handleScoreChange: Transisi dimulai');
-       await updatePlayerScore(firestore, playerId, change);
+       await updatePlayerScore(firestore, playerId, change as (1 | -1));
        console.log('handleScoreChange: updatePlayerScore dipanggil');
        setPointInputs(prev => ({...prev, [playerId]: ''}));
     });

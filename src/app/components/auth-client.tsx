@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Trophy } from 'lucide-react';
 
 export default function AuthClient() {
+  console.log('AuthClient: Komponen dirender');
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
@@ -24,26 +25,35 @@ export default function AuthClient() {
   const [loginPassword, setLoginPassword] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
+  
+  console.log('AuthClient: State Awal', { auth: !!auth, user, isUserLoading });
 
   useEffect(() => {
+    console.log('AuthClient: useEffect untuk redirect berjalan', { isUserLoading, user: !!user });
     // Redirect only after loading is complete and user is confirmed
     if (!isUserLoading && user) {
+      console.log('AuthClient: Pengguna terdeteksi, mengarahkan ke /');
       router.push('/');
+    } else {
+       console.log('AuthClient: Tidak ada pengguna atau masih loading, tetap di halaman login');
     }
   }, [user, isUserLoading, router]);
 
   // While loading, don't render the form to prevent flashes of content
   if (isUserLoading) {
+    console.log('AuthClient: isUserLoading true, merender layar loading...');
     return <div>Loading...</div>;
   }
   
   // If user is already logged in, they will be redirected by the effect above.
   // Returning null prevents the form from flashing.
   if (user) {
+    console.log('AuthClient: Pengguna sudah ada, tidak merender form, menunggu redirect dari useEffect.');
     return null;
   }
 
   const handleFirebaseAuthError = (error: any) => {
+    console.error('AuthClient: Terjadi error Firebase Auth', error);
     let description = "An unexpected error occurred.";
     switch (error.code) {
       case 'auth/email-already-in-use':
@@ -69,13 +79,16 @@ export default function AuthClient() {
   
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('AuthClient: Memulai proses login...');
     if (!loginEmail || !loginPassword) {
       toast({ variant: 'destructive', title: 'Error', description: 'Email and password are required.' });
       return;
     }
     startTransition(async () => {
       try {
+        console.log('AuthClient: Memanggil signInWithEmailAndPassword');
         await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+        console.log('AuthClient: Login berhasil, menunggu redirect dari onAuthStateChanged.');
         // onAuthStateChanged in provider will handle the redirect via useEffect
       } catch (error) {
         handleFirebaseAuthError(error);
@@ -85,6 +98,7 @@ export default function AuthClient() {
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('AuthClient: Memulai proses registrasi...');
     if (!registerEmail || !registerPassword) {
       toast({ variant: 'destructive', title: 'Error', description: 'Email and password are required.' });
       return;
@@ -95,7 +109,9 @@ export default function AuthClient() {
     }
     startTransition(async () => {
       try {
+        console.log('AuthClient: Memanggil createUserWithEmailAndPassword');
         await createUserWithEmailAndPassword(auth, registerEmail, registerPassword);
+        console.log('AuthClient: Registrasi berhasil, menunggu redirect dari onAuthStateChanged.');
         // onAuthStateChanged in provider will handle the redirect via useEffect
       } catch (error) {
         handleFirebaseAuthError(error);
@@ -103,6 +119,7 @@ export default function AuthClient() {
     });
   };
 
+  console.log('AuthClient: Merender form login/register.');
   return (
     <Card className="w-full max-w-md shadow-2xl shadow-primary/10">
         <CardHeader className="text-center">

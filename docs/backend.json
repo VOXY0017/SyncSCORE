@@ -24,28 +24,6 @@
         "name",
         "score"
       ]
-    },
-    "UserProfile": {
-      "title": "User Profile",
-      "type": "object",
-      "description": "Represents a user's profile data stored in Firestore.",
-      "properties": {
-        "uid": {
-          "type": "string",
-          "description": "The user's unique ID from Firebase Authentication."
-        },
-        "email": {
-          "type": "string",
-          "format": "email",
-          "description": "The user's email address."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The timestamp when the user account was created."
-        }
-      },
-      "required": ["uid", "email", "createdAt"]
     }
   },
   "auth": {
@@ -57,13 +35,13 @@
   "firestore": {
     "structure": [
       {
-        "path": "players/{playerId}",
+        "path": "/players/{playerId}",
         "definition": {
           "entityName": "Player",
           "schema": {
             "$ref": "#/backend/entities/Player"
           },
-          "description": "Stores player data including name and score.",
+          "description": "Stores player data. Allows real-time updates of player scores and deletion by admins. 'playerId' is the unique identifier for each player.",
           "params": [
             {
               "name": "playerId",
@@ -73,22 +51,22 @@
         }
       },
       {
-        "path": "users/{userId}",
+        "path": "/roles_admin/{uid}",
         "definition": {
-          "entityName": "UserProfile",
+          "entityName": "adminRole",
           "schema": {
-            "$ref": "#/backend/entities/UserProfile"
+            "$ref": "#/backend/entities/Player"
           },
-          "description": "Stores public profile information for a user.",
+          "description": "A document in this collection signifies that the user with the corresponding UID has admin privileges. Existence of the document is what confers the role; the content is irrelevant.",
           "params": [
             {
-              "name": "userId",
-              "description": "Corresponds to the user's Firebase Auth UID."
+              "name": "uid",
+              "description": "The Firebase Auth UID of the user who has admin privileges."
             }
           ]
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to support a real-time, multi-player score system (ScoreSync). The `players` collection stores game-specific data. A separate `users` collection is introduced to store user profile information, linking back to Firebase Authentication via the UID. This separation keeps user data distinct from game data, improving organization and security. Security rules can now be defined on a per-collection basis (e.g., only users can edit their own profiles, while game scores might have different rules)."
+    "reasoning": "The Firestore structure is designed to support a real-time, multi-player score system (ScoreSync). It prioritizes simplicity, security, and real-time updates using Firebase.  It uses a single collection for players. The structure facilitates efficient queries for ranking and provides a clear security model.\n\n**Authorization Independence:** The design does not require authorization checks that rely on hierarchical data (`get()` calls in rules). All necessary data for validating operations is present within each document, which is especially important for atomic operations and managing data consistency.\n\n**QAPs Support:**\n*   Secure `list` operations are supported by the segregation of player data into its own collection. This ensures that `list` operations can be performed securely with rules applied at the collection level.\n*   The design uses path-based ownership for global data, enforcing that write access is restricted based on rule definitions (admin role or updates to individual scores).\n\n**Invariants:**\n*   The structure supports the integrity of scores by allowing score updates only through increments controlled by rules.\n*   The name is assumed to be unique and invariant."
   }
 }

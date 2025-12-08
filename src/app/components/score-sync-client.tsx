@@ -248,7 +248,7 @@ export default function ScoreSyncClient() {
                             players.map((player) => (
                                 <TableRow key={player.id}>
                                     <TableCell className="font-medium p-2 text-sm">{player.name}</TableCell>
-                                    <TableCell className='text-right w-[70px] p-2'>
+                                    <TableCell className='text-right p-2'>
                                         <Input
                                         type="number"
                                         placeholder="Pts"

@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, Trash2, Trophy, Gamepad2, Users } from 'lucide-react';
+import { Plus, Minus, Trash2, Trophy, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -124,7 +124,7 @@ export default function ScoreSyncClient() {
     <div className="min-h-screen w-full bg-custom-background bg-cover bg-center relative flex flex-col">
        <div className="absolute pointer-events-none inset-0 flex items-center justify-center dark:bg-black bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
       
-      <div className="container flex-grow max-w-screen-2xl mx-auto py-6 sm:py-10 grid md:grid-cols-[1fr_400px] gap-4">
+      <div className="container flex-grow max-w-screen-2xl mx-auto py-6 sm:py-10 grid md:grid-cols-[1fr_380px] gap-4">
         <main>
             <Card className="shadow-md h-full backdrop-blur-lg">
                 <CardHeader>
@@ -177,24 +177,23 @@ export default function ScoreSyncClient() {
         </main>
         
         <aside>
-            <Card className="w-full sticky top-10 h-fit backdrop-blur-lg shadow-md">
+            <Card className="w-full sticky top-10 h-full backdrop-blur-lg shadow-md">
                 <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-2 text-lg">
-                        <Gamepad2 />
-                        Manage Points
+                        <Users />
+                        Player Management
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleAddPlayer} className="flex w-full items-center gap-2 mb-4">
                         <Input
-                            placeholder="Add new player..."
+                            placeholder="Add new player and press Enter..."
                             value={newPlayerName}
                             onChange={(e) => setNewPlayerName(e.target.value)}
                             disabled={isPending}
                             className="h-8 text-sm"
                             aria-label="New player name"
                         />
-                         <Button type="submit" size="sm" className="h-8" disabled={!newPlayerName.trim() || isPending}>Add</Button>
                     </form>
                     <ScrollArea className="h-[calc(100vh-20rem)]">
                         <Table>

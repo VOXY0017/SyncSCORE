@@ -3,7 +3,6 @@
 import * as React from 'react';
 import { useState, useTransition } from 'react';
 import type { Player } from '@/lib/types';
-import { ThemeToggle } from './theme-toggle';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -125,29 +124,17 @@ export default function ScoreSyncClient() {
     <div className="min-h-screen w-full bg-custom-background bg-cover bg-center relative flex flex-col">
        <div className="absolute pointer-events-none inset-0 flex items-center justify-center dark:bg-black bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
       
-       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 max-w-screen-2xl items-center justify-between">
-          <div className="flex items-center gap-3">
-              <Trophy className="h-7 w-7 text-primary" />
-              <h1 className="text-xl font-bold tracking-tight">ScoreSync</h1>
-          </div>
-          <div className='flex items-center gap-2'>
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
-
       <div className="container flex-grow max-w-screen-2xl mx-auto py-6 sm:py-10 grid md:grid-cols-[1fr_400px] gap-4">
         <main>
             <Card className="shadow-lg h-full">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-xl">
-                        <Users />
-                        Leaderboard
+                    <CardTitle className="flex items-center gap-3 text-2xl">
+                        <Trophy className="h-7 w-7 text-primary" />
+                        Score Markas B7
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <ScrollArea className="h-[calc(100vh-14rem)]">
+                    <ScrollArea className="h-[calc(100vh-12rem)]">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -190,7 +177,7 @@ export default function ScoreSyncClient() {
         </main>
         
         <aside>
-            <Card className="w-full sticky top-24 h-fit">
+            <Card className="w-full sticky top-10 h-fit">
                 <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-2 text-lg">
                         <Gamepad2 />
@@ -209,7 +196,7 @@ export default function ScoreSyncClient() {
                         />
                          <Button type="submit" size="sm" className="h-8" disabled={!newPlayerName.trim() || isPending}>Add</Button>
                     </form>
-                    <ScrollArea className="h-[calc(100vh-22rem)]">
+                    <ScrollArea className="h-[calc(100vh-20rem)]">
                         <Table>
                         <TableBody>
                             {isLoading ? (

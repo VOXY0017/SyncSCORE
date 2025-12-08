@@ -11,8 +11,8 @@ const fontSans = FontSans({
 });
 
 export const metadata: Metadata = {
-  title: 'ScoreSync',
-  description: 'A real-time multiplayer score tracking system.',
+  title: 'Score Markas B7',
+  description: 'Scoreboard for Markas B7',
 };
 
 export default function RootLayout({
@@ -31,7 +31,6 @@ export default function RootLayout({
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
-          enableSystem
           disableTransitionOnChange
         >
           {children}

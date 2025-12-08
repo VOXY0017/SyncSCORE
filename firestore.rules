@@ -49,29 +49,17 @@ service cloud.firestore {
 
     /**
      * @description
-     * Allows public read access for a global scoreboard but disables all client-side writes.
-     * Writes are disabled as a security precaution because the 'Player' data model is missing
-     * an ownership field (e.g., 'ownerId'), making it impossible to verify who is allowed to
-     * create, update, or delete a player's score.
+     * Allows public read access for a global scoreboard and allows authenticated users to write.
      *
      * @path /players/{playerId}
      *
-     * @allow (get) Any user, signed in or not, can read a player's score document.
-     * @deny (create) A signed-in user's attempt to create a new player document will be rejected.
+     * @allow (get, list) Any user, signed in or not, can read player score data.
+     * @allow (create, update, delete) Any signed-in user can manage player data.
      *
-     * @principle
-     * Enables public data consumption while enforcing a secure-by-default posture for writes
-     * when the data model cannot support owner-based authorization.
      */
     match /players/{playerId} {
-      allow get: if true;
-      allow list: if true;
-
-      // CRITICAL: Cannot implement owner-only writes. The 'Player' entity is missing an 'ownerId' or 'creatorId' field.
-      // All client-side writes are disabled to prevent unauthorized data modification.
-      allow create: if false; // TODO: To enable, add an 'ownerId' to the Player and validate it: request.resource.data.ownerId == request.auth.uid
-      allow update: if false; // TODO: To enable, add an 'ownerId' to the Player and validate it: isOwner(resource.data.ownerId)
-      allow delete: if false; // TODO: To enable, add an 'ownerId' to the Player and validate it: isOwner(resource.data.ownerId)
+      allow read: if true;
+      allow write: if isSignedIn();
     }
   }
 }

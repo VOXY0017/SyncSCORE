@@ -17,12 +17,17 @@
         "score": {
           "type": "number",
           "description": "The player's current score."
+        },
+        "ownerId": {
+            "type": "string",
+            "description": "The UID of the user who created the player."
         }
       },
       "required": [
         "id",
         "name",
-        "score"
+        "score",
+        "ownerId"
       ]
     }
   },

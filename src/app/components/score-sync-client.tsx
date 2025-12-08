@@ -1,8 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useTransition, useLayoutEffect, useRef } from 'react';
+import { useState, useTransition, useLayoutEffect, useRef, useEffect, useMemo } from 'react';
 import type { Player } from '@/lib/types';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { collection, doc, query, orderBy } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,12 +26,18 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Minus, X, Trophy, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const initialPlayers: Player[] = [];
+import { initiateAnonymousSignIn, useAuth } from '@/firebase';
 
 export default function ScoreSyncClient() {
-  const [players, setPlayers] = useState<Player[]>(initialPlayers);
-  const [isLoading, setIsLoading] = React.useState(false);
+  const firestore = useFirestore();
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
+
+  const playersCollectionRef = useMemoFirebase(() => collection(firestore, 'players'), [firestore]);
+  const playersQuery = useMemoFirebase(() => query(playersCollectionRef, orderBy('score', 'desc')), [playersCollectionRef]);
+  
+  const { data: players, isLoading: isPlayersLoading } = useCollection<Player>(playersQuery);
+  const isLoading = isUserLoading || isPlayersLoading;
 
   const [newPlayerName, setNewPlayerName] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -41,7 +50,14 @@ export default function ScoreSyncClient() {
   const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
   const prevPlayerPositions = useRef<Map<string, { top: number; index: number }>>(new Map());
 
+  useEffect(() => {
+    if (!user && !isUserLoading) {
+      initiateAnonymousSignIn(auth);
+    }
+  }, [user, isUserLoading, auth]);
+
   useLayoutEffect(() => {
+    if (!players) return;
     const newPlayerPositions = new Map<string, { top: number; index: number }>();
     
     // 1. Get new positions
@@ -82,25 +98,26 @@ export default function ScoreSyncClient() {
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = newPlayerName.trim();
-    if (!trimmedName) return;
+    if (!trimmedName || !user) return;
 
     startTransition(() => {
-      const newPlayer: Player = {
-        id: new Date().getTime().toString(),
+      const newPlayer: Omit<Player, 'id'> = {
         name: trimmedName,
         score: 0,
+        ownerId: user.uid,
       };
-      setPlayers(prev => [...prev, newPlayer].sort((a, b) => b.score - a.score));
+      addDocumentNonBlocking(playersCollectionRef, newPlayer);
       setNewPlayerName('');
       toast({ title: "Player Added", description: `${trimmedName} has joined the game!`});
     });
   };
 
-  const handleScoreChange = (playerId: string, change: number) => {
+  const handleScoreChange = (playerId: string, currentScore: number, change: number) => {
     if (isNaN(change) || change === 0) return;
     
     startTransition(() => {
-        setPlayers(prev => prev.map(p => p.id === playerId ? {...p, score: p.score + change} : p).sort((a,b) => b.score - a.score));
+        const playerDocRef = doc(firestore, 'players', playerId);
+        updateDocumentNonBlocking(playerDocRef, { score: currentScore + change });
         setPointInputs(prev => ({...prev, [playerId]: ''}));
     });
   };
@@ -113,7 +130,8 @@ export default function ScoreSyncClient() {
     if (!playerToDelete) return;
 
     startTransition(() => {
-      setPlayers(prev => prev.filter(p => p.id !== playerToDelete.id));
+      const playerDocRef = doc(firestore, 'players', playerToDelete.id);
+      deleteDocumentNonBlocking(playerDocRef);
       toast({ title: "Player Removed", description: `${playerToDelete.name} has been removed.`});
       setDeleteAlertOpen(false);
       setPlayerToDelete(null);
@@ -228,7 +246,7 @@ export default function ScoreSyncClient() {
                             placeholder="Add new player and press Enter..."
                             value={newPlayerName}
                             onChange={(e) => setNewPlayerName(e.target.value)}
-                            disabled={isPending}
+                            disabled={isPending || isLoading}
                             className="h-8 text-sm"
                             aria-label="New player name"
                         />
@@ -259,10 +277,10 @@ export default function ScoreSyncClient() {
                                         />
                                     </TableCell>
                                     <TableCell className="text-right w-[80px] space-x-1 p-2">
-                                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
+                                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, player.score, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
                                             <Plus className="h-4 w-4" />
                                         </Button>
-                                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
+                                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, player.score, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
                                             <Minus className="h-4 w-4" />
                                         </Button>
                                     </TableCell>
@@ -271,7 +289,7 @@ export default function ScoreSyncClient() {
                             ) : (
                             <TableRow>
                                 <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                                Add a player to begin.
+                                {isPlayersLoading ? 'Loading players...' : 'Add a player to begin.'}
                                 </TableCell>
                             </TableRow>
                             )}

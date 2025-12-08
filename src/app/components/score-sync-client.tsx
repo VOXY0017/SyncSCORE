@@ -158,7 +158,6 @@ export default function ScoreSyncClient() {
 
   return (
     <div className="min-h-screen w-full bg-custom-background bg-cover bg-center relative flex flex-col">
-       <div className="absolute pointer-events-none inset-0 flex items-center justify-center dark:bg-black bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
       
       <div className="container flex-grow max-w-screen-2xl mx-auto py-6 sm:py-10 grid md:grid-cols-[1fr_380px] gap-4">
         <main>

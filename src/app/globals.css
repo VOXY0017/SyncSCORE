@@ -58,17 +58,17 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   .ranking-change-active {
-    animation: var(--animation-name) var(--animation-duration) ease-in-out;
+    animation: ranking-change 600ms ease-in-out;
   }
 
   @keyframes ranking-change {
       from {
           transform: translateY(var(--delta-y));
-          opacity: 0.5;
+          background-color: hsl(var(--primary) / 0.1);
       }
       to {
           transform: translateY(0);
-          opacity: 1;
+          background-color: transparent;
       }
   }
 }

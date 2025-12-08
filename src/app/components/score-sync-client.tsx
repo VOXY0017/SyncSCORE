@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useLayoutEffect, useRef } from 'react';
 import type { Player } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,47 @@ export default function ScoreSyncClient() {
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
+
+  const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
+  const prevPlayerPositions = useRef<Map<string, { top: number; index: number }>>(new Map());
+
+  useLayoutEffect(() => {
+    const newPlayerPositions = new Map<string, { top: number; index: number }>();
+    
+    // 1. Get new positions
+    players.forEach((player, index) => {
+        const row = rowRefs.current[player.id];
+        if (row) {
+            newPlayerPositions.set(player.id, { top: row.offsetTop, index });
+        }
+    });
+
+    // 2. Animate if position changed
+    newPlayerPositions.forEach((newPos, playerId) => {
+        const prevPos = prevPlayerPositions.current.get(playerId);
+        const row = rowRefs.current[playerId];
+        
+        if (prevPos && row) {
+            const deltaY = prevPos.top - newPos.top;
+            if (deltaY !== 0) {
+                requestAnimationFrame(() => {
+                    row.style.setProperty('--delta-y', `${deltaY}px`);
+                    row.classList.add('ranking-change-active');
+                    
+                    row.addEventListener('animationend', () => {
+                        row.classList.remove('ranking-change-active');
+                        row.style.removeProperty('--delta-y');
+                    }, { once: true });
+                });
+            }
+        }
+    });
+    
+    // 3. Update previous positions for next render
+    prevPlayerPositions.current = newPlayerPositions;
+
+  }, [players]);
+
 
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,7 +190,10 @@ export default function ScoreSyncClient() {
                                     players && players.map((player, index) => {
                                         const gap = index > 0 && players ? players[index - 1].score - player.score : null;
                                         return (
-                                            <TableRow key={player.id}>
+                                            <TableRow 
+                                                key={player.id}
+                                                ref={(el) => (rowRefs.current[player.id] = el)}
+                                            >
                                               <TableCell className={cn("text-center font-medium text-lg", 
                                                 index === 0 ? "text-yellow-400" :
                                                 index === 1 ? "text-slate-400" :

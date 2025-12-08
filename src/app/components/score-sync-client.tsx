@@ -145,6 +145,13 @@ export default function ScoreSyncClient() {
     }
   }
 
+  const handleScrollToManagement = () => {
+    const managementSection = document.getElementById('player-management');
+    if (managementSection) {
+      managementSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   const PlayerListSkeleton = () => (
     <>
         {[...Array(4)].map((_, i) => (
@@ -181,9 +188,14 @@ export default function ScoreSyncClient() {
         <main>
             <Card className="shadow-md h-full">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-3 text-2xl">
-                        <Trophy className="h-7 w-7 text-primary" />
-                        Score Markas B7
+                    <CardTitle className="flex items-center justify-between gap-3 text-2xl">
+                        <div className="flex items-center gap-3">
+                            <Trophy className="h-7 w-7 text-primary" />
+                            Score Markas B7
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={handleScrollToManagement} aria-label="Go to Player Management">
+                            <Users className="h-6 w-6" />
+                        </Button>
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -233,7 +245,7 @@ export default function ScoreSyncClient() {
         </main>
         
         <aside>
-            <Card className="w-full sticky top-10 h-full shadow-md">
+            <Card id="player-management" className="w-full sticky top-10 h-full shadow-md">
                 <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-2 text-lg">
                         <Users />
@@ -319,4 +331,5 @@ export default function ScoreSyncClient() {
     </AlertDialog>
     </div>
   );
-}
+
+    

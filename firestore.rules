@@ -1,98 +1,34 @@
-/**
- * # Firestore Security Rules
- *
- * ## Core Philosophy
- * This ruleset enforces a security model for a real-time player scoreboard application.
- * The core principle is that all player scores are public and readable by anyone,
- * but all write operations (creating, updating, deleting players) are controlled.
- * A specific role-based system is used to grant administrative privileges for data management.
- *
- * ## Data Structure
- * - /players/{playerId}: A top-level collection containing all player documents. This data is public.
- * - /roles_admin/{uid}: A collection where the existence of a document grants a user administrative rights.
- *
- * ## Key Security Decisions
- * - Public Read Access: The `/players` collection is publicly readable to allow for global scoreboards and leaderboards.
- * - Admin-Controlled Writes: All modifications to player data (score updates, deletions) are restricted to users with an 'admin' role.
- * - Open Player Creation: Any authenticated user can create a new player entry. This facilitates easy onboarding in a game-like environment.
- * - Role Management: Only existing administrators can add or remove other administrators, ensuring that control over the system is managed securely.
- *
- * ## Denormalization for Authorization
- * The rules use a lookup-based approach for role checking. The `/roles_admin/{uid}`
- * collection acts as a centralized list of administrators. A rule can perform a fast `exists()`
- * check against this collection to determine if a user has administrative privileges,
- * avoiding the need to store role information on every user or player document.
- *
- * ## Structural Segregation
- * This model uses separate top-level collections for public data (`/players`) and
- * sensitive administrative data (`/roles_admin`), which is a secure and performant pattern.
- */
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ----------------------------------------------------------------------
     // Helper Functions
-    // ----------------------------------------------------------------------
-
-    /**
-     * Checks if the user is authenticated.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * Checks if the requesting user has an admin role by verifying
-     * the existence of a document in the roles_admin collection.
-     */
-    function isAdmin() {
-      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-    }
-
-    /**
-     * Ensures a player's name cannot be changed after creation.
-     */
-    function isPlayerNameImmutable() {
-      return request.resource.data.name == resource.data.name;
-    }
-
-
-    // ----------------------------------------------------------------------
-    // Collection Rules
-    // ----------------------------------------------------------------------
-
-    /**
-     * @description Manages player documents. Data is public to read, but writes are restricted.
-     * @path /players/{playerId}
-     * @allow (get) Any user, signed in or not, can read a player's score.
-     * @allow (create) Any authenticated user can create a new player document.
-     * @allow (update) An authenticated admin can update an existing player's score.
-     * @deny (delete) A non-admin user cannot delete a player document.
-     * @principle Public read access for global data, with writes restricted by a specific role (admin).
-     */
+    // Rules for the 'players' collection
     match /players/{playerId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update: if isAdmin() && resource != null && isPlayerNameImmutable();
-      allow delete: if isAdmin() && resource != null;
+      // Any authenticated user can read the list of players or a single player
+      allow read: if isSignedIn();
+
+      // Any authenticated user can create, update, or delete a player
+      allow write: if isSignedIn();
     }
 
-    /**
-     * @description Manages administrator roles. The existence of a document grants the role.
-     * @path /roles_admin/{uid}
-     * @allow (create) An existing admin can grant admin privileges to another user.
-     * @allow (get) An existing admin can check if another user is an admin.
-     * @deny (list) A non-admin user cannot list all administrators.
-     * @deny (delete) A non-admin user cannot revoke admin privileges.
-     * @principle Secures metadata and access control lists by restricting all access to users who already hold the required role.
-     */
-    match /roles_admin/{uid} {
-      allow get: if isAdmin();
-      allow list: if isAdmin();
-      allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+    // Rules for the 'users' collection
+    match /users/{userId} {
+      // A user can create their own profile
+      allow create: if request.auth.uid == userId;
+
+      // A user can only read their own profile
+      allow read, update: if request.auth.uid == userId;
+      
+      // Users cannot delete their profiles through the app
+      allow delete: if false;
     }
   }
 }
+
+    

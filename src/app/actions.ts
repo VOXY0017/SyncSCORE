@@ -1,10 +1,6 @@
 'use server';
 
-import { collection, query, where, getDocs, doc, increment, Firestore } from 'firebase/firestore';
-import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-
-// Note: Removed initializeFirebase() from the server action file.
-// The firestore instance will now be passed from the client.
+import { collection, query, where, getDocs, doc, increment, addDoc, deleteDoc, updateDoc, Firestore } from 'firebase/firestore';
 
 export async function addPlayer(firestore: Firestore, name: string): Promise<{ success: boolean; error?: string }> {
   const trimmedName = name.trim();
@@ -21,14 +17,14 @@ export async function addPlayer(firestore: Firestore, name: string): Promise<{ s
       return { success: false, error: 'A player with this name already exists.' };
     }
 
-    addDocumentNonBlocking(playersRef, {
+    await addDoc(playersRef, {
       name: trimmedName,
       score: 0,
     });
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error adding player: ", error);
-    return { success: false, error: 'Failed to add player. Check server logs and Firebase setup.' };
+    return { success: false, error: error.message || 'Failed to add player.' };
   }
 }
 
@@ -39,13 +35,13 @@ export async function updatePlayerScore(firestore: Firestore, playerId: string, 
 
   try {
     const playerDocRef = doc(firestore, 'players', playerId);
-    updateDocumentNonBlocking(playerDocRef, {
+    await updateDoc(playerDocRef, {
       score: increment(change),
     });
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error updating score: ", error);
-    return { success: false, error: 'Failed to update score.' };
+    return { success: false, error: error.message || 'Failed to update score.' };
   }
 }
 
@@ -55,10 +51,12 @@ export async function removePlayer(firestore: Firestore, playerId: string): Prom
   }
 
   try {
-    deleteDocumentNonBlocking(doc(firestore, 'players', playerId));
+    await deleteDoc(doc(firestore, 'players', playerId));
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error deleting player: ", error);
-    return { success: false, error: 'Failed to delete player.' };
+    return { success: false, error: error.message || 'Failed to delete player.' };
   }
 }
+
+    

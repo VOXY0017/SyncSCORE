@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useTransition, useCallback, useMemo } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Player } from '@/lib/types';
 import { ThemeToggle } from './theme-toggle';
@@ -25,7 +25,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Minus, Trash2, Trophy, Gamepad2, Users, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth, useCollection, useFirestore, useUser, signOutUser, useMemoFirebase } from '@/firebase';
+import { useAuth, useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { signOut } from 'firebase/auth';
 import { addPlayer, removePlayer, updatePlayerScore } from '../actions';
 import { collection, query, orderBy } from 'firebase/firestore';
 
@@ -82,9 +83,10 @@ export default function ScoreSyncClient() {
 
   const handleScoreChange = (playerId: string, change: number) => {
     if (isNaN(change) || change === 0 || !firestore) return;
+    const scoreChange = Math.abs(change) * (change > 0 ? 1 : -1) as 1 | -1;
     
     startTransition(async () => {
-       await updatePlayerScore(firestore, playerId, change as (1 | -1));
+       await updatePlayerScore(firestore, playerId, scoreChange);
        setPointInputs(prev => ({...prev, [playerId]: ''}));
     });
   };
@@ -117,7 +119,7 @@ export default function ScoreSyncClient() {
 
   const handleSignOut = () => {
     if (auth) {
-      signOutUser(auth);
+      signOut(auth);
       router.push('/login');
     }
   };
@@ -322,3 +324,5 @@ export default function ScoreSyncClient() {
     </div>
   );
 }
+
+    

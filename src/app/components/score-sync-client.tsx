@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, Trash2, Trophy, Users } from 'lucide-react';
+import { Plus, Minus, X, Trophy, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -149,10 +149,10 @@ export default function ScoreSyncClient() {
     <>
     {[...Array(4)].map((_, i) => (
         <TableRow key={i}>
+            <TableCell className="p-2 w-[40px]"><Skeleton className="h-8 w-8" /></TableCell>
             <TableCell><Skeleton className="h-4 w-2/4" /></TableCell>
             <TableCell className="text-right"><Skeleton className="h-9 w-20 ml-auto" /></TableCell>
             <TableCell className="flex justify-end gap-2">
-                <Skeleton className="h-9 w-9" />
                 <Skeleton className="h-9 w-9" />
                 <Skeleton className="h-9 w-9" />
             </TableCell>
@@ -247,34 +247,36 @@ export default function ScoreSyncClient() {
                             ) : players && players.length > 0 ? (
                             players.map((player) => (
                                 <TableRow key={player.id}>
-                                    <TableCell className="font-medium p-2 text-sm">{player.name}</TableCell>
+                                    <TableCell className="p-2 w-[40px]">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </TableCell>
+                                    <TableCell className="font-medium p-2 text-sm w-full">{player.name}</TableCell>
                                     <TableCell className='text-right p-2'>
                                         <Input
                                         type="number"
                                         placeholder="Pts"
-                                        className="h-8 text-center ml-auto text-sm"
+                                        className="h-8 text-center ml-auto text-sm w-20"
                                         value={pointInputs[player.id] || ''}
                                         onChange={(e) => handlePointInputChange(player.id, e.target.value)}
                                         disabled={isPending}
                                         aria-label={`Points for ${player.name}`}
                                         />
                                     </TableCell>
-                                    <TableCell className="text-right w-[110px] space-x-1 p-2">
+                                    <TableCell className="text-right w-[80px] space-x-1 p-2">
                                         <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
                                             <Plus className="h-4 w-4" />
                                         </Button>
                                         <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
                                             <Minus className="h-4 w-4" />
                                         </Button>
-                                        <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
                                     </TableCell>
                                 </TableRow>
                             ))
                             ) : (
                             <TableRow>
-                                <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                                 Add a player to begin.
                                 </TableCell>
                             </TableRow>

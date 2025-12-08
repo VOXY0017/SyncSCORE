@@ -1,9 +1,9 @@
-import ScoreSyncClient from './components/score-sync-client';
+import Leaderboard from './components/leaderboard';
 
 export default function Home() {
   return (
     <main>
-        <ScoreSyncClient />
+      <Leaderboard />
     </main>
   );
 }

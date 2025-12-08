@@ -158,8 +158,8 @@ export default function ScoreSyncClient() {
 
   return (
     <div className="min-h-screen w-full bg-custom-background bg-cover bg-center relative flex flex-col">
-      
-      <div className="container flex-grow max-w-screen-2xl mx-auto py-6 sm:py-10 grid md:grid-cols-[1fr_380px] gap-4">
+      <div className="absolute inset-0 bg-black/60 z-0" />
+      <div className="container flex-grow max-w-screen-2xl mx-auto py-6 sm:py-10 grid md:grid-cols-[1fr_380px] gap-4 relative z-10">
         <main>
             <Card className="shadow-md h-full backdrop-blur-lg">
                 <CardHeader>

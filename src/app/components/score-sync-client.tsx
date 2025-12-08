@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
 import type { Player } from '@/lib/types';
 import { ThemeToggle } from './theme-toggle';
 
@@ -25,31 +24,17 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Minus, Trash2, Trophy, Gamepad2, Users, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth, useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { signOut } from 'firebase/auth';
-import { addPlayer, removePlayer, updatePlayerScore } from '../actions';
-import { collection, query, orderBy } from 'firebase/firestore';
+
+const initialPlayers: Player[] = [
+    { id: '1', name: 'Alice', score: 150 },
+    { id: '2', name: 'Bob', score: 120 },
+    { id: '3', name: 'Charlie', score: 95 },
+    { id: '4', name: 'Diana', score: 80 },
+];
 
 export default function ScoreSyncClient() {
-  const router = useRouter();
-  const auth = useAuth();
-  const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
-
-  const playersQuery = useMemoFirebase(
-    () => {
-      if (!firestore) return null;
-      const q = query(
-        collection(firestore, 'players'),
-        orderBy('score', 'desc'),
-        orderBy('name', 'asc')
-      );
-      return q;
-    },
-    [firestore]
-  );
-  
-  const { data: players, isLoading: isPlayersLoading, error: playersError } = useCollection<Player>(playersQuery);
+  const [players, setPlayers] = useState<Player[]>(initialPlayers);
+  const [isLoading, setIsLoading] = React.useState(false);
 
   const [newPlayerName, setNewPlayerName] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -58,36 +43,30 @@ export default function ScoreSyncClient() {
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
-  
-  React.useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isUserLoading, router]);
 
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = newPlayerName.trim();
-    if (!trimmedName || !firestore) return;
+    if (!trimmedName) return;
 
-    startTransition(async () => {
-      const result = await addPlayer(firestore, trimmedName);
-      if (result.success) {
-        setNewPlayerName('');
-        toast({ title: "Player Added", description: `${trimmedName} has joined the game!`});
-      } else {
-        toast({ variant: "destructive", title: "Error", description: result.error });
-      }
+    startTransition(() => {
+      const newPlayer: Player = {
+        id: new Date().getTime().toString(),
+        name: trimmedName,
+        score: 0,
+      };
+      setPlayers(prev => [...prev, newPlayer].sort((a, b) => b.score - a.score));
+      setNewPlayerName('');
+      toast({ title: "Player Added", description: `${trimmedName} has joined the game!`});
     });
   };
 
   const handleScoreChange = (playerId: string, change: number) => {
-    if (isNaN(change) || change === 0 || !firestore) return;
-    const scoreChange = Math.abs(change) * (change > 0 ? 1 : -1) as 1 | -1;
+    if (isNaN(change) || change === 0) return;
     
-    startTransition(async () => {
-       await updatePlayerScore(firestore, playerId, scoreChange);
-       setPointInputs(prev => ({...prev, [playerId]: ''}));
+    startTransition(() => {
+        setPlayers(prev => prev.map(p => p.id === playerId ? {...p, score: p.score + change} : p).sort((a,b) => b.score - a.score));
+        setPointInputs(prev => ({...prev, [playerId]: ''}));
     });
   };
   
@@ -96,15 +75,11 @@ export default function ScoreSyncClient() {
   }
 
   const confirmDeletePlayer = () => {
-    if (!playerToDelete || !firestore) return;
+    if (!playerToDelete) return;
 
-    startTransition(async () => {
-      const result = await removePlayer(firestore, playerToDelete.id);
-      if(result.success) {
-        toast({ title: "Player Removed", description: `${playerToDelete.name} has been removed.`});
-      } else {
-        toast({ variant: "destructive", title: "Error", description: result.error });
-      }
+    startTransition(() => {
+      setPlayers(prev => prev.filter(p => p.id !== playerToDelete.id));
+      toast({ title: "Player Removed", description: `${playerToDelete.name} has been removed.`});
       setDeleteAlertOpen(false);
       setPlayerToDelete(null);
     });
@@ -118,17 +93,13 @@ export default function ScoreSyncClient() {
   }
 
   const handleSignOut = () => {
-    if (auth) {
-      signOut(auth);
-      router.push('/login');
-    }
+    // Fake sign out
+    toast({ title: "Signed Out", description: "You have been logged out." });
   };
-
-  const isLoading = isUserLoading || isPlayersLoading;
 
   const PlayerListSkeleton = () => (
     <>
-        {[...Array(8)].map((_, i) => (
+        {[...Array(4)].map((_, i) => (
             <TableRow key={i}>
                 <TableCell><Skeleton className="h-5 w-5 rounded-full" /></TableCell>
                 <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
@@ -141,7 +112,7 @@ export default function ScoreSyncClient() {
 
   const ManagementSkeleton = () => (
     <>
-    {[...Array(8)].map((_, i) => (
+    {[...Array(4)].map((_, i) => (
         <TableRow key={i}>
             <TableCell><Skeleton className="h-4 w-2/4" /></TableCell>
             <TableCell className="text-right"><Skeleton className="h-9 w-20 ml-auto" /></TableCell>
@@ -155,17 +126,6 @@ export default function ScoreSyncClient() {
     </>
   );
 
-  if (isUserLoading || !user) {
-    return (
-        <div className="flex items-center justify-center min-h-screen w-full bg-background dark:bg-black">
-            <div className="flex items-center gap-2 text-muted-foreground">
-                <Trophy className="h-6 w-6 animate-spin" />
-                <span>Loading Scoreboard...</span>
-            </div>
-        </div>
-    )
-  }
-  
   return (
     <div className="min-h-screen w-full bg-background dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2] relative flex flex-col">
        <div className="absolute pointer-events-none inset-0 flex items-center justify-center dark:bg-black bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
@@ -324,5 +284,3 @@ export default function ScoreSyncClient() {
     </div>
   );
 }
-
-    

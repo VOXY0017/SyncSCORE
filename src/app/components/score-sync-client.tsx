@@ -124,11 +124,16 @@ export default function ScoreSyncClient() {
   const isLoading = isUserLoading || isPlayersLoading;
 
   const PlayerListSkeleton = () => (
-    <div className="space-y-2 mt-4">
+    <>
         {[...Array(8)].map((_, i) => (
-            <Skeleton key={i} className="h-12 w-full" />
+            <TableRow key={i}>
+                <TableCell><Skeleton className="h-5 w-5 rounded-full" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-1/2 ml-auto" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-1/2 ml-auto" /></TableCell>
+            </TableRow>
         ))}
-    </div>
+    </>
   );
 
   const ManagementSkeleton = () => (
@@ -166,7 +171,7 @@ export default function ScoreSyncClient() {
         <div className="container flex h-14 max-w-screen-2xl items-center justify-between">
           <div className="flex items-center gap-3">
               <Trophy className="h-7 w-7 text-primary" />
-              <h1 className="text-xl font-bold tracking-tight">Score Markas B7</h1>
+              <h1 className="text-xl font-bold tracking-tight">ScoreSync</h1>
           </div>
           <div className='flex items-center gap-2'>
             <Button variant="ghost" size="sm" onClick={handleSignOut}>
@@ -316,4 +321,3 @@ export default function ScoreSyncClient() {
     </div>
   );
 }
-

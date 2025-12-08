@@ -30,34 +30,25 @@ import { addPlayer, removePlayer, updatePlayerScore } from '../actions';
 import { collection, query, orderBy } from 'firebase/firestore';
 
 export default function ScoreSyncClient() {
-  console.log('ScoreSyncClient: Komponen dirender');
   const router = useRouter();
   const auth = useAuth();
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
 
-  console.log('ScoreSyncClient: State Awal', { auth: !!auth, firestore: !!firestore, user, isUserLoading });
-
-
   const playersQuery = useMemoFirebase(
     () => {
-      console.log('ScoreSyncClient: useMemoFirebase untuk playersQuery dijalankan. Firestore:', !!firestore);
       if (!firestore) return null;
       const q = query(
         collection(firestore, 'players'),
         orderBy('score', 'desc'),
         orderBy('name', 'asc')
       );
-      console.log('ScoreSyncClient: Query dibuat:', q);
       return q;
     },
     [firestore]
   );
   
   const { data: players, isLoading: isPlayersLoading, error: playersError } = useCollection<Player>(playersQuery);
-
-  console.log('ScoreSyncClient: Hasil dari useCollection', { players, isPlayersLoading, playersError });
-
 
   const [newPlayerName, setNewPlayerName] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -68,9 +59,7 @@ export default function ScoreSyncClient() {
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
   
   React.useEffect(() => {
-    console.log('ScoreSyncClient: useEffect untuk auth check berjalan', { isUserLoading, user });
     if (!isUserLoading && !user) {
-      console.log('ScoreSyncClient: Mengarahkan ke /login');
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
@@ -78,13 +67,10 @@ export default function ScoreSyncClient() {
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = newPlayerName.trim();
-    console.log('handleAddPlayer: Mencoba menambah pemain', { trimmedName, firestore: !!firestore });
     if (!trimmedName || !firestore) return;
 
     startTransition(async () => {
-      console.log('handleAddPlayer: Transisi dimulai');
       const result = await addPlayer(firestore, trimmedName);
-      console.log('handleAddPlayer: Hasil dari server action', result);
       if (result.success) {
         setNewPlayerName('');
         toast({ title: "Player Added", description: `${trimmedName} has joined the game!`});
@@ -95,13 +81,10 @@ export default function ScoreSyncClient() {
   };
 
   const handleScoreChange = (playerId: string, change: number) => {
-    console.log('handleScoreChange: Mencoba mengubah skor', { playerId, change, firestore: !!firestore });
     if (isNaN(change) || change === 0 || !firestore) return;
     
     startTransition(async () => {
-       console.log('handleScoreChange: Transisi dimulai');
        await updatePlayerScore(firestore, playerId, change as (1 | -1));
-       console.log('handleScoreChange: updatePlayerScore dipanggil');
        setPointInputs(prev => ({...prev, [playerId]: ''}));
     });
   };
@@ -111,13 +94,10 @@ export default function ScoreSyncClient() {
   }
 
   const confirmDeletePlayer = () => {
-    console.log('confirmDeletePlayer: Mencoba menghapus pemain', { playerToDelete, firestore: !!firestore });
     if (!playerToDelete || !firestore) return;
 
     startTransition(async () => {
-      console.log('confirmDeletePlayer: Transisi dimulai');
       const result = await removePlayer(firestore, playerToDelete.id);
-      console.log('confirmDeletePlayer: Hasil dari server action', result);
       if(result.success) {
         toast({ title: "Player Removed", description: `${playerToDelete.name} has been removed.`});
       } else {
@@ -136,7 +116,6 @@ export default function ScoreSyncClient() {
   }
 
   const handleSignOut = () => {
-    console.log('handleSignOut: Mencoba logout', { auth: !!auth });
     if (auth) {
       signOutUser(auth);
       router.push('/login');
@@ -144,8 +123,6 @@ export default function ScoreSyncClient() {
   };
 
   const isLoading = isUserLoading || isPlayersLoading;
-  console.log('ScoreSyncClient: isLoading flag', { isLoading, isUserLoading, isPlayersLoading });
-
 
   const PlayerListSkeleton = () => (
     <>
@@ -177,7 +154,6 @@ export default function ScoreSyncClient() {
   );
 
   if (isUserLoading || !user) {
-    console.log('ScoreSyncClient: Render loading screen atau redirect', { isUserLoading, user: !!user });
     return (
         <div className="flex items-center justify-center min-h-screen w-full bg-background dark:bg-black">
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -188,7 +164,6 @@ export default function ScoreSyncClient() {
     )
   }
   
-  console.log('ScoreSyncClient: Merender UI utama');
   return (
     <div className="min-h-screen w-full bg-background dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2] relative flex flex-col">
        <div className="absolute pointer-events-none inset-0 flex items-center justify-center dark:bg-black bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>

@@ -137,7 +137,7 @@ export default function ScoreSyncClient() {
         </div>
       </header>
 
-      <div className="container flex-grow max-w-screen-2xl mx-auto py-6 sm:py-10 grid md:grid-cols-[1fr_400px] gap-8">
+      <div className="container flex-grow max-w-screen-2xl mx-auto py-6 sm:py-10 grid md:grid-cols-[1fr_400px] gap-4">
         <main>
             <Card className="shadow-lg h-full">
                 <CardHeader>
@@ -204,10 +204,10 @@ export default function ScoreSyncClient() {
                             value={newPlayerName}
                             onChange={(e) => setNewPlayerName(e.target.value)}
                             disabled={isPending}
-                            className="h-9"
+                            className="h-8 text-sm"
                             aria-label="New player name"
                         />
-                         <Button type="submit" size="sm" disabled={!newPlayerName.trim() || isPending}>Add</Button>
+                         <Button type="submit" size="sm" className="h-8" disabled={!newPlayerName.trim() || isPending}>Add</Button>
                     </form>
                     <ScrollArea className="h-[calc(100vh-22rem)]">
                         <Table>
@@ -217,12 +217,12 @@ export default function ScoreSyncClient() {
                             ) : players && players.length > 0 ? (
                             players.map((player) => (
                                 <TableRow key={player.id}>
-                                    <TableCell className="font-medium p-2">{player.name}</TableCell>
-                                    <TableCell className='text-right w-[80px] p-2'>
+                                    <TableCell className="font-medium p-2 text-sm">{player.name}</TableCell>
+                                    <TableCell className='text-right w-[70px] p-2'>
                                         <Input
                                         type="number"
                                         placeholder="Pts"
-                                        className="h-8 text-center ml-auto"
+                                        className="h-8 text-center ml-auto text-sm"
                                         value={pointInputs[player.id] || ''}
                                         onChange={(e) => handlePointInputChange(player.id, e.target.value)}
                                         disabled={isPending}

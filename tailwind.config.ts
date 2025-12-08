@@ -18,6 +18,9 @@ export default {
       },
     },
     extend: {
+      backgroundImage: {
+        'custom-background': "url('/background.jpg')",
+      },
       fontFamily: {
         sans: ['var(--font-sans)', ...fontFamily.sans],
       },

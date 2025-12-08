@@ -1,0 +1,77 @@
+/**
+ * This ruleset enforces a public, read-only security model for a real-time scoreboard application.
+ *
+ * Core Philosophy:
+ * The primary goal is to allow any user (authenticated or anonymous) to view player scores,
+ * supporting features like public leaderboards. However, to maintain data integrity, all direct
+ * client-side writes to player scores are currently disallowed. This creates a secure-by-default
+ * posture, assuming that score updates will be handled by a trusted backend service or Cloud Function.
+ *
+ * Data Structure:
+ * All player data is stored in a single top-level collection: /players/{playerId}.
+ * This flat structure is simple and performant for querying and listing all players.
+ *
+ * Key Security Decisions:
+ * - Public Read Access: The /players collection is publicly readable to anyone to facilitate a global scoreboard.
+ * - Write Operations Disabled: Direct client-side creation, updates, and deletion of player documents are
+ *   explicitly disabled. This is a critical security measure because the 'Player' entity in the data model
+ *   lacks an 'ownerId' or 'creatorId' field, making it impossible to securely authorize which user is
+ *   allowed to modify a specific score.
+ *
+ * Denormalization for Authorization:
+ * The current ruleset is simple and does not require denormalization. However, if write access were to be
+ * enabled, it would be critical to add an ownership field (e.g., 'ownerId') directly to each 'Player' document.
+ * This would allow for a simple, performant rule like 'allow update: if request.auth.uid == resource.data.ownerId;'
+ * without needing costly 'get()' calls to other documents.
+ *
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper Functions
+    // These functions provide reusable logic for common authorization patterns.
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the authenticated user's UID matches the provided userId.
+     * This is the foundation for document ownership rules.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description
+     * Allows public read access for a global scoreboard but disables all client-side writes.
+     * Writes are disabled as a security precaution because the 'Player' data model is missing
+     * an ownership field (e.g., 'ownerId'), making it impossible to verify who is allowed to
+     * create, update, or delete a player's score.
+     *
+     * @path /players/{playerId}
+     *
+     * @allow (get) Any user, signed in or not, can read a player's score document.
+     * @deny (create) A signed-in user's attempt to create a new player document will be rejected.
+     *
+     * @principle
+     * Enables public data consumption while enforcing a secure-by-default posture for writes
+     * when the data model cannot support owner-based authorization.
+     */
+    match /players/{playerId} {
+      allow get: if true;
+      allow list: if true;
+
+      // CRITICAL: Cannot implement owner-only writes. The 'Player' entity is missing an 'ownerId' or 'creatorId' field.
+      // All client-side writes are disabled to prevent unauthorized data modification.
+      allow create: if false; // TODO: To enable, add an 'ownerId' to the Player and validate it: request.resource.data.ownerId == request.auth.uid
+      allow update: if false; // TODO: To enable, add an 'ownerId' to the Player and validate it: isOwner(resource.data.ownerId)
+      allow delete: if false; // TODO: To enable, add an 'ownerId' to the Player and validate it: isOwner(resource.data.ownerId)
+    }
+  }
+}

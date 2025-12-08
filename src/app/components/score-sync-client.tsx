@@ -126,7 +126,7 @@ export default function ScoreSyncClient() {
       
       <div className="container flex-grow max-w-screen-2xl mx-auto py-6 sm:py-10 grid md:grid-cols-[1fr_400px] gap-4">
         <main>
-            <Card className="shadow-lg h-full">
+            <Card className="shadow-md h-full backdrop-blur-lg">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-3 text-2xl">
                         <Trophy className="h-7 w-7 text-primary" />
@@ -177,7 +177,7 @@ export default function ScoreSyncClient() {
         </main>
         
         <aside>
-            <Card className="w-full sticky top-10 h-fit">
+            <Card className="w-full sticky top-10 h-fit backdrop-blur-lg shadow-md">
                 <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-2 text-lg">
                         <Gamepad2 />

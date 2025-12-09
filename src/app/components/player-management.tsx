@@ -122,17 +122,17 @@ export default function PlayerManagement() {
   return (
     <div className="min-h-screen w-full bg-custom-background bg-cover bg-center relative flex flex-col">
       <div className="absolute inset-0 bg-black/60 z-0" />
-      <div className="container flex-grow max-w-screen-lg mx-auto py-6 sm:py-10 relative z-10">
+      <div className="container flex-grow max-w-screen-lg mx-auto py-4 sm:py-8 relative z-10">
         <Card id="player-management" className="w-full shadow-md">
             <CardHeader className="pb-4">
-                <CardTitle className="flex items-center justify-between gap-3 text-2xl">
+                <CardTitle className="flex items-center justify-between gap-3 text-xl sm:text-2xl">
                     <div className="flex items-center gap-3">
-                        <Users className="h-7 w-7 text-primary" />
+                        <Users className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
                         Player Management
                     </div>
                     <Button variant="ghost" size="icon" asChild aria-label="Go to Leaderboard">
                         <Link href="/">
-                            <Trophy className="h-6 w-6" />
+                            <Trophy className="h-5 w-5 sm:h-6 sm:w-6" />
                         </Link>
                     </Button>
                 </CardTitle>
@@ -148,7 +148,7 @@ export default function PlayerManagement() {
                         aria-label="New player name"
                     />
                 </form>
-                <ScrollArea className="h-[calc(100vh-14rem)]">
+                <ScrollArea className="h-[calc(100vh-13rem)] sm:h-[calc(100vh-14rem)]">
                     <Table>
                     <TableBody>
                         {isLoading ? (
@@ -166,7 +166,7 @@ export default function PlayerManagement() {
                                     <Input
                                     type="number"
                                     placeholder="Pts"
-                                    className="h-8 text-center ml-auto text-sm w-20"
+                                    className="h-8 text-center ml-auto text-sm w-16"
                                     value={pointInputs[player.id] || ''}
                                     onChange={(e) => handlePointInputChange(player.id, e.target.value)}
                                     disabled={isPending}

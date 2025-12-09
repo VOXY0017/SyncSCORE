@@ -87,31 +87,31 @@ export default function Leaderboard() {
   return (
     <div className="min-h-screen w-full bg-custom-background bg-cover bg-center relative flex flex-col">
       <div className="absolute inset-0 bg-black/60 z-0" />
-      <div className="container flex-grow max-w-screen-lg mx-auto py-6 sm:py-10 relative z-10">
+      <div className="container flex-grow max-w-screen-lg mx-auto py-4 sm:py-8 relative z-10">
         <main>
             <Card className="shadow-md h-full">
                 <CardHeader>
-                    <CardTitle className="flex items-center justify-between gap-3 text-2xl">
+                    <CardTitle className="flex items-center justify-between gap-3 text-xl sm:text-2xl">
                         <div className="flex items-center gap-3">
-                            <Trophy className="h-7 w-7 text-primary" />
+                            <Trophy className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
                             Score Markas B7
                         </div>
                         <Button variant="ghost" size="icon" asChild aria-label="Go to Player Management">
                             <Link href="/management">
-                                <Users className="h-6 w-6" />
+                                <Users className="h-5 w-5 sm:h-6 sm:w-6" />
                             </Link>
                         </Button>
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <ScrollArea className="h-[calc(100vh-12rem)]">
+                    <ScrollArea className="h-[calc(100vh-11rem)] sm:h-[calc(100vh-12rem)]">
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                <TableHead className="w-[80px] text-center font-bold">Rank</TableHead>
+                                <TableHead className="w-[50px] sm:w-[80px] text-center font-bold">Rank</TableHead>
                                 <TableHead className="font-bold">Player</TableHead>
-                                <TableHead className="w-[120px] text-right font-bold">Score</TableHead>
-                                <TableHead className="w-[120px] text-right font-bold">Gap</TableHead>
+                                <TableHead className="w-[80px] sm:w-[120px] text-right font-bold">Score</TableHead>
+                                <TableHead className="w-[50px] sm:w-[120px] text-right font-bold">Gap</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -123,7 +123,7 @@ export default function Leaderboard() {
                                                 key={player.id}
                                                 ref={(el) => (rowRefs.current[player.id] = el)}
                                             >
-                                              <TableCell className={cn("text-center font-medium text-lg", 
+                                              <TableCell className={cn("text-center font-medium text-base sm:text-lg", 
                                                 index === 0 ? "text-yellow-400" :
                                                 index === 1 ? "text-slate-400" :
                                                 index === 2 ? "text-orange-400" :
@@ -131,11 +131,11 @@ export default function Leaderboard() {
                                               )}>
                                                 {index + 1}
                                               </TableCell>
-                                              <TableCell className="font-medium text-lg">{player.name}</TableCell>
-                                              <TableCell className="text-right font-bold text-xl text-primary tabular-nums">
+                                              <TableCell className="font-medium text-base sm:text-lg">{player.name}</TableCell>
+                                              <TableCell className="text-right font-bold text-lg sm:text-xl text-primary tabular-nums">
                                                 {player.score > 0 ? `+${player.score}` : player.score}
                                               </TableCell>
-                                              <TableCell className="text-right text-sm text-muted-foreground tabular-nums">
+                                              <TableCell className="text-right text-xs sm:text-sm text-muted-foreground tabular-nums">
                                                 {gap !== null ? `-${gap}` : '–'}
                                               </TableCell>
                                             </TableRow>

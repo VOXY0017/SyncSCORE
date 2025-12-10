@@ -1,9 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useTransition, useMemo, useEffect } from 'react';
+import { useState, useTransition, useMemo } from 'react';
 import type { Player } from '@/lib/types';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import {
   addDocumentNonBlocking,
   deleteDocumentNonBlocking,
@@ -30,18 +30,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Minus, X, Trophy, Users, RotateCcw, History } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { initiateAnonymousSignIn, useAuth } from '@/firebase';
 
 export default function PlayerManagement() {
   const firestore = useFirestore();
-  const auth = useAuth();
-  const { user, isUserLoading } = useUser();
 
   const playersCollectionRef = useMemoFirebase(() => collection(firestore, 'players'), [firestore]);
   const playersQuery = useMemoFirebase(() => query(playersCollectionRef, orderBy('name', 'asc')), [playersCollectionRef]);
   
-  const { data: players, isLoading: isPlayersLoading } = useCollection<Player>(playersQuery);
-  const isLoading = isUserLoading || isPlayersLoading;
+  const { data: players, isLoading } = useCollection<Player>(playersQuery);
 
   const [newPlayerName, setNewPlayerName] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -54,22 +50,15 @@ export default function PlayerManagement() {
   
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (!user && !isUserLoading) {
-      initiateAnonymousSignIn(auth);
-    }
-  }, [user, isUserLoading, auth]);
-
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = newPlayerName.trim();
-    if (!trimmedName || !user) return;
+    if (!trimmedName) return;
 
     startTransition(() => {
       const newPlayer: Omit<Player, 'id'> = {
         name: trimmedName,
         score: 0,
-        ownerId: user.uid,
       };
       addDocumentNonBlocking(playersCollectionRef, newPlayer);
       setNewPlayerName('');
@@ -269,7 +258,7 @@ export default function PlayerManagement() {
                         ) : (
                         <TableRow>
                             <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                            {isPlayersLoading ? 'Loading players...' : 'Add a player to begin.'}
+                            {isLoading ? 'Loading players...' : 'Add a player to begin.'}
                             </TableCell>
                         </TableRow>
                         )}

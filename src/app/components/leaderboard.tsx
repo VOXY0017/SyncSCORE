@@ -1,9 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { useLayoutEffect, useRef, useMemo, useEffect } from 'react';
+import { useLayoutEffect, useRef, useMemo } from 'react';
 import type { Player } from '@/lib/types';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import Link from 'next/link';
 
@@ -14,27 +14,17 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Trophy, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-import { initiateAnonymousSignIn, useAuth } from '@/firebase';
 
 export default function Leaderboard() {
   const firestore = useFirestore();
-  const auth = useAuth();
-  const { user, isUserLoading } = useUser();
 
   const playersCollectionRef = useMemoFirebase(() => collection(firestore, 'players'), [firestore]);
   const playersQuery = useMemoFirebase(() => query(playersCollectionRef, orderBy('score', 'desc')), [playersCollectionRef]);
   
-  const { data: players, isLoading: isPlayersLoading } = useCollection<Player>(playersQuery);
-  const isLoading = isUserLoading || isPlayersLoading;
+  const { data: players, isLoading } = useCollection<Player>(playersQuery);
 
   const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
   const prevPlayerPositions = useRef<Map<string, { top: number; index: number }>>(new Map());
-
-  useEffect(() => {
-    if (!user && !isUserLoading) {
-      initiateAnonymousSignIn(auth);
-    }
-  }, [user, isUserLoading, auth]);
 
   useLayoutEffect(() => {
     if (!players) return;

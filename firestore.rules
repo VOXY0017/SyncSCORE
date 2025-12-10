@@ -66,26 +66,27 @@ service cloud.firestore {
 
       /**
        * @description
-       * Allows signed-in users to read score history for an individual player
-       * and allows the system to write new history entries.
+       * Allows anyone to read the score history for a player, but only signed-in
+       * users (which happens anonymously) can write new entries.
        *
        * @path /players/{playerId}/scoreHistory/{historyId}
        */
       match /scoreHistory/{historyId} {
-        allow read, write: if isSignedIn();
+        allow read: if true;
+        allow write: if isSignedIn();
       }
     }
     
     /**
      * @description
-     * This rule allows a collection group query on 'scoreHistory'. It is essential for the
-     * global score history feature on the main page. It allows any signed-in user
-     * to read from any 'scoreHistory' collection across all players.
+     * This rule allows a public collection group query on 'scoreHistory'. It is essential 
+     * for the global score history feature on the main page. It allows any user to read 
+     * from any 'scoreHistory' collection across all players.
      *
      * @path /players/{playerId}/scoreHistory/{historyId}
      */
     match /{path=**}/scoreHistory/{historyId} {
-        allow read: if isSignedIn();
+        allow read: if true;
     }
   }
 }

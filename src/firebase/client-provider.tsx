@@ -18,7 +18,7 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
     <FirebaseProvider
       firebaseApp={firebaseServices.firebaseApp}
       firestore={firebaseServices.firestore}
-      auth={null} // Ensure auth is null as it's not used
+      auth={null} // Ensure auth is always null
     >
       {children}
     </FirebaseProvider>

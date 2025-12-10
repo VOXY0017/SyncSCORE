@@ -1,15 +1,15 @@
 /**
- * This ruleset enforces a public read and write security model.
+ * This ruleset enforces a completely public security model.
  *
  * Core Philosophy:
- * The goal is to allow any user (authenticated or not) to view and modify player scores.
- * This is suitable for a simple, public scoreboard where no sensitive data is stored
- * and where accidental or malicious data modification is not a major concern.
+ * The goal is to allow any user (authenticated or not) to read, write, update,
+ * and delete any data. This is suitable for a simple, public scoreboard where
+ * no sensitive data is stored and where open collaboration is desired.
  *
  * Key Security Decisions:
- * - Public Read/Write Access: The entire 'players' collection and its subcollections
- *   are publicly readable and writable by anyone. This is the simplest possible
- *   configuration but offers no data protection.
+ * - Public Read/Write Access: The entire 'players' collection and all its
+ *   subcollections are publicly readable and writable by anyone. This offers
+ *   no data protection but provides maximum accessibility.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -17,8 +17,9 @@ service cloud.firestore {
 
     /**
      * @description
-     * Allows public read and write access for a global scoreboard.
+     * Allows completely public read and write access for a global scoreboard.
      * Anyone can create, read, update, or delete player data and their score history.
+     * This rule applies to the 'players' collection and all documents within it.
      *
      * @path /players/{playerId}
      */

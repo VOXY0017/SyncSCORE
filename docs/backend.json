@@ -47,7 +47,6 @@
           ]
         }
       }
-    ],
-    "reasoning": "The Firestore structure is designed to support a real-time, multi-player score system (ScoreSync). It prioritizes simplicity, real-time updates, and secure data access.  The design achieves Authorization Independence by storing all Player data within the `players` collection, ensuring that no document relies on data outside of itself for authorization. This eliminates the need for `get()` calls in security rules. The structure supports required QAPs by enabling efficient listing and ordering of players based on score. Segregation is achieved as only 'Player' entities exist in the `players` collection, guaranteeing all documents share the same security posture. Because of the nature of the application requirements, a membership map is unecessary, as each player is independent, and no collaboration occurs. Offline support will be handled at the application level, Firebase automatically handles synchronization when connectivity is restored. Firebase listeners are used to provide Real-Time Ranking Updates. Naming is descriptive and consistent."
+    ]
   }
 }

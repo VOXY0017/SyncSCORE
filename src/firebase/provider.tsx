@@ -47,9 +47,9 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       areServicesAvailable: servicesAvailable,
       firebaseApp: servicesAvailable ? firebaseApp : null,
       firestore: servicesAvailable ? firestore : null,
-      auth: auth || null,
+      auth: null, // Always return null for auth
     };
-  }, [firebaseApp, firestore, auth]);
+  }, [firebaseApp, firestore]);
 
   return (
     <FirebaseContext.Provider value={contextValue}>

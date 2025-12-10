@@ -8,6 +8,8 @@ import {
   CollectionReference,
   DocumentReference,
   SetOptions,
+  increment,
+  FieldValue,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import {FirestorePermissionError} from '@/firebase/errors';
@@ -86,4 +88,16 @@ export function deleteDocumentNonBlocking(docRef: DocumentReference) {
         })
       )
     });
+}
+
+// Re-exporting increment for use with score updates
+export const incrementScore = increment;
+declare global {
+  // eslint-disable-next-line no-unused-vars
+  namespace firebase.firestore {
+    // eslint-disable-next-line no-unused-vars
+    interface FieldValue {
+      increment(n: number): FieldValue;
+    }
+  }
 }

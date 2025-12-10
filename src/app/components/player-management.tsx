@@ -4,8 +4,11 @@ import * as React from 'react';
 import { useState, useTransition, useMemo, useEffect } from 'react';
 import type { Player } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, doc, query, orderBy, writeBatch } from 'firebase/firestore';
+import {
+  addDocumentNonBlocking,
+  deleteDocumentNonBlocking,
+} from '@/firebase/non-blocking-updates';
+import { collection, doc, query, orderBy, writeBatch, serverTimestamp, getDocs } from 'firebase/firestore';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -24,7 +27,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, X, Trophy, Users, RotateCcw } from 'lucide-react';
+import { Plus, Minus, X, Trophy, Users, RotateCcw, History } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { initiateAnonymousSignIn, useAuth } from '@/firebase';
 
@@ -73,13 +76,30 @@ export default function PlayerManagement() {
     });
   };
 
-  const handleScoreChange = (playerId: string, currentScore: number, change: number) => {
-    if (isNaN(change) || change === 0) return;
+  const handleScoreChange = (playerId: string, change: number) => {
+    if (isNaN(change) || change === 0 || !firestore) return;
     
     startTransition(() => {
-        const playerDocRef = doc(firestore, 'players', playerId);
-        updateDocumentNonBlocking(playerDocRef, { score: currentScore + change });
+      const playerDocRef = doc(firestore, 'players', playerId);
+      const scoreHistoryRef = collection(playerDocRef, 'scoreHistory');
+      
+      const batch = writeBatch(firestore);
+
+      // 1. Update total score
+      batch.update(playerDocRef, { score: firebase.firestore.FieldValue.increment(change) });
+
+      // 2. Add to score history
+      batch.set(doc(scoreHistoryRef), {
+        points: change,
+        timestamp: serverTimestamp()
+      });
+      
+      batch.commit().then(() => {
         setPointInputs(prev => ({...prev, [playerId]: ''}));
+      }).catch(err => {
+        console.error(err);
+        toast({ variant: 'destructive', title: "Error", description: "Could not update score."});
+      });
     });
   };
   
@@ -88,11 +108,22 @@ export default function PlayerManagement() {
   }
 
   const confirmDeletePlayer = () => {
-    if (!playerToDelete) return;
+    if (!playerToDelete || !firestore) return;
 
-    startTransition(() => {
+    startTransition(async () => {
+      // First, delete subcollection documents
+      const scoreHistoryRef = collection(firestore, 'players', playerToDelete.id, 'scoreHistory');
+      const scoreHistorySnapshot = await getDocs(scoreHistoryRef);
+      const deleteSubDocsBatch = writeBatch(firestore);
+      scoreHistorySnapshot.forEach(doc => {
+        deleteSubDocsBatch.delete(doc.ref);
+      });
+      await deleteSubDocsBatch.commit();
+      
+      // Then, delete the player document
       const playerDocRef = doc(firestore, 'players', playerToDelete.id);
       deleteDocumentNonBlocking(playerDocRef);
+      
       toast({ title: "Player Removed", description: `${playerToDelete.name} has been removed.`});
       setDeleteAlertOpen(false);
       setPlayerToDelete(null);
@@ -109,14 +140,22 @@ export default function PlayerManagement() {
   const confirmResetScores = () => {
     if (!players || !firestore) return;
     
-    startTransition(() => {
+    startTransition(async () => {
         const batch = writeBatch(firestore);
-        players.forEach(player => {
-            const playerRef = doc(firestore, 'players', player.id);
-            batch.update(playerRef, { score: 0 });
-        });
+        
+        for (const player of players) {
+          const playerRef = doc(firestore, 'players', player.id);
+          batch.update(playerRef, { score: 0 });
+
+          const scoreHistoryRef = collection(playerRef, 'scoreHistory');
+          const scoreHistorySnapshot = await getDocs(scoreHistoryRef);
+          scoreHistorySnapshot.forEach(doc => {
+              batch.delete(doc.ref);
+          });
+        }
+
         batch.commit().then(() => {
-            toast({ title: "Scores Reset", description: "All player scores have been set to 0."});
+            toast({ title: "Scores Reset", description: "All player scores have been set to 0 and histories cleared."});
         }).catch(err => {
             console.error(err);
             toast({ variant: 'destructive', title: "Error", description: "Could not reset scores."});
@@ -130,7 +169,8 @@ export default function PlayerManagement() {
     {[...Array(5)].map((_, i) => (
         <TableRow key={i}>
             <TableCell className="p-2 w-[40px]"><Skeleton className="h-8 w-8" /></TableCell>
-            <TableCell><Skeleton className="h-4 w-2/4" /></TableCell>
+            <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
+            <TableCell><Skeleton className="h-8 w-8" /></TableCell>
             <TableCell className="text-right"><Skeleton className="h-9 w-20 ml-auto" /></TableCell>
             <TableCell className="flex justify-end gap-2">
                 <Skeleton className="h-9 w-9" />
@@ -188,7 +228,18 @@ export default function PlayerManagement() {
                                         <X className="h-4 w-4" />
                                     </Button>
                                 </TableCell>
-                                <TableCell className="font-medium p-2 text-sm w-full">{player.name}</TableCell>
+                                <TableCell className="font-medium p-2 text-sm w-full">
+                                    <Link href={`/history/${player.id}`} className="hover:underline">
+                                        {player.name}
+                                    </Link>
+                                </TableCell>
+                                <TableCell className="p-2 w-[40px]">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" asChild>
+                                      <Link href={`/history/${player.id}`}>
+                                          <History className="h-4 w-4" />
+                                      </Link>
+                                    </Button>
+                                </TableCell>
                                 <TableCell className='text-right p-2'>
                                     <Input
                                     type="number"
@@ -201,10 +252,10 @@ export default function PlayerManagement() {
                                     />
                                 </TableCell>
                                 <TableCell className="text-right w-[80px] space-x-1 p-2">
-                                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, player.score, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
+                                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
                                         <Plus className="h-4 w-4" />
                                     </Button>
-                                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, player.score, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
+                                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
                                         <Minus className="h-4 w-4" />
                                     </Button>
                                 </TableCell>
@@ -212,7 +263,7 @@ export default function PlayerManagement() {
                         ))
                         ) : (
                         <TableRow>
-                            <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                            <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                             {isPlayersLoading ? 'Loading players...' : 'Add a player to begin.'}
                             </TableCell>
                         </TableRow>
@@ -229,7 +280,7 @@ export default function PlayerManagement() {
         <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete <strong>{playerToDelete?.name}</strong> and their score data.
+                This action cannot be undone. This will permanently delete <strong>{playerToDelete?.name}</strong> and all of their score history.
             </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -246,7 +297,7 @@ export default function PlayerManagement() {
         <AlertDialogHeader>
             <AlertDialogTitle>Reset all scores?</AlertDialogTitle>
             <AlertDialogDescription>
-                This action cannot be undone. This will reset the score of every player to 0.
+                This action cannot be undone. This will reset the score of every player to 0 and clear all score histories.
             </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

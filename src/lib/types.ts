@@ -11,4 +11,5 @@ export interface ScoreEntry {
   id: string;
   points: number;
   timestamp: Timestamp;
+  playerName: string;
 }

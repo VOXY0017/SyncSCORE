@@ -7,6 +7,7 @@ import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebas
 import {
   addDocumentNonBlocking,
   deleteDocumentNonBlocking,
+  incrementScore,
 } from '@/firebase/non-blocking-updates';
 import { collection, doc, query, orderBy, writeBatch, serverTimestamp, getDocs } from 'firebase/firestore';
 import Link from 'next/link';
@@ -79,6 +80,9 @@ export default function PlayerManagement() {
   const handleScoreChange = (playerId: string, change: number) => {
     if (isNaN(change) || change === 0 || !firestore) return;
     
+    const player = players?.find(p => p.id === playerId);
+    if (!player) return;
+
     startTransition(() => {
       const playerDocRef = doc(firestore, 'players', playerId);
       const scoreHistoryRef = collection(playerDocRef, 'scoreHistory');
@@ -86,12 +90,13 @@ export default function PlayerManagement() {
       const batch = writeBatch(firestore);
 
       // 1. Update total score
-      batch.update(playerDocRef, { score: firebase.firestore.FieldValue.increment(change) });
+      batch.update(playerDocRef, { score: incrementScore(change) });
 
       // 2. Add to score history
       batch.set(doc(scoreHistoryRef), {
         points: change,
-        timestamp: serverTimestamp()
+        timestamp: serverTimestamp(),
+        playerName: player.name, // Add player name to history
       });
       
       batch.commit().then(() => {

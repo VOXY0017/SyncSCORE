@@ -5,7 +5,7 @@ import { useState, useTransition, useMemo, useEffect } from 'react';
 import type { Player } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, doc, query, orderBy } from 'firebase/firestore';
+import { collection, doc, query, orderBy, writeBatch } from 'firebase/firestore';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, X, Trophy, Users } from 'lucide-react';
+import { Plus, Minus, X, Trophy, Users, RotateCcw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { initiateAnonymousSignIn, useAuth } from '@/firebase';
 
@@ -42,8 +42,11 @@ export default function PlayerManagement() {
   const [newPlayerName, setNewPlayerName] = useState('');
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  
   const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
+
+  const [isResetAlertOpen, setResetAlertOpen] = useState(false);
   
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
 
@@ -103,6 +106,25 @@ export default function PlayerManagement() {
     }
   }
 
+  const confirmResetScores = () => {
+    if (!players || !firestore) return;
+    
+    startTransition(() => {
+        const batch = writeBatch(firestore);
+        players.forEach(player => {
+            const playerRef = doc(firestore, 'players', player.id);
+            batch.update(playerRef, { score: 0 });
+        });
+        batch.commit().then(() => {
+            toast({ title: "Scores Reset", description: "All player scores have been set to 0."});
+        }).catch(err => {
+            console.error(err);
+            toast({ variant: 'destructive', title: "Error", description: "Could not reset scores."});
+        });
+        setResetAlertOpen(false);
+    });
+  };
+
   const ManagementSkeleton = () => (
     <>
     {[...Array(5)].map((_, i) => (
@@ -130,11 +152,16 @@ export default function PlayerManagement() {
                         <Users className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
                         Player Management
                     </div>
-                    <Button variant="ghost" size="icon" asChild aria-label="Go to Leaderboard">
-                        <Link href="/">
-                            <Trophy className="h-5 w-5 sm:h-6 sm:w-6" />
-                        </Link>
-                    </Button>
+                    <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Reset all scores">
+                            <RotateCcw className="h-5 w-5 sm:h-6 sm:w-6" />
+                        </Button>
+                        <Button variant="ghost" size="icon" asChild aria-label="Go to Leaderboard">
+                            <Link href="/">
+                                <Trophy className="h-5 w-5 sm:h-6 sm:w-6" />
+                            </Link>
+                        </Button>
+                    </div>
                 </CardTitle>
             </CardHeader>
             <CardContent>
@@ -213,6 +240,24 @@ export default function PlayerManagement() {
         </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
+    
+    <AlertDialog open={isResetAlertOpen} onOpenChange={setResetAlertOpen}>
+        <AlertDialogContent>
+        <AlertDialogHeader>
+            <AlertDialogTitle>Reset all scores?</AlertDialogTitle>
+            <AlertDialogDescription>
+                This action cannot be undone. This will reset the score of every player to 0.
+            </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmResetScores} disabled={isPending}>
+            {isPending ? "Resetting..." : "Reset Scores"}
+            </AlertDialogAction>
+        </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+
     </div>
   );
 }

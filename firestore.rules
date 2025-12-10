@@ -9,7 +9,7 @@
  *
  * Data Structure:
  * All player data is stored in a single top-level collection: /players/{playerId}.
- * This flat structure is simple and performant for querying and listing all players.
+ * Each player has a sub-collection for their score history: /players/{playerId}/scoreHistory/{historyId}.
  *
  * Key Security Decisions:
  * - Public Read Access: The /players collection is publicly readable to anyone to facilitate a global scoreboard.
@@ -17,6 +17,8 @@
  *   explicitly disabled. This is a critical security measure because the 'Player' entity in the data model
  *   lacks an 'ownerId' or 'creatorId' field, making it impossible to securely authorize which user is
  *   allowed to modify a specific score.
+ * - Collection Group Access: A specific rule is added for the 'scoreHistory' collection group to allow the
+ *   global history feed to function.
  *
  * Denormalization for Authorization:
  * The current ruleset is simple and does not require denormalization. However, if write access were to be
@@ -50,6 +52,7 @@ service cloud.firestore {
     /**
      * @description
      * Allows public read access for a global scoreboard and allows authenticated users to write.
+     * Also allows reading from the scoreHistory sub-collection.
      *
      * @path /players/{playerId}
      *
@@ -60,6 +63,29 @@ service cloud.firestore {
     match /players/{playerId} {
       allow read: if true;
       allow write: if isSignedIn();
+
+      /**
+       * @description
+       * Allows signed-in users to read score history for an individual player
+       * and allows the system to write new history entries.
+       *
+       * @path /players/{playerId}/scoreHistory/{historyId}
+       */
+      match /scoreHistory/{historyId} {
+        allow read, write: if isSignedIn();
+      }
+    }
+    
+    /**
+     * @description
+     * This rule allows a collection group query on 'scoreHistory'. It is essential for the
+     * global score history feature on the main page. It allows any signed-in user
+     * to read from any 'scoreHistory' collection across all players.
+     *
+     * @path /players/{playerId}/scoreHistory/{historyId}
+     */
+    match /{path=**}/scoreHistory/{historyId} {
+        allow read: if isSignedIn();
     }
   }
 }

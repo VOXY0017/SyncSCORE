@@ -48,10 +48,10 @@ export default function GameInfo() {
         setGameInfo({ nextGame: nextGameNumber, direction: 'Kiri', Icon: ArrowLeft });
       }
 
-      // Find player with the lowest score from the previous round
+      // Find player with the highest score from the previous round
       if (completedRounds > 0) {
           const previousRoundIndex = completedRounds - 1;
-          let lowestScorePlayer: FirstPlayerData | null = null;
+          let highestScorePlayer: FirstPlayerData | null = null;
 
           const playerHistories = players.map(player => ({
             player,
@@ -62,12 +62,12 @@ export default function GameInfo() {
           playerHistories.forEach(({ player, history }) => {
               if (history.length > previousRoundIndex) {
                   const previousGameScore = history[previousRoundIndex].points;
-                  if (lowestScorePlayer === null || previousGameScore < lowestScorePlayer.score) {
-                      lowestScorePlayer = { name: player.name, score: previousGameScore };
+                  if (highestScorePlayer === null || previousGameScore > highestScorePlayer.score) {
+                      highestScorePlayer = { name: player.name, score: previousGameScore };
                   }
               }
           });
-          setFirstPlayer(lowestScorePlayer);
+          setFirstPlayer(highestScorePlayer);
       } else {
         setFirstPlayer(null);
       }
@@ -120,10 +120,10 @@ export default function GameInfo() {
                     <div className='flex items-center gap-3 col-span-2'>
                         <UserX className="h-8 w-8 text-destructive" />
                         <div>
-                            <p className="text-muted-foreground">Main Pertama (Skor Game {gameInfo.nextGame - 1} Terendah)</p>
+                            <p className="text-muted-foreground">Main Pertama (Skor Game {gameInfo.nextGame - 1} Tertinggi)</p>
                             <div className="flex items-baseline gap-2">
                                 <p className="font-bold text-lg">{firstPlayer.name}</p>
-                                <p className="font-bold text-sm text-destructive">({firstPlayer.score})</p>
+                                <p className="font-bold text-sm text-destructive">({firstPlayer.score > 0 ? `+${firstPlayer.score}`: firstPlayer.score})</p>
                             </div>
                         </div>
                     </div>

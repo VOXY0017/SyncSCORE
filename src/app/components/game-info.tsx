@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ArrowRight, ArrowLeft, Gamepad2, UserX } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-interface FirstPlayerData {
+interface HighestPlayerData {
     name: string;
     score: number;
 }
@@ -24,7 +24,7 @@ export default function GameInfo() {
     direction: 'Kanan' | 'Kiri';
     Icon: React.FC<any>;
   } | null>(null);
-  const [firstPlayer, setFirstPlayer] = useState<FirstPlayerData | null>(null);
+  const [highestPlayer, setHighestPlayer] = useState<HighestPlayerData | null>(null);
 
   useEffect(() => {
     if (players !== undefined && history !== undefined) {
@@ -51,7 +51,7 @@ export default function GameInfo() {
       // Find player with the highest score from the previous round
       if (completedRounds > 0) {
           const previousRoundIndex = completedRounds - 1;
-          let highestScorePlayer: FirstPlayerData | null = null;
+          let highestScorePlayer: HighestPlayerData | null = null;
 
           const playerHistories = players.map(player => ({
             player,
@@ -67,9 +67,9 @@ export default function GameInfo() {
                   }
               }
           });
-          setFirstPlayer(highestScorePlayer);
+          setHighestPlayer(highestScorePlayer);
       } else {
-        setFirstPlayer(null);
+        setHighestPlayer(null);
       }
 
       setIsLoading(false);
@@ -115,15 +115,15 @@ export default function GameInfo() {
                     </div>
                 </div>
 
-                {firstPlayer && gameInfo.nextGame > 1 && (
+                {highestPlayer && gameInfo.nextGame > 1 && (
                  <>
                     <div className='flex items-center gap-3 col-span-2'>
                         <UserX className="h-8 w-8 text-destructive" />
                         <div>
-                            <p className="text-muted-foreground">Main Pertama (Skor Game {gameInfo.nextGame - 1} Tertinggi)</p>
+                            <p className="text-muted-foreground">Pemain Pertama (Skor Game {gameInfo.nextGame - 1} Tertinggi)</p>
                             <div className="flex items-baseline gap-2">
-                                <p className="font-bold text-lg">{firstPlayer.name}</p>
-                                <p className="font-bold text-sm text-destructive">({firstPlayer.score > 0 ? `+${firstPlayer.score}`: firstPlayer.score})</p>
+                                <p className="font-bold text-lg">{highestPlayer.name}</p>
+                                <p className="font-bold text-sm text-destructive">({highestPlayer.score > 0 ? `+${highestPlayer.score}`: highestPlayer.score})</p>
                             </div>
                         </div>
                     </div>

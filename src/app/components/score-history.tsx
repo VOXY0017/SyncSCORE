@@ -20,11 +20,11 @@ interface ScoreHistoryProps {
 
 // Static data
 const staticPlayers: { [key: string]: Player } = {
-  '1': { id: '1', name: 'Pemain Satu', score: 150 },
-  '2': { id: '2', name: 'Pemain Dua', score: 120 },
-  '3': { id: '3', name: 'Pemain Tiga', score: 95 },
-  '4': { id: '4', name: 'Pemain Empat', score: 80 },
-  '5': { id: '5', name: 'Pemain Lima', score: 50 },
+  '1': { id: '1', name: 'Pemain Satu', score: 15 },
+  '2': { id: '2', name: 'Pemain Dua', score: -5 },
+  '3': { id: '3', name: 'Pemain Tiga', score: 20 },
+  '4': { id: '4', name: 'Pemain Empat', score: -10 },
+  '5': { id: '5', name: 'Pemain Lima', score: 0 },
 };
 
 const staticHistory: { [key: string]: ScoreEntry[] } = {
@@ -54,7 +54,7 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
       const foundPlayer = staticPlayers[playerId] || null;
       const foundHistory = staticHistory[playerId] || [];
       setPlayer(foundPlayer);
-      setScoreHistory(foundHistory.sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime()));
+      setScoreHistory(foundHistory.sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime())); // Sort oldest to newest for game order
       setIsLoading(false);
     }, 1000);
   }, [playerId]);
@@ -63,6 +63,7 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
     <>
       {[...Array(10)].map((_, i) => (
         <TableRow key={i}>
+          <TableCell><Skeleton className="h-5 w-24" /></TableCell>
           <TableCell><Skeleton className="h-5 w-24" /></TableCell>
           <TableCell><Skeleton className="h-5 w-48" /></TableCell>
         </TableRow>
@@ -101,14 +102,18 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-[100px] sm:w-[120px] font-bold">Game</TableHead>
                       <TableHead className="w-[120px] sm:w-[150px] font-bold">Points</TableHead>
                       <TableHead className="font-bold">Timestamp</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading ? <HistorySkeleton /> : (
-                      scoreHistory && scoreHistory.map((entry) => (
+                      scoreHistory && scoreHistory.map((entry, index) => (
                         <TableRow key={entry.id}>
+                          <TableCell className="font-medium text-muted-foreground">
+                            Game {index + 1}
+                          </TableCell>
                           <TableCell className={cn("font-bold text-lg", entry.points > 0 ? "text-green-400" : "text-red-400")}>
                             {entry.points > 0 ? `+${entry.points}` : entry.points}
                           </TableCell>
@@ -120,7 +125,7 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                     )}
                     {!isLoading && scoreHistory?.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={2} className="h-24 text-center text-muted-foreground">
+                        <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
                           {player ? 'No score entries yet for this player.' : 'Player not found.'}
                         </TableCell>
                       </TableRow>

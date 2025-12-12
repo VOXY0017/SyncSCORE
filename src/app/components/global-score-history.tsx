@@ -30,7 +30,7 @@ export default function GlobalScoreHistory() {
       const sortedHistory = [...history].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
       if (players.length > 0) {
-        let allPlayers = [...players].map(p => p.name);
+        const allPlayers = players.map(p => p.name);
         
         const playerGameCounts = players.reduce((acc, player) => {
             acc[player.name] = history.filter(h => h.playerName === player.name).length;
@@ -45,9 +45,9 @@ export default function GlobalScoreHistory() {
 
         // Player rotation logic
         if (nextGameNumber % 2 !== 0) { // Ganjil (Odd) -> A-Z
-          allPlayers.sort((a, b) => a.name.localeCompare(b.name)); 
+          allPlayers.sort((a, b) => a.localeCompare(b)); 
         } else { // Genap (Even) -> Z-A
-          allPlayers.sort((a, b) => b.name.localeCompare(a.name)); 
+          allPlayers.sort((a, b) => b.localeCompare(a)); 
         }
 
         const pivotedScores: Record<string, (number | null)[]> = {};

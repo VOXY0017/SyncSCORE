@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import type { Player, ScoreEntry } from '@/lib/types';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { useSyncedState } from '@/hooks/use-synced-state';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,46 +19,25 @@ interface ScoreHistoryProps {
   playerId: string;
 }
 
-// Static data
-const staticPlayers: { [key: string]: Player } = {
-  '1': { id: '1', name: 'Pemain Satu', score: 15 },
-  '2': { id: '2', name: 'Pemain Dua', score: -5 },
-  '3': { id: '3', name: 'Pemain Tiga', score: 20 },
-  '4': { id: '4', name: 'Pemain Empat', score: -10 },
-  '5': { id: '5', name: 'Pemain Lima', score: 0 },
-};
-
-const staticHistory: { [key: string]: ScoreEntry[] } = {
-    '1': [
-        { id: 'h1', points: 10, timestamp: new Date(Date.now() - 60000 * 2), playerName: 'Pemain Satu' },
-        { id: 'h4', points: 5, timestamp: new Date(Date.now() - 60000 * 12), playerName: 'Pemain Satu' },
-    ],
-    '2': [
-        { id: 'h2', points: -5, timestamp: new Date(Date.now() - 60000 * 5), playerName: 'Pemain Dua' },
-    ],
-    '3': [
-        { id: 'h3', points: 20, timestamp: new Date(Date.now() - 60000 * 10), playerName: 'Pemain Tiga' },
-    ],
-    '4': [
-        { id: 'h5', points: -10, timestamp: new Date(Date.now() - 60000 * 15), playerName: 'Pemain Empat' },
-    ]
-};
-
 export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
+  const [players] = useSyncedState<Player[]>('players', []);
+  const [history] = useSyncedState<ScoreEntry[]>('scoreHistory', []);
+
   const [player, setPlayer] = useState<Player | null>(null);
-  const [scoreHistory, setScoreHistory] = useState<ScoreEntry[]>([]);
+  const [playerHistory, setPlayerHistory] = useState<ScoreEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching data
-    setTimeout(() => {
-      const foundPlayer = staticPlayers[playerId] || null;
-      const foundHistory = staticHistory[playerId] || [];
+    if (players && history) {
+      const foundPlayer = players.find(p => p.id === playerId) || null;
       setPlayer(foundPlayer);
-      setScoreHistory(foundHistory.sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime())); // Sort oldest to newest for game order
+      if (foundPlayer) {
+        const foundHistory = history.filter(h => h.playerName === foundPlayer.name);
+        setPlayerHistory(foundHistory.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+      }
       setIsLoading(false);
-    }, 1000);
-  }, [playerId]);
+    }
+  }, [playerId, players, history]);
 
   const HistorySkeleton = () => (
     <>
@@ -109,21 +89,21 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                   </TableHeader>
                   <TableBody>
                     {isLoading ? <HistorySkeleton /> : (
-                      scoreHistory && scoreHistory.map((entry, index) => (
+                      playerHistory && playerHistory.length > 0 ? playerHistory.map((entry, index) => (
                         <TableRow key={entry.id}>
                           <TableCell className="font-medium text-muted-foreground">
-                            Game {index + 1}
+                            Game {playerHistory.length - index}
                           </TableCell>
                           <TableCell className={cn("font-bold text-lg", entry.points > 0 ? "text-green-400" : "text-red-400")}>
                             {entry.points > 0 ? `+${entry.points}` : entry.points}
                           </TableCell>
                           <TableCell className="text-muted-foreground text-sm">
-                            {entry.timestamp ? format(entry.timestamp, 'Pp') : '...'}
+                            {entry.timestamp ? format(new Date(entry.timestamp), 'Pp') : '...'}
                           </TableCell>
                         </TableRow>
-                      ))
+                      )) : null
                     )}
-                    {!isLoading && scoreHistory?.length === 0 && (
+                    {!isLoading && (!playerHistory || playerHistory.length === 0) && (
                       <TableRow>
                         <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
                           {player ? 'No score entries yet for this player.' : 'Player not found.'}

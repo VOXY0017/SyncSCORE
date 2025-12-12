@@ -9,16 +9,8 @@ import { History } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useSyncedState } from '@/hooks/use-synced-state';
 
-// Static data
-const staticHistory: ScoreEntry[] = [
-  { id: 'h1', points: 10, timestamp: new Date(Date.now() - 60000 * 15), playerName: 'Pemain Satu' },
-  { id: 'h2', points: -5, timestamp: new Date(Date.now() - 60000 * 14), playerName: 'Pemain Dua' },
-  { id: 'h3', points: 20, timestamp: new Date(Date.now() - 60000 * 10), playerName: 'Pemain Tiga' },
-  { id: 'h4', points: 5, timestamp: new Date(Date.now() - 60000 * 8), playerName: 'Pemain Satu' },
-  { id: 'h5', points: -10, timestamp: new Date(Date.now() - 60000 * 5), playerName: 'Pemain Empat' },
-  { id: 'h6', points: 15, timestamp: new Date(Date.now() - 60000 * 2), playerName: 'Pemain Dua' },
-];
 
 interface PivotData {
   players: string[];
@@ -27,14 +19,15 @@ interface PivotData {
 }
 
 export default function GlobalScoreHistory() {
+  const [history] = useSyncedState<ScoreEntry[]>('scoreHistory', []);
   const [pivotData, setPivotData] = useState<PivotData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching data
-    setTimeout(() => {
+      if (!history) return;
+
       // Sort history by timestamp to determine game order
-      const sortedHistory = [...staticHistory].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      const sortedHistory = [...history].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
       if (sortedHistory.length > 0) {
         const playerNames = [...new Set(sortedHistory.map(entry => entry.playerName))].sort();
@@ -45,24 +38,48 @@ export default function GlobalScoreHistory() {
           scores[player] = Array(gamesCount).fill(null);
         });
 
-        sortedHistory.forEach((entry, index) => {
-          if (scores[entry.playerName]) {
-            scores[entry.playerName][index] = entry.points;
-          }
+        const playerGameCount: Record<string, number> = {};
+
+        sortedHistory.forEach((entry, _) => {
+            const player = entry.playerName;
+            // Find the first empty slot for this player
+            const gameIndex = scores[player].findIndex(s => s === null);
+            if (scores[player] && gameIndex !== -1) {
+                scores[player][gameIndex] = entry.points;
+            }
+        });
+        
+        // This transformation logic is a bit complex. Let's pivot the data correctly.
+        const allPlayers = [...new Set(history.map(h => h.playerName))].sort();
+        const gameTimestamps = [...new Set(history.map(h => h.timestamp))].sort((a,b) => new Date(a).getTime() - new Date(b).getTime());
+        const numGames = gameTimestamps.length;
+
+        const pivotedScores: Record<string, (number | null)[]> = {};
+        allPlayers.forEach(p => {
+            pivotedScores[p] = Array(numGames).fill(null);
         });
 
-        setPivotData({
-          players: playerNames,
-          games: gamesCount,
-          scores: scores,
+        history.forEach(entry => {
+            const playerIndex = allPlayers.indexOf(entry.playerName);
+            const gameIndex = gameTimestamps.indexOf(entry.timestamp);
+            if(playerIndex > -1 && gameIndex > -1) {
+                pivotedScores[entry.playerName][gameIndex] = entry.points;
+            }
         });
+
+
+        setPivotData({
+          players: allPlayers,
+          games: numGames,
+          scores: pivotedScores,
+        });
+
       } else {
         setPivotData({ players: [], games: 0, scores: {} });
       }
 
       setIsLoading(false);
-    }, 1000);
-  }, []);
+  }, [history]);
 
   const HistorySkeleton = () => (
     <>
@@ -139,7 +156,7 @@ export default function GlobalScoreHistory() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={1} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
                     Belum ada riwayat skor.
                   </TableCell>
                 </TableRow>

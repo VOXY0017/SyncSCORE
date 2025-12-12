@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import type { Player } from '@/lib/types';
 import Link from 'next/link';
+import { useSyncedState } from '@/hooks/use-synced-state';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,27 +14,18 @@ import { Trophy, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Static data
-const staticPlayers: Player[] = [
-  { id: '1', name: 'Pemain Satu', score: 150 },
-  { id: '2', name: 'Pemain Dua', score: 120 },
-  { id: '3', name: 'Pemain Tiga', score: 95 },
-  { id: '4', name: 'Pemain Empat', score: 80 },
-  { id: '5', name: 'Pemain Lima', score: 50 },
-];
-
 export default function Leaderboard() {
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [players] = useSyncedState<Player[]>('players', []);
+  const [sortedPlayers, setSortedPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching data
-    setTimeout(() => {
-      const sortedPlayers = [...staticPlayers].sort((a, b) => b.score - a.score);
-      setPlayers(sortedPlayers);
-      setIsLoading(false);
-    }, 1000);
-  }, []);
+    if (players !== undefined) {
+        const sorted = [...players].sort((a, b) => b.score - a.score);
+        setSortedPlayers(sorted);
+        setIsLoading(false);
+    }
+  }, [players]);
 
   const PlayerListSkeleton = () => (
     <>
@@ -76,8 +68,8 @@ export default function Leaderboard() {
                     </TableHeader>
                     <TableBody>
                         {isLoading ? <PlayerListSkeleton /> : (
-                            players && players.map((player, index) => {
-                                const gap = index > 0 && players ? players[index - 1].score - player.score : null;
+                            sortedPlayers && sortedPlayers.map((player, index) => {
+                                const gap = index > 0 && sortedPlayers ? sortedPlayers[index - 1].score - player.score : null;
                                 return (
                                     <TableRow 
                                         key={player.id}
@@ -101,7 +93,7 @@ export default function Leaderboard() {
                                 );
                             })
                         )}
-                         {!isLoading && players?.length === 0 && (
+                         {!isLoading && (!sortedPlayers || sortedPlayers.length === 0) && (
                             <TableRow>
                                 <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                                     No players yet. Go to Player Management to add one.

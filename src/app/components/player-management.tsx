@@ -2,8 +2,9 @@
 
 import * as React from 'react';
 import { useState, useTransition, useEffect } from 'react';
-import type { Player } from '@/lib/types';
+import type { Player, ScoreEntry } from '@/lib/types';
 import Link from 'next/link';
+import { useSyncedState } from '@/hooks/use-synced-state';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,17 +25,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Minus, X, Trophy, Users, RotateCcw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Static data
-const staticPlayers: Player[] = [
-  { id: '1', name: 'Pemain Satu', score: 150 },
-  { id: '2', name: 'Pemain Dua', score: 120 },
-  { id: '3', name: 'Pemain Tiga', score: 95 },
-  { id: '4', name: 'Pemain Empat', score: 80 },
-  { id: '5', name: 'Pemain Lima', score: 50 },
-];
 
 export default function PlayerManagement() {
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [players, setPlayers] = useSyncedState<Player[]>('players', []);
+  const [history, setHistory] = useSyncedState<ScoreEntry[]>('scoreHistory', []);
+  const [sortedPlayers, setSortedPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [newPlayerName, setNewPlayerName] = useState('');
@@ -49,39 +44,56 @@ export default function PlayerManagement() {
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // Simulate fetching data
-    setTimeout(() => {
-      setPlayers([...staticPlayers].sort((a, b) => a.name.localeCompare(b.name)));
-      setIsLoading(false);
-    }, 1000);
-  }, []);
+    if (players) {
+        setSortedPlayers([...players].sort((a, b) => a.name.localeCompare(b.name)));
+        setIsLoading(false);
+    }
+  }, [players]);
 
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = newPlayerName.trim();
-    if (!trimmedName) return;
+    if (!trimmedName || !players) return;
+    
+    // check for duplicate name
+    if (players.find(p => p.name.toLowerCase() === trimmedName.toLowerCase())) {
+        toast({ title: "Player Exists", description: "A player with that name already exists.", variant: "destructive" });
+        return;
+    }
 
     startTransition(() => {
       const newPlayer: Player = {
-        id: (players.length + 1).toString(),
+        id: crypto.randomUUID(),
         name: trimmedName,
         score: 0,
       };
-      setPlayers(prev => [...prev, newPlayer].sort((a,b) => a.name.localeCompare(b.name)));
+      setPlayers(prev => [...(prev || []), newPlayer]);
       setNewPlayerName('');
       toast({ title: "Player Added", description: `${trimmedName} has joined the game!`});
     });
   };
 
   const handleScoreChange = (playerId: string, change: number) => {
-    if (isNaN(change) || change === 0) return;
+    if (isNaN(change) || change === 0 || !players) return;
     
+    const player = players.find(p => p.id === playerId);
+    if (!player) return;
+
     startTransition(() => {
         setPlayers(prev => 
-            prev.map(p => p.id === playerId ? {...p, score: p.score + change} : p)
+            (prev || []).map(p => p.id === playerId ? {...p, score: p.score + change} : p)
         );
+        
+        const newHistoryEntry: ScoreEntry = {
+            id: crypto.randomUUID(),
+            points: change,
+            timestamp: new Date(),
+            playerName: player.name,
+        }
+        setHistory(prev => [...(prev || []), newHistoryEntry]);
+
         setPointInputs(prev => ({...prev, [playerId]: ''}));
-        toast({ title: "Score Updated", description: `Score for player has been updated by ${change}.`});
+        toast({ title: "Score Updated", description: `Score for ${player.name} has been updated by ${change}.`});
     });
   };
   
@@ -93,7 +105,8 @@ export default function PlayerManagement() {
     if (!playerToDelete) return;
 
     startTransition(() => {
-      setPlayers(prev => prev.filter(p => p.id !== playerToDelete.id));
+      setPlayers(prev => (prev || []).filter(p => p.id !== playerToDelete.id));
+      setHistory(prev => (prev || []).filter(h => h.playerName !== playerToDelete.name));
       toast({ title: "Player Removed", description: `${playerToDelete.name} has been removed.`});
       setDeleteAlertOpen(false);
       setPlayerToDelete(null);
@@ -109,8 +122,9 @@ export default function PlayerManagement() {
 
   const confirmResetScores = () => {
     startTransition(() => {
-        setPlayers(prev => prev.map(p => ({...p, score: 0})));
-        toast({ title: "Scores Reset", description: "All player scores have been set to 0."});
+        setPlayers(prev => (prev || []).map(p => ({...p, score: 0})));
+        setHistory([]);
+        toast({ title: "Scores Reset", description: "All player scores have been set to 0 and history cleared."});
         setResetAlertOpen(false);
     });
   };
@@ -170,8 +184,8 @@ export default function PlayerManagement() {
                     <TableBody>
                         {isLoading ? (
                         <ManagementSkeleton />
-                        ) : players && players.length > 0 ? (
-                        players.map((player) => (
+                        ) : sortedPlayers && sortedPlayers.length > 0 ? (
+                        sortedPlayers.map((player) => (
                             <TableRow key={player.id}>
                                 <TableCell className="p-2 w-[40px]">
                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>

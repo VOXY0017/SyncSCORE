@@ -39,7 +39,7 @@ export default function GlobalScoreHistory() {
         
         const completedRounds = players.length > 0 ? Math.min(...Object.values(playerGameCounts)) : 0;
         const maxGames = Math.max(0, ...Object.values(playerGameCounts));
-        const totalGamesToDisplay = maxGames + 1;
+        const totalGamesToDisplay = maxGames > completedRounds ? maxGames : completedRounds + 1;
         const nextGameNumber = completedRounds + 1;
 
 
@@ -102,7 +102,7 @@ export default function GlobalScoreHistory() {
       <CardHeader>
         <CardTitle className="flex items-center gap-3 text-xl sm:text-2xl">
           <History className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
-          Skor per Game
+          Riwayat Game
         </CardTitle>
       </CardHeader>
       <CardContent>

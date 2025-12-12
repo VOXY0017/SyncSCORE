@@ -2,7 +2,6 @@ import Leaderboard from './components/leaderboard';
 import GlobalScoreHistory from './components/global-score-history';
 import GameInfo from './components/game-info';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
 
 export default function Home() {
   return (
@@ -13,8 +12,8 @@ export default function Home() {
           <GameInfo />
           <Tabs defaultValue="total" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="total">Skor Total</TabsTrigger>
-              <TabsTrigger value="history">Skor per Game</TabsTrigger>
+              <TabsTrigger value="total">Leaderboard</TabsTrigger>
+              <TabsTrigger value="history">Riwayat Game</TabsTrigger>
             </TabsList>
             <TabsContent value="total" className="mt-4">
                <Leaderboard />

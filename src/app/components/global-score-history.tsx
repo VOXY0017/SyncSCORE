@@ -29,7 +29,7 @@ export default function GlobalScoreHistory() {
       const sortedHistory = [...history].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
       if (sortedHistory.length > 0) {
-        const allPlayers = [...new Set(history.map(h => h.playerName))].sort();
+        const allPlayers = [...new Set(history.map(h => h.playerName))];
         
         const playerGameCounts = allPlayers.reduce((acc, player) => {
             acc[player] = history.filter(h => h.playerName === player).length;
@@ -37,13 +37,21 @@ export default function GlobalScoreHistory() {
         }, {} as Record<string, number>);
 
         const maxGames = Math.max(0, ...Object.values(playerGameCounts));
+        const totalGamesToDisplay = maxGames + 1;
+
+        // Player rotation logic
+        if (maxGames % 2 === 0) { // Genap (Even)
+          allPlayers.sort((a, b) => b.localeCompare(a)); // Z-A
+        } else { // Ganjil (Odd)
+          allPlayers.sort((a, b) => a.localeCompare(b)); // A-Z
+        }
 
         const pivotedScores: Record<string, (number | null)[]> = {};
         allPlayers.forEach(player => {
-            pivotedScores[player] = Array(maxGames).fill(null);
+            pivotedScores[player] = Array(totalGamesToDisplay).fill(null);
             const playerHistory = sortedHistory.filter(h => h.playerName === player);
             playerHistory.forEach((entry, index) => {
-                if (index < maxGames) {
+                if (index < totalGamesToDisplay) {
                     pivotedScores[player][index] = entry.points;
                 }
             });
@@ -51,12 +59,12 @@ export default function GlobalScoreHistory() {
 
         setPivotData({
           players: allPlayers,
-          games: maxGames,
+          games: totalGamesToDisplay,
           scores: pivotedScores,
         });
 
       } else {
-        setPivotData({ players: [], games: 0, scores: {} });
+        setPivotData({ players: [], games: 1, scores: {} });
       }
 
       setIsLoading(false);

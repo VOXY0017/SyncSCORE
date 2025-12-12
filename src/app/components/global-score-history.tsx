@@ -1,12 +1,12 @@
+
 'use client';
 
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import type { Player, ScoreEntry } from '@/lib/types';
 import { useData } from '@/app/context/data-context';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { History } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -99,15 +99,9 @@ export default function GlobalScoreHistory() {
   );
 
   return (
-    <Card className="shadow-md h-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-3 text-xl sm:text-2xl">
-          <History className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
-          Riwayat Game
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[calc(100vh-14rem)] sm:h-[calc(100vh-15rem)] w-full whitespace-nowrap">
+    <Card className="shadow-none border-0 rounded-t-none">
+      <CardContent className="p-0">
+        <ScrollArea className="h-[calc(100vh-17.5rem)] sm:h-[calc(100vh-18.5rem)] w-full whitespace-nowrap">
           <Table>
             <TableHeader>
               <TableRow>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -8,7 +9,7 @@ import { useData } from '@/app/context/data-context';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import {
   AlertDialog,
@@ -22,7 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, X, Users, RotateCcw } from 'lucide-react';
+import { Plus, Minus, X, RotateCcw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
@@ -146,22 +147,16 @@ export default function PlayerManagement() {
 
   return (
     <>
-        <Card id="player-management" className="w-full shadow-md h-full">
-            <CardHeader className="pb-4">
-                <CardTitle className="flex items-center justify-between gap-3 text-xl sm:text-2xl">
-                    <div className="flex items-center gap-3">
-                        <Users className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
-                        Manajemen Pemain
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Reset all scores">
-                            <RotateCcw className="h-5 w-5 sm:h-6 sm:w-6" />
-                        </Button>
-                    </div>
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <form onSubmit={handleAddPlayer} className="flex w-full items-center gap-2 mb-4">
+        <Card id="player-management" className="w-full shadow-none border-0 rounded-t-none">
+            <CardContent className="p-2 sm:p-6 space-y-4">
+                 <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">Add or manage players and their scores.</p>
+                    <Button variant="outline" size="sm" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Reset all scores">
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Reset All
+                    </Button>
+                </div>
+                <form onSubmit={handleAddPlayer} className="flex w-full items-center gap-2">
                     <Input
                         placeholder="Add new player and press Enter..."
                         value={newPlayerName}
@@ -171,7 +166,7 @@ export default function PlayerManagement() {
                         aria-label="New player name"
                     />
                 </form>
-                <ScrollArea className="h-[calc(100vh-22rem)] sm:h-[calc(100vh-23rem)]">
+                <ScrollArea className="h-[calc(100vh-24.5rem)] sm:h-[calc(100vh-25.5rem)]">
                     <Table>
                     <TableBody>
                         {isLoading ? (

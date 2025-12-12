@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -5,11 +6,9 @@ import { useState, useEffect } from 'react';
 import type { Player } from '@/lib/types';
 import { useData } from '@/app/context/data-context';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Trophy, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -61,29 +60,11 @@ export default function Leaderboard() {
         ))}
     </>
   );
-  
-  const handleSwitchTab = () => {
-    const managementTab = document.querySelector('[data-radix-collection-item][value="management"]');
-    if (managementTab instanceof HTMLElement) {
-      managementTab.click();
-    }
-  };
 
   return (
-    <Card className="shadow-md h-full">
-        <CardHeader>
-            <CardTitle className="flex items-center justify-between gap-3 text-xl sm:text-2xl">
-                <div className="flex items-center gap-3">
-                    <Trophy className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
-                    Leaderboard
-                </div>
-                <Button variant="ghost" size="icon" onClick={handleSwitchTab} aria-label="Go to Player Management">
-                    <Users className="h-5 w-5 sm:h-6 sm:w-6" />
-                </Button>
-            </CardTitle>
-        </CardHeader>
-        <CardContent>
-            <ScrollArea className="h-[calc(100vh-22rem)] sm:h-[calc(100vh-23rem)]">
+    <Card className="shadow-none border-0 rounded-t-none">
+        <CardContent className="p-2 sm:p-6">
+            <ScrollArea className="h-[calc(100vh-17.5rem)] sm:h-[calc(100vh-18.5rem)]">
                 <Table>
                     <TableHeader>
                         <TableRow>

@@ -149,8 +149,8 @@ export default function PlayerManagement() {
     <>
         <Card id="player-management" className="w-full shadow-none border-0 rounded-t-none">
             <CardContent className="p-2 sm:p-6 space-y-4">
-                <div className="flex w-full items-center gap-2">
-                    <form onSubmit={handleAddPlayer} className="flex-grow">
+                <div className="flex w-full flex-col sm:flex-row items-center gap-2">
+                    <form onSubmit={handleAddPlayer} className="flex-grow w-full">
                         <Input
                             placeholder="Add new player and press Enter..."
                             value={newPlayerName}
@@ -160,7 +160,7 @@ export default function PlayerManagement() {
                             aria-label="New player name"
                         />
                     </form>
-                    <Button variant="outline" size="sm" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Reset all scores">
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Reset all scores">
                         <RotateCcw className="h-4 w-4 md:mr-2" />
                         <span className="hidden md:inline">Reset All</span>
                     </Button>
@@ -253,5 +253,3 @@ export default function PlayerManagement() {
     </>
   );
 }
-
-    

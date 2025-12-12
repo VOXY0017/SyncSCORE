@@ -7,10 +7,10 @@ import type { Player, ScoreEntry } from '@/lib/types';
 import { useSyncedState } from '@/hooks/use-synced-state';
 
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowRight, ArrowLeft, Gamepad2, UserX } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Trophy, Crown, Medal } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-interface HighestPlayerData {
+interface TopPlayerData {
     name: string;
     score: number;
 }
@@ -20,11 +20,10 @@ export default function GameInfo() {
   const [history] = useSyncedState<ScoreEntry[]>('scoreHistory', []);
   const [isLoading, setIsLoading] = useState(true);
   const [gameInfo, setGameInfo] = useState<{
-    nextGame: number;
     direction: 'Kanan' | 'Kiri';
     Icon: React.FC<any>;
   } | null>(null);
-  const [highestPlayer, setHighestPlayer] = useState<HighestPlayerData | null>(null);
+  const [topPlayers, setTopPlayers] = useState<TopPlayerData[]>([]);
 
   useEffect(() => {
     if (players !== undefined && history !== undefined) {
@@ -43,15 +42,15 @@ export default function GameInfo() {
       const nextGameNumber = completedRounds + 1;
       
       if (nextGameNumber % 2 !== 0) { // Ganjil (Odd) -> Kanan -> A-Z
-        setGameInfo({ nextGame: nextGameNumber, direction: 'Kanan', Icon: ArrowRight });
+        setGameInfo({ direction: 'Kanan', Icon: ArrowRight });
       } else { // Genap (Even) -> Kiri -> Z-A
-        setGameInfo({ nextGame: nextGameNumber, direction: 'Kiri', Icon: ArrowLeft });
+        setGameInfo({ direction: 'Kiri', Icon: ArrowLeft });
       }
 
-      // Find player with the highest score from the previous round
+      // Find top 3 players with the highest score from the previous round
       if (completedRounds > 0) {
           const previousRoundIndex = completedRounds - 1;
-          let highestScorePlayer: HighestPlayerData | null = null;
+          const scoresFromPreviousRound: TopPlayerData[] = [];
 
           const playerHistories = players.map(player => ({
             player,
@@ -62,14 +61,14 @@ export default function GameInfo() {
           playerHistories.forEach(({ player, history }) => {
               if (history.length > previousRoundIndex) {
                   const previousGameScore = history[previousRoundIndex].points;
-                  if (highestScorePlayer === null || previousGameScore > highestScorePlayer.score) {
-                      highestScorePlayer = { name: player.name, score: previousGameScore };
-                  }
+                  scoresFromPreviousRound.push({ name: player.name, score: previousGameScore });
               }
           });
-          setHighestPlayer(highestScorePlayer);
+
+          scoresFromPreviousRound.sort((a, b) => b.score - a.score);
+          setTopPlayers(scoresFromPreviousRound.slice(0, 3));
       } else {
-        setHighestPlayer(null);
+        setTopPlayers([]);
       }
 
       setIsLoading(false);
@@ -89,37 +88,60 @@ export default function GameInfo() {
       </div>
   );
 
+  const renderTopPlayer = (player: TopPlayerData, rank: number) => {
+    let Icon, iconColor, title;
+    switch (rank) {
+      case 1:
+        Icon = Trophy;
+        iconColor = 'text-yellow-400';
+        title = 'Pemain Pertama';
+        break;
+      case 2:
+        Icon = Crown;
+        iconColor = 'text-slate-400';
+        title = 'Pemain Kedua';
+        break;
+      case 3:
+        Icon = Medal;
+        iconColor = 'text-orange-400';
+        title = 'Pemain Ketiga';
+        break;
+      default:
+        return null;
+    }
+
+    return (
+      <div className='flex items-center gap-3'>
+        <Icon className={`h-6 w-6 sm:h-7 sm:w-7 ${iconColor}`} />
+        <div className='text-left'>
+          <p className="text-muted-foreground text-xs sm:text-sm">{title}</p>
+          <div className="flex items-baseline gap-2">
+            <p className="font-bold text-base sm:text-lg">{player.name}</p>
+            <p className="font-bold text-xs sm:text-sm text-destructive">({player.score > 0 ? `+${player.score}`: player.score})</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Card>
         <CardContent className="p-4">
            {isLoading ? (
                <InfoSkeleton />
            ) : gameInfo ? (
-            <div className="grid grid-cols-1 gap-4 text-sm">
-                <div className="flex items-center justify-between">
-                     <div className="text-left">
-                        <p className="text-muted-foreground">Arah Permainan</p>
-                        <div className="flex items-center gap-2 justify-start">
-                           <p className="font-bold text-lg">{gameInfo.direction}</p>
-                           <gameInfo.Icon className="h-5 w-5" />
-                        </div>
-                    </div>
-                    {highestPlayer && gameInfo.nextGame > 1 && (
-                     <>
-                        <div className='flex items-center gap-3 text-right'>
-                            <div>
-                                <p className="text-muted-foreground">Pemain Pertama</p>
-                                <div className="flex items-baseline gap-2 justify-end">
-                                    <p className="font-bold text-lg">{highestPlayer.name}</p>
-                                    <p className="font-bold text-sm text-destructive">({highestPlayer.score > 0 ? `+${highestPlayer.score}`: highestPlayer.score})</p>
-                                </div>
-                            </div>
-                             <UserX className="h-8 w-8 text-destructive" />
-                        </div>
-                     </>
-                    )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm items-center">
+                <div className="flex items-center gap-2 justify-start">
+                   <p className="text-muted-foreground">Arah Permainan</p>
+                   <p className="font-bold text-lg">{gameInfo.direction}</p>
+                   <gameInfo.Icon className="h-5 w-5" />
                 </div>
-
+                
+                {topPlayers.length > 0 && (
+                  <div className="flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4">
+                    {topPlayers.map((player, index) => renderTopPlayer(player, index + 1))}
+                  </div>
+                )}
             </div>
            ) : <InfoSkeleton />}
         </CardContent>

@@ -24,53 +24,34 @@ export default function GlobalScoreHistory() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-      if (!history) return;
+      if (history === undefined) return;
 
-      // Sort history by timestamp to determine game order
       const sortedHistory = [...history].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
       if (sortedHistory.length > 0) {
-        const playerNames = [...new Set(sortedHistory.map(entry => entry.playerName))].sort();
-        const gamesCount = sortedHistory.length;
-
-        const scores: Record<string, (number | null)[]> = {};
-        playerNames.forEach(player => {
-          scores[player] = Array(gamesCount).fill(null);
-        });
-
-        const playerGameCount: Record<string, number> = {};
-
-        sortedHistory.forEach((entry, _) => {
-            const player = entry.playerName;
-            // Find the first empty slot for this player
-            const gameIndex = scores[player].findIndex(s => s === null);
-            if (scores[player] && gameIndex !== -1) {
-                scores[player][gameIndex] = entry.points;
-            }
-        });
-        
-        // This transformation logic is a bit complex. Let's pivot the data correctly.
         const allPlayers = [...new Set(history.map(h => h.playerName))].sort();
-        const gameTimestamps = [...new Set(history.map(h => h.timestamp))].sort((a,b) => new Date(a).getTime() - new Date(b).getTime());
-        const numGames = gameTimestamps.length;
+        
+        const playerGameCounts = allPlayers.reduce((acc, player) => {
+            acc[player] = history.filter(h => h.playerName === player).length;
+            return acc;
+        }, {} as Record<string, number>);
+
+        const maxGames = Math.max(0, ...Object.values(playerGameCounts));
 
         const pivotedScores: Record<string, (number | null)[]> = {};
-        allPlayers.forEach(p => {
-            pivotedScores[p] = Array(numGames).fill(null);
+        allPlayers.forEach(player => {
+            pivotedScores[player] = Array(maxGames).fill(null);
+            const playerHistory = sortedHistory.filter(h => h.playerName === player);
+            playerHistory.forEach((entry, index) => {
+                if (index < maxGames) {
+                    pivotedScores[player][index] = entry.points;
+                }
+            });
         });
-
-        history.forEach(entry => {
-            const playerIndex = allPlayers.indexOf(entry.playerName);
-            const gameIndex = gameTimestamps.indexOf(entry.timestamp);
-            if(playerIndex > -1 && gameIndex > -1) {
-                pivotedScores[entry.playerName][gameIndex] = entry.points;
-            }
-        });
-
 
         setPivotData({
           players: allPlayers,
-          games: numGames,
+          games: maxGames,
           scores: pivotedScores,
         });
 

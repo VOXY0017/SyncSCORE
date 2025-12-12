@@ -53,7 +53,7 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
   return (
     <div className="min-h-screen w-full bg-custom-background bg-cover bg-center relative flex flex-col">
       <div className="absolute inset-0 bg-black/60 z-0" />
-      <div className="container flex-grow max-w-screen-lg mx-auto py-4 sm:py-8 relative z-10">
+      <div className="container flex-grow max-w-screen-lg mx-auto py-2 sm:py-4 relative z-10">
         <main>
           <Card className="shadow-md h-full">
             <CardHeader>

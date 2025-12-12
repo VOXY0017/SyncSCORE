@@ -20,7 +20,7 @@ export default function Home() {
   return (
     <div className="min-h-screen w-full bg-custom-background bg-cover bg-center relative flex flex-col">
       <div className="absolute inset-0 bg-black/60 z-0" />
-      <div className="container flex-grow max-w-screen-xl mx-auto py-4 sm:py-6 relative z-10">
+      <div className="container flex-grow max-w-screen-xl mx-auto py-2 sm:py-4 relative z-10">
         <main className="space-y-4">
           <div className="flex justify-between items-center sm:hidden mb-2 px-2">
              <h1 className="text-xl font-bold text-white">Scoreboard</h1>

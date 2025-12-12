@@ -149,8 +149,7 @@ export default function PlayerManagement() {
     <>
         <Card id="player-management" className="w-full shadow-none border-0 rounded-t-none">
             <CardContent className="p-2 sm:p-6 space-y-4">
-                 <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">Add or manage players and their scores.</p>
+                 <div className="flex items-center justify-end">
                     <Button variant="outline" size="sm" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Reset all scores">
                         <RotateCcw className="h-4 w-4 mr-2" />
                         Reset All

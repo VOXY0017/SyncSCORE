@@ -148,7 +148,7 @@ export default function PlayerManagement() {
   return (
     <>
         <Card id="player-management" className="w-full shadow-none border-0 rounded-t-none">
-            <CardContent className="p-2 sm:p-6 space-y-4">
+            <CardContent className="p-2 sm:p-4 space-y-4">
                 <div className="flex w-full flex-col sm:flex-row items-center gap-2">
                     <form onSubmit={handleAddPlayer} className="flex-grow w-full">
                         <Input
@@ -156,7 +156,7 @@ export default function PlayerManagement() {
                             value={newPlayerName}
                             onChange={(e) => setNewPlayerName(e.target.value)}
                             disabled={isPending || isLoading}
-                            className="h-9 text-sm"
+                            className="h-9 text-base"
                             aria-label="New player name"
                         />
                     </form>
@@ -165,7 +165,7 @@ export default function PlayerManagement() {
                         <span className="hidden md:inline">Reset All</span>
                     </Button>
                 </div>
-                <ScrollArea className="h-[calc(100vh-22rem)] sm:h-[calc(100vh-23rem)]">
+                <ScrollArea className="h-[calc(100vh-19rem)] sm:h-[calc(100vh-16.5rem)] md:h-[calc(100vh-20.5rem)]">
                     <Table>
                     <TableBody>
                         {isLoading ? (

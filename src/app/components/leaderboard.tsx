@@ -68,7 +68,7 @@ export default function Leaderboard() {
             <CardTitle className="flex items-center justify-between gap-3 text-xl sm:text-2xl">
                 <div className="flex items-center gap-3">
                     <Trophy className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
-                    Score Markas B7
+                    Leaderboard
                 </div>
                 <Button variant="ghost" size="icon" asChild aria-label="Go to Player Management">
                     <Link href="/management">

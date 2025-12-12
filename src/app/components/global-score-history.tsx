@@ -1,10 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collectionGroup, query, orderBy, limit } from 'firebase/firestore';
 import type { ScoreEntry } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,17 +11,27 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
+// Static data
+const staticHistory: ScoreEntry[] = [
+  { id: 'h1', points: 10, timestamp: new Date(Date.now() - 60000 * 2), playerName: 'Pemain Satu' },
+  { id: 'h2', points: -5, timestamp: new Date(Date.now() - 60000 * 5), playerName: 'Pemain Dua' },
+  { id: 'h3', points: 20, timestamp: new Date(Date.now() - 60000 * 10), playerName: 'Pemain Tiga' },
+  { id: 'h4', points: 5, timestamp: new Date(Date.now() - 60000 * 12), playerName: 'Pemain Satu' },
+  { id: 'h5', points: -10, timestamp: new Date(Date.now() - 60000 * 15), playerName: 'Pemain Empat' },
+];
+
 export default function GlobalScoreHistory() {
-  const firestore = useFirestore();
+  const [history, setHistory] = useState<ScoreEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const historyQuery = useMemoFirebase(() =>
-    query(
-      collectionGroup(firestore, 'scoreHistory'),
-      orderBy('timestamp', 'desc'),
-      limit(5)
-    ), [firestore]);
-
-  const { data: history, isLoading } = useCollection<ScoreEntry>(historyQuery);
+  useEffect(() => {
+    // Simulate fetching data
+    setTimeout(() => {
+      const sortedHistory = [...staticHistory].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      setHistory(sortedHistory);
+      setIsLoading(false);
+    }, 1000);
+  }, []);
 
   const HistorySkeleton = () => (
     <div className="space-y-4">
@@ -67,7 +75,7 @@ export default function GlobalScoreHistory() {
                     <p className="font-medium text-sm">{entry.playerName}</p>
                     <p className="text-xs text-muted-foreground">
                       {entry.timestamp
-                        ? formatDistanceToNow(entry.timestamp.toDate(), { addSuffix: true })
+                        ? formatDistanceToNow(entry.timestamp, { addSuffix: true })
                         : '...'}
                     </p>
                   </div>

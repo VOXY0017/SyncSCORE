@@ -1,4 +1,3 @@
-import { Timestamp } from 'firebase/firestore';
 
 export interface Player {
   id: string;
@@ -9,6 +8,6 @@ export interface Player {
 export interface ScoreEntry {
   id: string;
   points: number;
-  timestamp: Timestamp;
+  timestamp: Date;
   playerName: string;
 }

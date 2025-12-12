@@ -1,15 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useTransition, useMemo } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import type { Player } from '@/lib/types';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import {
-  addDocumentNonBlocking,
-  deleteDocumentNonBlocking,
-  incrementScore,
-} from '@/firebase/non-blocking-updates';
-import { collection, doc, query, orderBy, writeBatch, serverTimestamp, getDocs } from 'firebase/firestore';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -31,13 +24,18 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Minus, X, Trophy, Users, RotateCcw, History } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function PlayerManagement() {
-  const firestore = useFirestore();
+// Static data
+const staticPlayers: Player[] = [
+  { id: '1', name: 'Pemain Satu', score: 150 },
+  { id: '2', name: 'Pemain Dua', score: 120 },
+  { id: '3', name: 'Pemain Tiga', score: 95 },
+  { id: '4', name: 'Pemain Empat', score: 80 },
+  { id: '5', name: 'Pemain Lima', score: 50 },
+];
 
-  const playersCollectionRef = useMemoFirebase(() => collection(firestore, 'players'), [firestore]);
-  const playersQuery = useMemoFirebase(() => query(playersCollectionRef, orderBy('name', 'asc')), [playersCollectionRef]);
-  
-  const { data: players, isLoading } = useCollection<Player>(playersQuery);
+export default function PlayerManagement() {
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [newPlayerName, setNewPlayerName] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -50,50 +48,40 @@ export default function PlayerManagement() {
   
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    // Simulate fetching data
+    setTimeout(() => {
+      setPlayers([...staticPlayers].sort((a, b) => a.name.localeCompare(b.name)));
+      setIsLoading(false);
+    }, 1000);
+  }, []);
+
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = newPlayerName.trim();
     if (!trimmedName) return;
 
     startTransition(() => {
-      const newPlayer: Omit<Player, 'id'> = {
+      const newPlayer: Player = {
+        id: (players.length + 1).toString(),
         name: trimmedName,
         score: 0,
       };
-      addDocumentNonBlocking(playersCollectionRef, newPlayer);
+      setPlayers(prev => [...prev, newPlayer].sort((a,b) => a.name.localeCompare(b.name)));
       setNewPlayerName('');
       toast({ title: "Player Added", description: `${trimmedName} has joined the game!`});
     });
   };
 
   const handleScoreChange = (playerId: string, change: number) => {
-    if (isNaN(change) || change === 0 || !firestore) return;
+    if (isNaN(change) || change === 0) return;
     
-    const player = players?.find(p => p.id === playerId);
-    if (!player) return;
-
     startTransition(() => {
-      const playerDocRef = doc(firestore, 'players', playerId);
-      const scoreHistoryRef = collection(playerDocRef, 'scoreHistory');
-      
-      const batch = writeBatch(firestore);
-
-      // 1. Update total score
-      batch.update(playerDocRef, { score: incrementScore(change) });
-
-      // 2. Add to score history
-      batch.set(doc(scoreHistoryRef), {
-        points: change,
-        timestamp: serverTimestamp(),
-        playerName: player.name, // Add player name to history
-      });
-      
-      batch.commit().then(() => {
+        setPlayers(prev => 
+            prev.map(p => p.id === playerId ? {...p, score: p.score + change} : p)
+        );
         setPointInputs(prev => ({...prev, [playerId]: ''}));
-      }).catch(err => {
-        console.error(err);
-        toast({ variant: 'destructive', title: "Error", description: "Could not update score."});
-      });
+        toast({ title: "Score Updated", description: `Score for player has been updated by ${change}.`});
     });
   };
   
@@ -102,22 +90,10 @@ export default function PlayerManagement() {
   }
 
   const confirmDeletePlayer = () => {
-    if (!playerToDelete || !firestore) return;
+    if (!playerToDelete) return;
 
-    startTransition(async () => {
-      // First, delete subcollection documents
-      const scoreHistoryRef = collection(firestore, 'players', playerToDelete.id, 'scoreHistory');
-      const scoreHistorySnapshot = await getDocs(scoreHistoryRef);
-      const deleteSubDocsBatch = writeBatch(firestore);
-      scoreHistorySnapshot.forEach(doc => {
-        deleteSubDocsBatch.delete(doc.ref);
-      });
-      await deleteSubDocsBatch.commit();
-      
-      // Then, delete the player document
-      const playerDocRef = doc(firestore, 'players', playerToDelete.id);
-      deleteDocumentNonBlocking(playerDocRef);
-      
+    startTransition(() => {
+      setPlayers(prev => prev.filter(p => p.id !== playerToDelete.id));
       toast({ title: "Player Removed", description: `${playerToDelete.name} has been removed.`});
       setDeleteAlertOpen(false);
       setPlayerToDelete(null);
@@ -132,28 +108,9 @@ export default function PlayerManagement() {
   }
 
   const confirmResetScores = () => {
-    if (!players || !firestore) return;
-    
-    startTransition(async () => {
-        const batch = writeBatch(firestore);
-        
-        for (const player of players) {
-          const playerRef = doc(firestore, 'players', player.id);
-          batch.update(playerRef, { score: 0 });
-
-          const scoreHistoryRef = collection(playerRef, 'scoreHistory');
-          const scoreHistorySnapshot = await getDocs(scoreHistoryRef);
-          scoreHistorySnapshot.forEach(doc => {
-              batch.delete(doc.ref);
-          });
-        }
-
-        batch.commit().then(() => {
-            toast({ title: "Scores Reset", description: "All player scores have been set to 0 and histories cleared."});
-        }).catch(err => {
-            console.error(err);
-            toast({ variant: 'destructive', title: "Error", description: "Could not reset scores."});
-        });
+    startTransition(() => {
+        setPlayers(prev => prev.map(p => ({...p, score: 0})));
+        toast({ title: "Scores Reset", description: "All player scores have been set to 0."});
         setResetAlertOpen(false);
     });
   };

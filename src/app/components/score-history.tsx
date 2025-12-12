@@ -1,10 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import type { Player, ScoreEntry } from '@/lib/types';
-import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, query, orderBy } from 'firebase/firestore';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
@@ -20,18 +18,46 @@ interface ScoreHistoryProps {
   playerId: string;
 }
 
+// Static data
+const staticPlayers: { [key: string]: Player } = {
+  '1': { id: '1', name: 'Pemain Satu', score: 150 },
+  '2': { id: '2', name: 'Pemain Dua', score: 120 },
+  '3': { id: '3', name: 'Pemain Tiga', score: 95 },
+  '4': { id: '4', name: 'Pemain Empat', score: 80 },
+  '5': { id: '5', name: 'Pemain Lima', score: 50 },
+};
+
+const staticHistory: { [key: string]: ScoreEntry[] } = {
+    '1': [
+        { id: 'h1', points: 10, timestamp: new Date(Date.now() - 60000 * 2), playerName: 'Pemain Satu' },
+        { id: 'h4', points: 5, timestamp: new Date(Date.now() - 60000 * 12), playerName: 'Pemain Satu' },
+    ],
+    '2': [
+        { id: 'h2', points: -5, timestamp: new Date(Date.now() - 60000 * 5), playerName: 'Pemain Dua' },
+    ],
+    '3': [
+        { id: 'h3', points: 20, timestamp: new Date(Date.now() - 60000 * 10), playerName: 'Pemain Tiga' },
+    ],
+    '4': [
+        { id: 'h5', points: -10, timestamp: new Date(Date.now() - 60000 * 15), playerName: 'Pemain Empat' },
+    ]
+};
+
 export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
-  const firestore = useFirestore();
+  const [player, setPlayer] = useState<Player | null>(null);
+  const [scoreHistory, setScoreHistory] = useState<ScoreEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const playerDocRef = useMemoFirebase(() => doc(firestore, 'players', playerId), [firestore, playerId]);
-  const { data: player, isLoading: isPlayerLoading } = useDoc<Player>(playerDocRef);
-
-  const scoreHistoryCollectionRef = useMemoFirebase(() => collection(playerDocRef, 'scoreHistory'), [playerDocRef]);
-  const scoreHistoryQuery = useMemoFirebase(() => query(scoreHistoryCollectionRef, orderBy('timestamp', 'desc')), [scoreHistoryCollectionRef]);
-  
-  const { data: scoreHistory, isLoading: isHistoryLoading } = useCollection<ScoreEntry>(scoreHistoryQuery);
-  
-  const isLoading = isPlayerLoading || isHistoryLoading;
+  useEffect(() => {
+    // Simulate fetching data
+    setTimeout(() => {
+      const foundPlayer = staticPlayers[playerId] || null;
+      const foundHistory = staticHistory[playerId] || [];
+      setPlayer(foundPlayer);
+      setScoreHistory(foundHistory.sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime()));
+      setIsLoading(false);
+    }, 1000);
+  }, [playerId]);
 
   const HistorySkeleton = () => (
     <>
@@ -54,7 +80,7 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
               <CardTitle className="flex items-center justify-between gap-3 text-xl sm:text-2xl">
                 <div className="flex items-center gap-3">
                   <History className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
-                  Score History: {isPlayerLoading ? <Skeleton className="h-7 w-32" /> : player?.name}
+                  Score History: {isLoading ? <Skeleton className="h-7 w-32" /> : player?.name || 'Unknown Player'}
                 </div>
                  <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" asChild aria-label="Go to Player Management">
@@ -87,7 +113,7 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                             {entry.points > 0 ? `+${entry.points}` : entry.points}
                           </TableCell>
                           <TableCell className="text-muted-foreground text-sm">
-                            {entry.timestamp ? format(entry.timestamp.toDate(), 'Pp') : '...'}
+                            {entry.timestamp ? format(entry.timestamp, 'Pp') : '...'}
                           </TableCell>
                         </TableRow>
                       ))
@@ -95,7 +121,7 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                     {!isLoading && scoreHistory?.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={2} className="h-24 text-center text-muted-foreground">
-                          No score entries yet for this player.
+                          {player ? 'No score entries yet for this player.' : 'Player not found.'}
                         </TableCell>
                       </TableRow>
                     )}

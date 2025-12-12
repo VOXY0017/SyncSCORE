@@ -1,10 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useLayoutEffect, useRef, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import type { Player } from '@/lib/types';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -15,55 +13,31 @@ import { Trophy, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Static data
+const staticPlayers: Player[] = [
+  { id: '1', name: 'Pemain Satu', score: 150 },
+  { id: '2', name: 'Pemain Dua', score: 120 },
+  { id: '3', name: 'Pemain Tiga', score: 95 },
+  { id: '4', name: 'Pemain Empat', score: 80 },
+  { id: '5', name: 'Pemain Lima', score: 50 },
+];
+
 export default function Leaderboard() {
-  const firestore = useFirestore();
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const playersCollectionRef = useMemoFirebase(() => collection(firestore, 'players'), [firestore]);
-  const playersQuery = useMemoFirebase(() => query(playersCollectionRef, orderBy('score', 'desc')), [playersCollectionRef]);
-  
-  const { data: players, isLoading } = useCollection<Player>(playersQuery);
-
-  const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
-  const prevPlayerPositions = useRef<Map<string, { top: number; index: number }>>(new Map());
-
-  useLayoutEffect(() => {
-    if (!players) return;
-    const newPlayerPositions = new Map<string, { top: number; index: number }>();
-    
-    players.forEach((player, index) => {
-        const row = rowRefs.current[player.id];
-        if (row) {
-            newPlayerPositions.set(player.id, { top: row.offsetTop, index });
-        }
-    });
-
-    newPlayerPositions.forEach((newPos, playerId) => {
-        const prevPos = prevPlayerPositions.current.get(playerId);
-        const row = rowRefs.current[playerId];
-        
-        if (prevPos && row) {
-            const deltaY = prevPos.top - newPos.top;
-            if (deltaY !== 0) {
-                requestAnimationFrame(() => {
-                    row.style.setProperty('--delta-y', `${deltaY}px`);
-                    row.classList.add('ranking-change-active');
-                    
-                    row.addEventListener('animationend', () => {
-                        row.classList.remove('ranking-change-active');
-                        row.style.removeProperty('--delta-y');
-                    }, { once: true });
-                });
-            }
-        }
-    });
-    
-    prevPlayerPositions.current = newPlayerPositions;
-
-  }, [players]);
+  useEffect(() => {
+    // Simulate fetching data
+    setTimeout(() => {
+      const sortedPlayers = [...staticPlayers].sort((a, b) => b.score - a.score);
+      setPlayers(sortedPlayers);
+      setIsLoading(false);
+    }, 1000);
+  }, []);
 
   const PlayerListSkeleton = () => (
     <>
-        {[...Array(8)].map((_, i) => (
+        {[...Array(5)].map((_, i) => (
             <TableRow key={i}>
                 <TableCell><Skeleton className="h-5 w-5 rounded-full" /></TableCell>
                 <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
@@ -107,7 +81,6 @@ export default function Leaderboard() {
                                 return (
                                     <TableRow 
                                         key={player.id}
-                                        ref={(el) => (rowRefs.current[player.id] = el)}
                                     >
                                       <TableCell className={cn("text-center font-medium text-base sm:text-lg", 
                                         index === 0 ? "text-yellow-400" :

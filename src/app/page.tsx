@@ -23,8 +23,8 @@ export default function Home() {
       <div className="container flex-grow max-w-screen-lg mx-auto py-2 sm:py-4 relative z-10">
         <main className="space-y-4">
           <div className="flex justify-between items-center sm:hidden mb-2 px-1">
-             <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-white">
-                Fanci
+             <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-white font-poppins">
+                Score Markas B7
              </h1>
              <Button variant="outline" size="icon" className="h-8 w-8" onClick={toggleTheme}>
                 <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -33,8 +33,8 @@ export default function Home() {
               </Button>
           </div>
           <div className="hidden sm:block text-center mb-4">
-              <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary via-white to-primary">
-                  Fanci
+              <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary via-white to-primary font-poppins">
+                  Score Markas B7
               </h1>
           </div>
           <GameInfo />

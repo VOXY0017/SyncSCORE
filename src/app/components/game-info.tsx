@@ -108,7 +108,7 @@ export default function GameInfo() {
                      <>
                         <div className='flex items-center gap-3 text-right'>
                             <div>
-                                <p className="text-muted-foreground">Pemain Pertama (Skor Game {gameInfo.nextGame - 1} Tertinggi)</p>
+                                <p className="text-muted-foreground">Pemain Pertama</p>
                                 <div className="flex items-baseline gap-2 justify-end">
                                     <p className="font-bold text-lg">{highestPlayer.name}</p>
                                     <p className="font-bold text-sm text-destructive">({highestPlayer.score > 0 ? `+${highestPlayer.score}`: highestPlayer.score})</p>

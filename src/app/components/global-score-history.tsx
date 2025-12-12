@@ -32,19 +32,22 @@ export default function GlobalScoreHistory() {
       if (players.length > 0) {
         let allPlayers = [...players].map(p => p.name);
         
-        const playerGameCounts = allPlayers.reduce((acc, player) => {
-            acc[player] = history.filter(h => h.playerName === player).length;
+        const playerGameCounts = players.reduce((acc, player) => {
+            acc[player.name] = history.filter(h => h.playerName === player.name).length;
             return acc;
         }, {} as Record<string, number>);
-
+        
+        const completedRounds = players.length > 0 ? Math.min(...Object.values(playerGameCounts)) : 0;
         const maxGames = Math.max(0, ...Object.values(playerGameCounts));
         const totalGamesToDisplay = maxGames + 1;
+        const nextGameNumber = completedRounds + 1;
+
 
         // Player rotation logic
-        if (maxGames % 2 === 0) { // Genap (Even)
-          allPlayers.sort((a, b) => a.localeCompare(b)); // A-Z
-        } else { // Ganjil (Odd)
-          allPlayers.sort((a, b) => b.localeCompare(a)); // Z-A
+        if (nextGameNumber % 2 !== 0) { // Ganjil (Odd) -> A-Z
+          allPlayers.sort((a, b) => a.name.localeCompare(b.name)); 
+        } else { // Genap (Even) -> Z-A
+          allPlayers.sort((a, b) => b.name.localeCompare(a.name)); 
         }
 
         const pivotedScores: Record<string, (number | null)[]> = {};

@@ -23,29 +23,33 @@ export default function Leaderboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (players !== undefined) {
-        const sorted = [...players].sort((a, b) => b.score - a.score);
-        setSortedPlayers(sorted);
-        setIsLoading(false);
-    }
-    
-    if (history !== undefined) {
-      if (history.length > 0) {
+    if (players !== undefined && history !== undefined) {
+      let completedRounds = 0;
+      if (players.length > 0 && history.length > 0) {
         const playerGameCounts = players.reduce((acc, player) => {
             acc[player.name] = history.filter(h => h.playerName === player.name).length;
             return acc;
         }, {} as Record<string, number>);
 
-        const maxGames = Math.max(0, ...Object.values(playerGameCounts));
-
-        if (maxGames % 2 === 0) { // Genap (Even)
-          setGameDirection({ text: 'Kiri', icon: ArrowLeft }); // Z-A
-        } else { // Ganjil (Odd)
-          setGameDirection({ text: 'Kanan', icon: ArrowRight }); // A-Z
-        }
-      } else {
-        setGameDirection({ text: 'Kanan', icon: ArrowRight });
+        completedRounds = Math.min(...Object.values(playerGameCounts));
       }
+
+      const nextGameNumber = completedRounds + 1;
+      let sorted;
+
+      if (nextGameNumber % 2 !== 0) { // Ganjil (Odd) -> Kanan -> A-Z
+        setGameDirection({ text: 'Kanan', icon: ArrowRight });
+        sorted = [...players].sort((a, b) => a.name.localeCompare(b.name));
+      } else { // Genap (Even) -> Kiri -> Z-A
+        setGameDirection({ text: 'Kiri', icon: ArrowLeft });
+        sorted = [...players].sort((a, b) => b.name.localeCompare(a.name));
+      }
+      
+      // Final sort by score
+      sorted.sort((a, b) => b.score - a.score);
+
+      setSortedPlayers(sorted);
+      setIsLoading(false);
     }
   }, [players, history]);
 

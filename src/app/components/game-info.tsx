@@ -53,12 +53,15 @@ export default function GameInfo() {
           const previousRoundIndex = completedRounds - 1;
           let lowestScorePlayer: FirstPlayerData | null = null;
 
-          players.forEach(player => {
-              const playerHistory = history.filter(h => h.playerName === player.name)
-                                           .sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+          const playerHistories = players.map(player => ({
+            player,
+            history: history.filter(h => h.playerName === player.name)
+                            .sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+          }));
 
-              if (playerHistory.length > previousRoundIndex) {
-                  const previousGameScore = playerHistory[previousRoundIndex].points;
+          playerHistories.forEach(({ player, history }) => {
+              if (history.length > previousRoundIndex) {
+                  const previousGameScore = history[previousRoundIndex].points;
                   if (lowestScorePlayer === null || previousGameScore < lowestScorePlayer.score) {
                       lowestScorePlayer = { name: player.name, score: previousGameScore };
                   }

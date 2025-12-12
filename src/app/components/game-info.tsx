@@ -3,11 +3,19 @@
 
 import * as React from 'react';
 import { useState, useEffect } from 'react';
+import { useTheme } from "next-themes"
 import { useData } from '@/app/context/data-context';
 import type { Player, ScoreEntry } from '@/lib/types';
 
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowRight, ArrowLeft, Trophy, Crown, Medal } from 'lucide-react';
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ArrowRight, ArrowLeft, Trophy, Crown, Medal, Moon, Sun } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface TopPlayerData {
@@ -17,6 +25,7 @@ interface TopPlayerData {
 
 export default function GameInfo() {
   const { players, history } = useData();
+  const { setTheme } = useTheme()
   const [isLoading, setIsLoading] = useState(true);
   const [gameInfo, setGameInfo] = useState<{
     direction: 'Kanan' | 'Kiri';
@@ -128,18 +137,39 @@ export default function GameInfo() {
            {isLoading ? (
                <InfoSkeleton />
            ) : gameInfo ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm items-center">
+            <div className="flex flex-col sm:flex-row gap-4 text-sm items-center justify-between">
                 <div className="flex items-center gap-2 justify-start">
                    <p className="text-muted-foreground">Arah Permainan</p>
                    <p className="font-bold text-lg">{gameInfo.direction}</p>
                    <gameInfo.Icon className="h-5 w-5" />
                 </div>
                 
-                {topPlayers.length > 0 && (
-                  <div className="flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4">
-                    {topPlayers.map((player, index) => renderTopPlayer(player, index + 1))}
-                  </div>
-                )}
+                <div className="flex flex-1 flex-col sm:flex-row items-center sm:justify-end gap-3 sm:gap-4">
+                  {topPlayers.length > 0 && (
+                      topPlayers.map((player, index) => renderTopPlayer(player, index + 1))
+                  )}
+                </div>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                      <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                      <span className="sr-only">Toggle theme</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setTheme("light")}>
+                      Light
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("dark")}>
+                      Dark
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("system")}>
+                      System
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
             </div>
            ) : <InfoSkeleton />}
         </CardContent>

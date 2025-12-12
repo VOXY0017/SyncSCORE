@@ -149,23 +149,23 @@ export default function PlayerManagement() {
     <>
         <Card id="player-management" className="w-full shadow-none border-0 rounded-t-none">
             <CardContent className="p-2 sm:p-6 space-y-4">
-                 <div className="flex items-center justify-end">
+                <div className="flex w-full items-center gap-2">
+                    <form onSubmit={handleAddPlayer} className="flex-grow">
+                        <Input
+                            placeholder="Add new player and press Enter..."
+                            value={newPlayerName}
+                            onChange={(e) => setNewPlayerName(e.target.value)}
+                            disabled={isPending || isLoading}
+                            className="h-9 text-sm"
+                            aria-label="New player name"
+                        />
+                    </form>
                     <Button variant="outline" size="sm" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Reset all scores">
-                        <RotateCcw className="h-4 w-4 mr-2" />
-                        Reset All
+                        <RotateCcw className="h-4 w-4 md:mr-2" />
+                        <span className="hidden md:inline">Reset All</span>
                     </Button>
                 </div>
-                <form onSubmit={handleAddPlayer} className="flex w-full items-center gap-2">
-                    <Input
-                        placeholder="Add new player and press Enter..."
-                        value={newPlayerName}
-                        onChange={(e) => setNewPlayerName(e.target.value)}
-                        disabled={isPending || isLoading}
-                        className="h-8 text-sm"
-                        aria-label="New player name"
-                    />
-                </form>
-                <ScrollArea className="h-[calc(100vh-24.5rem)] sm:h-[calc(100vh-25.5rem)]">
+                <ScrollArea className="h-[calc(100vh-22rem)] sm:h-[calc(100vh-23rem)]">
                     <Table>
                     <TableBody>
                         {isLoading ? (
@@ -253,3 +253,5 @@ export default function PlayerManagement() {
     </>
   );
 }
+
+    

@@ -34,7 +34,12 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
           ? storedValue(storedValue)
           : storedValue;
       // Save state to local storage
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      const currentValue = window.localStorage.getItem(key);
+      if (JSON.stringify(valueToStore) !== currentValue) {
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        // We are broadcasting the change to other tabs
+        window.dispatchEvent(new StorageEvent('storage', { key }));
+      }
     } catch (error) {
       // A more advanced implementation would handle the error case
       console.log(error);
@@ -47,29 +52,29 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       // Save state
       setStoredValue(valueToStore);
-      // We are broadcasting the change to other tabs
-      if (typeof window !== 'undefined') {
-          window.dispatchEvent(new StorageEvent('storage', { key }));
-      }
     } catch (error) {
       console.log(error);
     }
   };
 
   const handleStorageChange = useCallback((event: StorageEvent) => {
+    // only update if the event is for our key and the value has actually changed
     if (event.key === key) {
          if (typeof window === 'undefined') {
             return;
         }
         try {
             const item = window.localStorage.getItem(key);
-            setStoredValue(item ? JSON.parse(item) : initialValue);
+            const newValue = item ? JSON.parse(item) : initialValue;
+            if(JSON.stringify(newValue) !== JSON.stringify(storedValue)) {
+                setStoredValue(newValue);
+            }
         } catch (error) {
             console.log(error);
             setStoredValue(initialValue);
         }
     }
-  }, [key, initialValue]);
+  }, [key, initialValue, storedValue]);
 
   // Listen for changes in other tabs
   useEffect(() => {

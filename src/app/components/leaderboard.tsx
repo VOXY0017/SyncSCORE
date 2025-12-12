@@ -10,16 +10,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Trophy, Users, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Trophy, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 
 export default function Leaderboard() {
   const [players] = useSyncedState<Player[]>('players', []);
   const [history] = useSyncedState<ScoreEntry[]>('scoreHistory', []);
   const [sortedPlayers, setSortedPlayers] = useState<Player[]>([]);
-  const [gameDirection, setGameDirection] = useState<{text: string, icon: React.FC<any>}>({ text: 'Kanan', icon: ArrowRight });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -37,11 +35,9 @@ export default function Leaderboard() {
       const nextGameNumber = completedRounds + 1;
       let sorted;
 
-      if (nextGameNumber % 2 !== 0) { // Ganjil (Odd) -> Kanan -> A-Z
-        setGameDirection({ text: 'Kanan', icon: ArrowRight });
+      if (nextGameNumber % 2 !== 0) { // Ganjil (Odd) -> A-Z
         sorted = [...players].sort((a, b) => a.name.localeCompare(b.name));
-      } else { // Genap (Even) -> Kiri -> Z-A
-        setGameDirection({ text: 'Kiri', icon: ArrowLeft });
+      } else { // Genap (Even) -> Z-A
         sorted = [...players].sort((a, b) => b.name.localeCompare(a.name));
       }
       
@@ -73,10 +69,6 @@ export default function Leaderboard() {
                 <div className="flex items-center gap-3">
                     <Trophy className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
                     Score Markas B7
-                    <Badge variant="outline" className="flex items-center gap-1.5 py-1 px-2 text-sm sm:text-base font-semibold">
-                      {gameDirection.text}
-                      <gameDirection.icon className="h-4 w-4" />
-                    </Badge>
                 </div>
                 <Button variant="ghost" size="icon" asChild aria-label="Go to Player Management">
                     <Link href="/management">
@@ -86,7 +78,7 @@ export default function Leaderboard() {
             </CardTitle>
         </CardHeader>
         <CardContent>
-            <ScrollArea className="h-[calc(100vh-14rem)] sm:h-[calc(100vh-15rem)]">
+            <ScrollArea className="h-[calc(100vh-22rem)] sm:h-[calc(100vh-23rem)]">
                 <Table>
                     <TableHeader>
                         <TableRow>

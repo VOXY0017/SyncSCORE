@@ -20,13 +20,13 @@ export default function Home() {
   return (
     <div className="min-h-screen w-full bg-custom-background bg-cover bg-center relative flex flex-col">
       <div className="absolute inset-0 bg-black/60 z-0" />
-      <div className="container flex-grow max-w-screen-xl mx-auto py-2 sm:py-4 relative z-10">
+      <div className="container flex-grow max-w-screen-lg mx-auto py-2 sm:py-4 relative z-10">
         <main className="space-y-4">
-          <div className="flex justify-between items-center sm:hidden mb-2 px-2">
-             <h1 className="text-xl font-bold text-white">Scoreboard</h1>
-             <Button variant="outline" size="icon" onClick={toggleTheme}>
-                <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <div className="flex justify-between items-center sm:hidden mb-2 px-1">
+             <h1 className="text-lg font-bold text-white">Scoreboard</h1>
+             <Button variant="outline" size="icon" className="h-8 w-8" onClick={toggleTheme}>
+                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                 <span className="sr-only">Toggle theme</span>
               </Button>
           </div>

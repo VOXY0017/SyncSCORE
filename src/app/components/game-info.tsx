@@ -95,30 +95,30 @@ export default function GameInfo() {
       case 1:
         Icon = Trophy;
         iconColor = 'text-yellow-400';
-        title = 'Pemain Pertama';
+        title = 'Juara 1';
         break;
       case 2:
         Icon = Crown;
         iconColor = 'text-slate-400';
-        title = 'Pemain Kedua';
+        title = 'Juara 2';
         break;
       case 3:
         Icon = Medal;
         iconColor = 'text-orange-400';
-        title = 'Pemain Ketiga';
+        title = 'Juara 3';
         break;
       default:
         return null;
     }
 
     return (
-      <div key={player.name} className='flex items-center gap-3'>
-        <Icon className={`h-6 w-6 sm:h-7 sm:w-7 ${iconColor}`} />
+      <div key={player.name} className='flex items-center gap-2'>
+        <Icon className={`h-5 w-5 ${iconColor}`} />
         <div className='text-left'>
-          <p className="text-muted-foreground text-xs sm:text-sm">{title}</p>
-          <div className="flex items-baseline gap-2">
-            <p className="font-bold text-base sm:text-lg">{player.name}</p>
-            <p className="font-bold text-xs sm:text-sm text-destructive">({player.score > 0 ? `+${player.score}`: player.score})</p>
+          <p className="text-muted-foreground text-xs">{title}</p>
+          <div className="flex items-baseline gap-1.5">
+            <p className="font-bold text-sm">{player.name}</p>
+            <p className="font-bold text-xs text-destructive">({player.score > 0 ? `+${player.score}`: player.score})</p>
           </div>
         </div>
       </div>
@@ -131,26 +131,26 @@ export default function GameInfo() {
 
   return (
     <Card>
-        <CardContent className="p-4">
+        <CardContent className="p-3 sm:p-4">
            {isLoading ? (
                <InfoSkeleton />
            ) : gameInfo ? (
-            <div className="flex flex-col sm:flex-row gap-4 text-sm items-center justify-between">
-                <div className="flex items-center gap-2 justify-start">
-                   <p className="text-muted-foreground">Arah Permainan</p>
-                   <p className="font-bold text-lg">{gameInfo.direction}</p>
-                   <gameInfo.Icon className="h-5 w-5" />
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 text-sm items-center justify-between">
+                <div className="flex items-center gap-2 justify-start w-full sm:w-auto">
+                   <p className="text-muted-foreground">Arah Main</p>
+                   <p className="font-bold text-base">{gameInfo.direction}</p>
+                   <gameInfo.Icon className="h-4 w-4" />
                 </div>
                 
-                <div className="flex flex-1 flex-col sm:flex-row items-center sm:justify-end gap-3 sm:gap-4">
+                <div className="flex flex-1 w-full sm:w-auto flex-row items-center justify-between sm:justify-end gap-2 sm:gap-4">
                   {topPlayers.length > 0 && (
                       topPlayers.map((player, index) => renderTopPlayer(player, index + 1))
                   )}
                 </div>
 
-                <Button variant="outline" size="icon" onClick={toggleTheme} className="hidden sm:inline-flex">
-                  <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                  <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <Button variant="outline" size="icon" onClick={toggleTheme} className="hidden sm:inline-flex h-8 w-8">
+                  <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                   <span className="sr-only">Toggle theme</span>
                 </Button>
             </div>

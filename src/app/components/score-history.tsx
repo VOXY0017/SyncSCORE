@@ -57,32 +57,32 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
         <main>
           <Card className="shadow-md h-full">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between gap-3 text-xl sm:text-2xl">
-                <div className="flex items-center gap-3">
-                  <History className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
-                  Score History: {isLoading ? <Skeleton className="h-7 w-32" /> : player?.name || 'Unknown Player'}
+              <CardTitle className="flex items-center justify-between gap-3 text-lg sm:text-xl">
+                <div className="flex items-center gap-2">
+                  <History className="h-5 w-5 text-primary" />
+                  Score History: {isLoading ? <Skeleton className="h-6 w-28" /> : player?.name || 'Unknown Player'}
                 </div>
                  <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" asChild aria-label="Go to Player Management">
                         <Link href="/management">
-                            <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+                            <Users className="h-5 w-5" />
                         </Link>
                     </Button>
                     <Button variant="ghost" size="icon" asChild aria-label="Go Back">
                         <Link href="/management">
-                            <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+                            <ArrowLeft className="h-5 w-5" />
                         </Link>
                     </Button>
                 </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[calc(100vh-11rem)] sm:h-[calc(100vh-12rem)]">
+              <ScrollArea className="h-[calc(100vh-10rem)] sm:h-[calc(100vh-11rem)]">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[100px] sm:w-[120px] font-bold">Game</TableHead>
-                      <TableHead className="w-[120px] sm:w-[150px] font-bold">Points</TableHead>
+                      <TableHead className="w-[80px] sm:w-[100px] font-bold">Game</TableHead>
+                      <TableHead className="w-[100px] sm:w-[120px] font-bold">Points</TableHead>
                       <TableHead className="font-bold">Timestamp</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -90,13 +90,13 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                     {isLoading ? <HistorySkeleton /> : (
                       playerHistory && playerHistory.length > 0 ? playerHistory.map((entry, index) => (
                         <TableRow key={entry.id}>
-                          <TableCell className="font-medium text-muted-foreground">
+                          <TableCell className="font-medium text-muted-foreground text-xs sm:text-sm">
                             Game {playerHistory.length - index}
                           </TableCell>
-                          <TableCell className={cn("font-bold text-lg", entry.points > 0 ? "text-green-400" : "text-red-400")}>
+                          <TableCell className={cn("font-bold text-base", entry.points > 0 ? "text-green-400" : "text-red-400")}>
                             {entry.points > 0 ? `+${entry.points}` : entry.points}
                           </TableCell>
-                          <TableCell className="text-muted-foreground text-sm">
+                          <TableCell className="text-muted-foreground text-xs sm:text-sm">
                             {entry.timestamp ? format(new Date(entry.timestamp), 'Pp') : '...'}
                           </TableCell>
                         </TableRow>

@@ -5,7 +5,7 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import type { Player, ScoreEntry } from '@/lib/types';
 import { useData } from '@/app/context/data-context';
-import { Card, CardContent } from '@/components/ui/card';
+import { CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -99,7 +99,6 @@ export default function GlobalScoreHistory() {
   );
 
   return (
-    <Card className="shadow-none border-0 rounded-t-none">
       <CardContent className="p-0">
         <ScrollArea className="h-[calc(100vh-14.5rem)] sm:h-[calc(100vh-12rem)] md:h-[calc(100vh-16rem)] w-full whitespace-nowrap">
           <Table>
@@ -156,6 +155,5 @@ export default function GlobalScoreHistory() {
           </Table>
         </ScrollArea>
       </CardContent>
-    </Card>
   );
 }

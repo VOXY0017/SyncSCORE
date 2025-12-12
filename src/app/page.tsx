@@ -31,10 +31,10 @@ export default function Home() {
               </Button>
           </div>
           <GameInfo />
-          <Tabs defaultValue="leaderboard" className="w-full md:grid md:grid-cols-4 md:gap-6" id="main-tabs">
-            <Card className="md:col-span-1">
+          <Tabs defaultValue="leaderboard" className="w-full">
+            <Card>
               <CardHeader className="p-0">
-                 <TabsList className="grid w-full grid-cols-3 md:grid-cols-1 md:h-full">
+                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="leaderboard">
                       <Trophy className="h-4 w-4 mr-2" />
                       Leaderboard
@@ -49,19 +49,16 @@ export default function Home() {
                     </TabsTrigger>
                   </TabsList>
               </CardHeader>
+              <TabsContent value="leaderboard">
+                <Leaderboard />
+              </TabsContent>
+              <TabsContent value="history">
+                <GlobalScoreHistory />
+              </TabsContent>
+              <TabsContent value="management">
+                <PlayerManagement />
+              </TabsContent>
             </Card>
-
-            <div className="mt-4 md:mt-0 md:col-span-3">
-                <TabsContent value="leaderboard">
-                  <Leaderboard />
-                </TabsContent>
-                <TabsContent value="history">
-                  <GlobalScoreHistory />
-                </TabsContent>
-                <TabsContent value="management">
-                  <PlayerManagement />
-                </TabsContent>
-            </div>
           </Tabs>
         </main>
       </div>

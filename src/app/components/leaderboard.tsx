@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import type { Player } from '@/lib/types';
 import { useData } from '@/app/context/data-context';
 
-import { Card, CardContent } from '@/components/ui/card';
+import { CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -62,56 +62,54 @@ export default function Leaderboard() {
   );
 
   return (
-    <Card className="shadow-none border-0 rounded-t-none">
-        <CardContent className="p-0">
-             <ScrollArea className="h-[calc(100vh-14.5rem)] sm:h-[calc(100vh-12rem)] md:h-[calc(100vh-16rem)]">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                        <TableHead className="w-[50px] sm:w-[80px] text-center font-bold">Rank</TableHead>
-                        <TableHead className="font-bold">Player</TableHead>
-                        <TableHead className="w-[80px] sm:w-[120px] text-right font-bold">Score</TableHead>
-                        <TableHead className="w-[50px] sm:w-[120px] text-right font-bold">Gap</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? <PlayerListSkeleton /> : (
-                            sortedPlayers && sortedPlayers.map((player, index) => {
-                                const gap = index > 0 && sortedPlayers ? sortedPlayers[index - 1].score - player.score : null;
-                                return (
-                                    <TableRow 
-                                        key={player.id}
-                                    >
-                                      <TableCell className={cn("text-center font-medium text-base sm:text-lg", 
-                                        index === 0 ? "text-yellow-400" :
-                                        index === 1 ? "text-slate-400" :
-                                        index === 2 ? "text-orange-400" :
-                                        "text-muted-foreground"
-                                      )}>
-                                        {index + 1}
-                                      </TableCell>
-                                      <TableCell className="font-medium text-base sm:text-lg">{player.name}</TableCell>
-                                      <TableCell className="text-right font-bold text-lg sm:text-xl text-primary tabular-nums">
-                                        {player.score > 0 ? `+${player.score}` : player.score}
-                                      </TableCell>
-                                      <TableCell className="text-right text-xs sm:text-sm text-muted-foreground tabular-nums">
-                                        {gap !== null ? `-${gap}` : '–'}
-                                      </TableCell>
-                                    </TableRow>
-                                );
-                            })
-                        )}
-                         {!isLoading && (!sortedPlayers || sortedPlayers.length === 0) && (
-                            <TableRow>
-                                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                                    No players yet. Go to Player Management to add one.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </ScrollArea>
-        </CardContent>
-    </Card>
+      <CardContent className="p-0">
+          <ScrollArea className="h-[calc(100vh-14.5rem)] sm:h-[calc(100vh-12rem)] md:h-[calc(100vh-16rem)]">
+              <Table>
+                  <TableHeader>
+                      <TableRow>
+                      <TableHead className="w-[50px] sm:w-[80px] text-center font-bold">Rank</TableHead>
+                      <TableHead className="font-bold">Player</TableHead>
+                      <TableHead className="w-[80px] sm:w-[120px] text-right font-bold">Score</TableHead>
+                      <TableHead className="w-[50px] sm:w-[120px] text-right font-bold">Gap</TableHead>
+                      </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                      {isLoading ? <PlayerListSkeleton /> : (
+                          sortedPlayers && sortedPlayers.map((player, index) => {
+                              const gap = index > 0 && sortedPlayers ? sortedPlayers[index - 1].score - player.score : null;
+                              return (
+                                  <TableRow 
+                                      key={player.id}
+                                  >
+                                    <TableCell className={cn("text-center font-medium text-base sm:text-lg", 
+                                      index === 0 ? "text-yellow-400" :
+                                      index === 1 ? "text-slate-400" :
+                                      index === 2 ? "text-orange-400" :
+                                      "text-muted-foreground"
+                                    )}>
+                                      {index + 1}
+                                    </TableCell>
+                                    <TableCell className="font-medium text-base sm:text-lg">{player.name}</TableCell>
+                                    <TableCell className="text-right font-bold text-lg sm:text-xl text-primary tabular-nums">
+                                      {player.score > 0 ? `+${player.score}` : player.score}
+                                    </TableCell>
+                                    <TableCell className="text-right text-xs sm:text-sm text-muted-foreground tabular-nums">
+                                      {gap !== null ? `-${gap}` : '–'}
+                                    </TableCell>
+                                  </TableRow>
+                              );
+                          })
+                      )}
+                        {!isLoading && (!sortedPlayers || sortedPlayers.length === 0) && (
+                          <TableRow>
+                              <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                                  No players yet. Go to Player Management to add one.
+                              </TableCell>
+                          </TableRow>
+                      )}
+                  </TableBody>
+              </Table>
+          </ScrollArea>
+      </CardContent>
   );
 }

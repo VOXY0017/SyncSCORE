@@ -9,7 +9,7 @@ import { useData } from '@/app/context/data-context';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import {
   AlertDialog,
@@ -147,109 +147,107 @@ export default function PlayerManagement() {
 
   return (
     <>
-        <Card id="player-management" className="w-full shadow-none border-0 rounded-t-none">
-            <CardContent className="p-2 sm:p-4 space-y-4">
-                <div className="flex w-full flex-col sm:flex-row items-center gap-2">
-                    <form onSubmit={handleAddPlayer} className="flex-grow w-full">
-                        <Input
-                            placeholder="Add new player and press Enter..."
-                            value={newPlayerName}
-                            onChange={(e) => setNewPlayerName(e.target.value)}
-                            disabled={isPending || isLoading}
-                            className="h-9 text-base"
-                            aria-label="New player name"
-                        />
-                    </form>
-                    <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Reset all scores">
-                        <RotateCcw className="h-4 w-4 md:mr-2" />
-                        <span className="hidden md:inline">Reset All</span>
-                    </Button>
-                </div>
-                <ScrollArea className="h-[calc(100vh-19rem)] sm:h-[calc(100vh-16.5rem)] md:h-[calc(100vh-20.5rem)]">
-                    <Table>
-                    <TableBody>
-                        {isLoading ? (
-                        <ManagementSkeleton />
-                        ) : sortedPlayers && sortedPlayers.length > 0 ? (
-                        sortedPlayers.map((player) => (
-                            <TableRow key={player.id}>
-                                <TableCell className="p-2 w-[40px]">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </TableCell>
-                                <TableCell className="font-medium p-2 text-sm w-full">
-                                    <Link href={`/history/${player.id}`} className="hover:underline">
-                                        {player.name}
-                                    </Link>
-                                </TableCell>
-                                <TableCell className='text-right p-2'>
-                                    <Input
-                                    type="number"
-                                    placeholder="Pts"
-                                    className="h-8 text-center ml-auto text-sm w-20"
-                                    value={pointInputs[player.id] || ''}
-                                    onChange={(e) => handlePointInputChange(player.id, e.target.value)}
-                                    disabled={isPending}
-                                    aria-label={`Points for ${player.name}`}
-                                    />
-                                </TableCell>
-                                <TableCell className="text-right w-[80px] space-x-1 p-2">
-                                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
-                                        <Plus className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
-                                        <Minus className="h-4 w-4" />
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))
-                        ) : (
-                        <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                            {isLoading ? 'Loading players...' : 'Add a player to begin.'}
-                            </TableCell>
-                        </TableRow>
-                        )}
-                    </TableBody>
-                    </Table>
-                </ScrollArea>
-            </CardContent>
-        </Card>
+      <CardContent className="p-2 sm:p-4 space-y-4">
+          <div className="flex w-full flex-col sm:flex-row items-center gap-2">
+              <form onSubmit={handleAddPlayer} className="flex-grow w-full">
+                  <Input
+                      placeholder="Add new player and press Enter..."
+                      value={newPlayerName}
+                      onChange={(e) => setNewPlayerName(e.target.value)}
+                      disabled={isPending || isLoading}
+                      className="h-9 text-base"
+                      aria-label="New player name"
+                  />
+              </form>
+              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Reset all scores">
+                  <RotateCcw className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">Reset All</span>
+              </Button>
+          </div>
+          <ScrollArea className="h-[calc(100vh-19rem)] sm:h-[calc(100vh-16.5rem)] md:h-[calc(100vh-20.5rem)]">
+              <Table>
+              <TableBody>
+                  {isLoading ? (
+                  <ManagementSkeleton />
+                  ) : sortedPlayers && sortedPlayers.length > 0 ? (
+                  sortedPlayers.map((player) => (
+                      <TableRow key={player.id}>
+                          <TableCell className="p-2 w-[40px]">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
+                                  <X className="h-4 w-4" />
+                              </Button>
+                          </TableCell>
+                          <TableCell className="font-medium p-2 text-sm w-full">
+                              <Link href={`/history/${player.id}`} className="hover:underline">
+                                  {player.name}
+                              </Link>
+                          </TableCell>
+                          <TableCell className='text-right p-2'>
+                              <Input
+                              type="number"
+                              placeholder="Pts"
+                              className="h-8 text-center ml-auto text-sm w-20"
+                              value={pointInputs[player.id] || ''}
+                              onChange={(e) => handlePointInputChange(player.id, e.target.value)}
+                              disabled={isPending}
+                              aria-label={`Points for ${player.name}`}
+                              />
+                          </TableCell>
+                          <TableCell className="text-right w-[80px] space-x-1 p-2">
+                              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
+                                  <Plus className="h-4 w-4" />
+                              </Button>
+                              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
+                                  <Minus className="h-4 w-4" />
+                              </Button>
+                          </TableCell>
+                      </TableRow>
+                  ))
+                  ) : (
+                  <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                      {isLoading ? 'Loading players...' : 'Add a player to begin.'}
+                      </TableCell>
+                  </TableRow>
+                  )}
+              </TableBody>
+              </Table>
+          </ScrollArea>
+      </CardContent>
 
-        <AlertDialog open={isDeleteAlertOpen} onOpenChange={handleAlertOpenChange}>
-            <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete <strong>{playerToDelete?.name}</strong> and all of their score history.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={confirmDeletePlayer} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isPending}>
-                {isPending ? "Deleting..." : "Delete"}
-                </AlertDialogAction>
-            </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-        
-        <AlertDialog open={isResetAlertOpen} onOpenChange={setResetAlertOpen}>
-            <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Reset all scores?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    This action cannot be undone. This will reset the score of every player to 0 and clear all score histories.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={confirmResetScores} disabled={isPending}>
-                {isPending ? "Resetting..." : "Reset Scores"}
-                </AlertDialogAction>
-            </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={handleAlertOpenChange}>
+          <AlertDialogContent>
+          <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete <strong>{playerToDelete?.name}</strong> and all of their score history.
+              </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeletePlayer} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isPending}>
+              {isPending ? "Deleting..." : "Delete"}
+              </AlertDialogAction>
+          </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
+      
+      <AlertDialog open={isResetAlertOpen} onOpenChange={setResetAlertOpen}>
+          <AlertDialogContent>
+          <AlertDialogHeader>
+              <AlertDialogTitle>Reset all scores?</AlertDialogTitle>
+              <AlertDialogDescription>
+                  This action cannot be undone. This will reset the score of every player to 0 and clear all score histories.
+              </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmResetScores} disabled={isPending}>
+              {isPending ? "Resetting..." : "Reset Scores"}
+              </AlertDialogAction>
+          </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

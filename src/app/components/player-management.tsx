@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, X, Trophy, Users, RotateCcw } from 'lucide-react';
+import { Plus, Minus, X, Users, RotateCcw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
@@ -145,24 +145,17 @@ export default function PlayerManagement() {
   );
 
   return (
-    <div className="min-h-screen w-full bg-custom-background bg-cover bg-center relative flex flex-col">
-      <div className="absolute inset-0 bg-black/60 z-0" />
-      <div className="container flex-grow max-w-screen-lg mx-auto py-4 sm:py-8 relative z-10">
-        <Card id="player-management" className="w-full shadow-md">
+    <>
+        <Card id="player-management" className="w-full shadow-md h-full">
             <CardHeader className="pb-4">
                 <CardTitle className="flex items-center justify-between gap-3 text-xl sm:text-2xl">
                     <div className="flex items-center gap-3">
                         <Users className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
-                        Player Management
+                        Manajemen Pemain
                     </div>
                     <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Reset all scores">
                             <RotateCcw className="h-5 w-5 sm:h-6 sm:w-6" />
-                        </Button>
-                        <Button variant="ghost" size="icon" asChild aria-label="Go to Leaderboard">
-                            <Link href="/">
-                                <Trophy className="h-5 w-5 sm:h-6 sm:w-6" />
-                            </Link>
                         </Button>
                     </div>
                 </CardTitle>
@@ -178,7 +171,7 @@ export default function PlayerManagement() {
                         aria-label="New player name"
                     />
                 </form>
-                <ScrollArea className="h-[calc(100vh-13rem)] sm:h-[calc(100vh-14rem)]">
+                <ScrollArea className="h-[calc(100vh-22rem)] sm:h-[calc(100vh-23rem)]">
                     <Table>
                     <TableBody>
                         {isLoading ? (
@@ -229,42 +222,40 @@ export default function PlayerManagement() {
                 </ScrollArea>
             </CardContent>
         </Card>
-      </div>
 
-    <AlertDialog open={isDeleteAlertOpen} onOpenChange={handleAlertOpenChange}>
-        <AlertDialogContent>
-        <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete <strong>{playerToDelete?.name}</strong> and all of their score history.
-            </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeletePlayer} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isPending}>
-            {isPending ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-        </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
-    
-    <AlertDialog open={isResetAlertOpen} onOpenChange={setResetAlertOpen}>
-        <AlertDialogContent>
-        <AlertDialogHeader>
-            <AlertDialogTitle>Reset all scores?</AlertDialogTitle>
-            <AlertDialogDescription>
-                This action cannot be undone. This will reset the score of every player to 0 and clear all score histories.
-            </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmResetScores} disabled={isPending}>
-            {isPending ? "Resetting..." : "Reset Scores"}
-            </AlertDialogAction>
-        </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
-
-    </div>
+        <AlertDialog open={isDeleteAlertOpen} onOpenChange={handleAlertOpenChange}>
+            <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete <strong>{playerToDelete?.name}</strong> and all of their score history.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDeletePlayer} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isPending}>
+                {isPending ? "Deleting..." : "Delete"}
+                </AlertDialogAction>
+            </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        
+        <AlertDialog open={isResetAlertOpen} onOpenChange={setResetAlertOpen}>
+            <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Reset all scores?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. This will reset the score of every player to 0 and clear all score histories.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmResetScores} disabled={isPending}>
+                {isPending ? "Resetting..." : "Reset Scores"}
+                </AlertDialogAction>
+            </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    </>
   );
 }

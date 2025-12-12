@@ -3,7 +3,6 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import type { Player } from '@/lib/types';
-import Link from 'next/link';
 import { useData } from '@/app/context/data-context';
 
 import { Button } from '@/components/ui/button';
@@ -62,6 +61,13 @@ export default function Leaderboard() {
         ))}
     </>
   );
+  
+  const handleSwitchTab = () => {
+    const managementTab = document.querySelector('[data-radix-collection-item][value="management"]');
+    if (managementTab instanceof HTMLElement) {
+      managementTab.click();
+    }
+  };
 
   return (
     <Card className="shadow-md h-full">
@@ -71,10 +77,8 @@ export default function Leaderboard() {
                     <Trophy className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
                     Leaderboard
                 </div>
-                <Button variant="ghost" size="icon" asChild aria-label="Go to Player Management">
-                    <Link href="/management">
-                        <Users className="h-5 w-5 sm:h-6 sm:w-6" />
-                    </Link>
+                <Button variant="ghost" size="icon" onClick={handleSwitchTab} aria-label="Go to Player Management">
+                    <Users className="h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
             </CardTitle>
         </CardHeader>

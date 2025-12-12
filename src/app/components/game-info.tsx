@@ -34,7 +34,7 @@ export default function GameInfo() {
         players.forEach(player => {
             playerGameCounts[player.name] = history.filter(h => h.playerName === player.name).length;
         });
-        if (Object.keys(playerGameCounts).length === players.length) {
+        if (Object.keys(playerGameCounts).length === players.length && players.length > 0) {
             completedRounds = Math.min(...Object.values(playerGameCounts));
         }
       }
@@ -111,7 +111,7 @@ export default function GameInfo() {
     }
 
     return (
-      <div className='flex items-center gap-3'>
+      <div key={player.name} className='flex items-center gap-3'>
         <Icon className={`h-6 w-6 sm:h-7 sm:w-7 ${iconColor}`} />
         <div className='text-left'>
           <p className="text-muted-foreground text-xs sm:text-sm">{title}</p>

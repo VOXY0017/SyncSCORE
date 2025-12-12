@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Minus, X, Trophy, Users, RotateCcw, History } from 'lucide-react';
+import { Plus, Minus, X, Trophy, Users, RotateCcw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Static data
@@ -121,7 +121,6 @@ export default function PlayerManagement() {
         <TableRow key={i}>
             <TableCell className="p-2 w-[40px]"><Skeleton className="h-8 w-8" /></TableCell>
             <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
-            <TableCell><Skeleton className="h-8 w-8" /></TableCell>
             <TableCell className="text-right"><Skeleton className="h-9 w-20 ml-auto" /></TableCell>
             <TableCell className="flex justify-end gap-2">
                 <Skeleton className="h-9 w-9" />
@@ -183,13 +182,6 @@ export default function PlayerManagement() {
                                     <Link href={`/history/${player.id}`} className="hover:underline">
                                         {player.name}
                                     </Link>
-                                </TableCell>
-                                <TableCell className="p-2 w-[40px]">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" asChild>
-                                      <Link href={`/history/${player.id}`}>
-                                          <History className="h-4 w-4" />
-                                      </Link>
-                                    </Button>
                                 </TableCell>
                                 <TableCell className='text-right p-2'>
                                     <Input

@@ -14,8 +14,10 @@ import { useSyncedState } from '@/hooks/use-synced-state';
 
 interface PivotData {
   players: string[];
-  games: number;
-  scores: Record<string, (number | null)[]>;
+  games: {
+    gameNumber: number;
+    scores: Record<string, number | null>;
+  }[];
 }
 
 export default function GlobalScoreHistory() {
@@ -27,10 +29,8 @@ export default function GlobalScoreHistory() {
   useEffect(() => {
       if (history === undefined || players === undefined) return;
 
-      const sortedHistory = [...history].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-
       if (players.length > 0) {
-        const allPlayers = players.map(p => p.name);
+        const allPlayerNames = players.map(p => p.name);
         
         const playerGameCounts = players.reduce((acc, player) => {
             acc[player.name] = history.filter(h => h.playerName === player.name).length;
@@ -41,34 +41,46 @@ export default function GlobalScoreHistory() {
         const maxGames = Math.max(0, ...Object.values(playerGameCounts));
         const totalGamesToDisplay = maxGames > completedRounds ? maxGames : completedRounds + 1;
         const nextGameNumber = completedRounds + 1;
-
-
-        // Player rotation logic
+        
         if (nextGameNumber % 2 !== 0) { // Ganjil (Odd) -> A-Z
-          allPlayers.sort((a, b) => a.localeCompare(b)); 
+          allPlayerNames.sort((a, b) => a.localeCompare(b)); 
         } else { // Genap (Even) -> Z-A
-          allPlayers.sort((a, b) => b.localeCompare(a)); 
+          allPlayerNames.sort((a, b) => b.localeCompare(a)); 
         }
 
-        const pivotedScores: Record<string, (number | null)[]> = {};
-        allPlayers.forEach(player => {
-            pivotedScores[player] = Array(totalGamesToDisplay).fill(null);
-            const playerHistory = sortedHistory.filter(h => h.playerName === player);
-            playerHistory.forEach((entry, index) => {
-                if (index < totalGamesToDisplay) {
-                    pivotedScores[player][index] = entry.points;
-                }
-            });
+        const gameData: PivotData['games'] = [];
+        
+        // Group history by game round
+        const historyByPlayer: Record<string, ScoreEntry[]> = {};
+        allPlayerNames.forEach(name => {
+          historyByPlayer[name] = history
+            .filter(h => h.playerName === name)
+            .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         });
 
+        for (let i = 0; i < totalGamesToDisplay; i++) {
+            const gameScores: Record<string, number | null> = {};
+            allPlayerNames.forEach(playerName => {
+                const playerHistory = historyByPlayer[playerName];
+                if (playerHistory && playerHistory[i]) {
+                    gameScores[playerName] = playerHistory[i].points;
+                } else {
+                    gameScores[playerName] = null;
+                }
+            });
+            gameData.push({
+                gameNumber: i + 1,
+                scores: gameScores
+            });
+        }
+
         setPivotData({
-          players: allPlayers,
-          games: totalGamesToDisplay,
-          scores: pivotedScores,
+          players: allPlayerNames,
+          games: gameData,
         });
 
       } else {
-        setPivotData({ players: [], games: 1, scores: {} });
+        setPivotData({ players: [], games: [] });
       }
 
       setIsLoading(false);
@@ -76,24 +88,14 @@ export default function GlobalScoreHistory() {
 
   const HistorySkeleton = () => (
     <>
-      <TableRow>
-        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-        {[...Array(5)].map((_, i) => (
-          <TableCell key={i}><Skeleton className="h-5 w-16" /></TableCell>
-        ))}
-      </TableRow>
-       <TableRow>
-        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-        {[...Array(5)].map((_, i) => (
-          <TableCell key={i}><Skeleton className="h-5 w-16" /></TableCell>
-        ))}
-      </TableRow>
-       <TableRow>
-        <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-        {[...Array(5)].map((_, i) => (
-          <TableCell key={i}><Skeleton className="h-5 w-16" /></TableCell>
-        ))}
-      </TableRow>
+      {[...Array(5)].map((_, i) => (
+        <TableRow key={i}>
+            <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+            <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+        </TableRow>
+      ))}
     </>
   );
 
@@ -110,12 +112,12 @@ export default function GlobalScoreHistory() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="sticky left-0 bg-card z-10 font-bold min-w-[120px]">Player</TableHead>
+                <TableHead className="sticky left-0 bg-card z-10 font-bold min-w-[80px]">Game</TableHead>
                 {isLoading ? (
-                  [...Array(5)].map((_, i) => <TableHead key={i}><Skeleton className="h-5 w-20" /></TableHead>)
+                  [...Array(4)].map((_, i) => <TableHead key={i}><Skeleton className="h-5 w-24" /></TableHead>)
                 ) : (
-                  pivotData && [...Array(pivotData.games)].map((_, i) => (
-                    <TableHead key={i} className="text-center">Game {i + 1}</TableHead>
+                  pivotData && pivotData.players.map((player) => (
+                    <TableHead key={player} className="text-center">{player}</TableHead>
                   ))
                 )}
               </TableRow>
@@ -123,33 +125,36 @@ export default function GlobalScoreHistory() {
             <TableBody>
               {isLoading ? (
                 <HistorySkeleton />
-              ) : pivotData && pivotData.players.length > 0 ? (
-                pivotData.players.map((player) => (
-                  <TableRow key={player}>
+              ) : pivotData && pivotData.games.length > 0 ? (
+                pivotData.games.map((game) => (
+                  <TableRow key={game.gameNumber}>
                     <TableCell className="sticky left-0 bg-card z-10 font-medium">
-                      {player}
+                      Game {game.gameNumber}
                     </TableCell>
-                    {pivotData.scores[player].map((score, gameIndex) => (
-                      <TableCell key={gameIndex} className="text-center">
-                        {score !== null ? (
-                          <span
-                            className={cn(
-                              "font-bold",
-                              score > 0 ? "text-green-400" : "text-red-400"
-                            )}
-                          >
-                            {score > 0 ? `+${score}` : score}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground"> – </span>
-                        )}
-                      </TableCell>
-                    ))}
+                    {pivotData.players.map((player) => {
+                      const score = game.scores[player];
+                      return (
+                        <TableCell key={`${game.gameNumber}-${player}`} className="text-center">
+                          {score !== null ? (
+                            <span
+                              className={cn(
+                                "font-bold",
+                                score > 0 ? "text-green-400" : "text-red-400"
+                              )}
+                            >
+                              {score > 0 ? `+${score}` : score}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground"> – </span>
+                          )}
+                        </TableCell>
+                      )
+                    })}
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={pivotData ? pivotData.players.length + 1 : 2} className="h-24 text-center text-muted-foreground">
                     Belum ada riwayat skor.
                   </TableCell>
                 </TableRow>

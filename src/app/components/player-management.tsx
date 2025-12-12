@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useState, useTransition, useEffect } from 'react';
 import type { Player, ScoreEntry } from '@/lib/types';
 import Link from 'next/link';
-import { useSyncedState } from '@/hooks/use-synced-state';
+import { useData } from '@/app/context/data-context';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,8 +27,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 
 export default function PlayerManagement() {
-  const [players, setPlayers] = useSyncedState<Player[]>('players', []);
-  const [history, setHistory] = useSyncedState<ScoreEntry[]>('scoreHistory', []);
+  const { players, setPlayers, history, setHistory } = useData();
   const [sortedPlayers, setSortedPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -44,7 +43,7 @@ export default function PlayerManagement() {
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (players) {
+    if (players !== undefined) {
         setSortedPlayers([...players].sort((a, b) => a.name.localeCompare(b.name)));
         setIsLoading(false);
     }
@@ -53,7 +52,7 @@ export default function PlayerManagement() {
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = newPlayerName.trim();
-    if (!trimmedName || !players) return;
+    if (!trimmedName || players === undefined) return;
     
     // check for duplicate name
     if (players.find(p => p.name.toLowerCase() === trimmedName.toLowerCase())) {
@@ -74,7 +73,7 @@ export default function PlayerManagement() {
   };
 
   const handleScoreChange = (playerId: string, change: number) => {
-    if (isNaN(change) || change === 0 || !players) return;
+    if (isNaN(change) || change === 0 || players === undefined || history === undefined) return;
     
     const player = players.find(p => p.id === playerId);
     if (!player) return;

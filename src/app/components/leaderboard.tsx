@@ -2,9 +2,9 @@
 
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import type { Player, ScoreEntry } from '@/lib/types';
+import type { Player } from '@/lib/types';
 import Link from 'next/link';
-import { useSyncedState } from '@/hooks/use-synced-state';
+import { useData } from '@/app/context/data-context';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,8 +15,7 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Leaderboard() {
-  const [players] = useSyncedState<Player[]>('players', []);
-  const [history] = useSyncedState<ScoreEntry[]>('scoreHistory', []);
+  const { players, history } = useData();
   const [sortedPlayers, setSortedPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -29,7 +28,9 @@ export default function Leaderboard() {
             return acc;
         }, {} as Record<string, number>);
 
-        completedRounds = Math.min(...Object.values(playerGameCounts));
+        if (Object.keys(playerGameCounts).length === players.length) {
+            completedRounds = Math.min(...Object.values(playerGameCounts));
+        }
       }
 
       const nextGameNumber = completedRounds + 1;

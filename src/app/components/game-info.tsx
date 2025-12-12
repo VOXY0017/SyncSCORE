@@ -3,8 +3,8 @@
 
 import * as React from 'react';
 import { useState, useEffect } from 'react';
+import { useData } from '@/app/context/data-context';
 import type { Player, ScoreEntry } from '@/lib/types';
-import { useSyncedState } from '@/hooks/use-synced-state';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowRight, ArrowLeft, Trophy, Crown, Medal } from 'lucide-react';
@@ -16,8 +16,7 @@ interface TopPlayerData {
 }
 
 export default function GameInfo() {
-  const [players] = useSyncedState<Player[]>('players', []);
-  const [history] = useSyncedState<ScoreEntry[]>('scoreHistory', []);
+  const { players, history } = useData();
   const [isLoading, setIsLoading] = useState(true);
   const [gameInfo, setGameInfo] = useState<{
     direction: 'Kanan' | 'Kiri';
@@ -47,7 +46,6 @@ export default function GameInfo() {
         setGameInfo({ direction: 'Kiri', Icon: ArrowLeft });
       }
 
-      // Find top 3 players with the highest score from the previous round
       if (completedRounds > 0) {
           const previousRoundIndex = completedRounds - 1;
           const scoresFromPreviousRound: TopPlayerData[] = [];

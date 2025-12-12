@@ -3,13 +3,13 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import type { Player, ScoreEntry } from '@/lib/types';
+import { useData } from '@/app/context/data-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { History } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useSyncedState } from '@/hooks/use-synced-state';
 
 
 interface PivotData {
@@ -21,8 +21,7 @@ interface PivotData {
 }
 
 export default function GlobalScoreHistory() {
-  const [players] = useSyncedState<Player[]>('players', []);
-  const [history] = useSyncedState<ScoreEntry[]>('scoreHistory', []);
+  const { players, history } = useData();
   const [pivotData, setPivotData] = useState<PivotData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 

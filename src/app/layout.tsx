@@ -4,6 +4,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/theme-provider';
+import { DataProvider } from '@/app/context/data-context';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -33,8 +34,10 @@ export default function RootLayout({
           defaultTheme="dark"
           disableTransitionOnChange
         >
-          {children}
-          <Toaster />
+            <DataProvider>
+              {children}
+              <Toaster />
+            </DataProvider>
         </ThemeProvider>
       </body>
     </html>

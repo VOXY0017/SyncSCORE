@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import type { Player, ScoreEntry } from '@/lib/types';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { useSyncedState } from '@/hooks/use-synced-state';
+import { useData } from '@/app/context/data-context';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,15 +20,14 @@ interface ScoreHistoryProps {
 }
 
 export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
-  const [players] = useSyncedState<Player[]>('players', []);
-  const [history] = useSyncedState<ScoreEntry[]>('scoreHistory', []);
+  const { players, history } = useData();
 
   const [player, setPlayer] = useState<Player | null>(null);
   const [playerHistory, setPlayerHistory] = useState<ScoreEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (players && history) {
+    if (players !== undefined && history !== undefined) {
       const foundPlayer = players.find(p => p.id === playerId) || null;
       setPlayer(foundPlayer);
       if (foundPlayer) {

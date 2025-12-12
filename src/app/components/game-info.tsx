@@ -77,14 +77,10 @@ export default function GameInfo() {
   }, [players, history]);
 
   const InfoSkeleton = () => (
-      <div className="grid grid-cols-2 gap-4">
-        <div className='space-y-1'>
-            <Skeleton className="h-5 w-32" />
-            <Skeleton className="h-4 w-24" />
-        </div>
-        <div className='space-y-1 text-right'>
-            <Skeleton className="h-5 w-28 ml-auto" />
-            <Skeleton className="h-4 w-20 ml-auto" />
+      <div className="grid grid-cols-1 gap-4">
+        <div className='space-y-1 text-left'>
+            <Skeleton className="h-5 w-28" />
+            <Skeleton className="h-4 w-20" />
         </div>
         <div className='space-y-1'>
             <Skeleton className="h-5 w-28" />
@@ -99,36 +95,30 @@ export default function GameInfo() {
            {isLoading ? (
                <InfoSkeleton />
            ) : gameInfo ? (
-            <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className='flex items-center gap-3'>
-                    <Gamepad2 className="h-8 w-8 text-primary" />
-                    <div>
-                        <p className="text-muted-foreground">Game Berikutnya</p>
-                        <p className="font-bold text-lg">{gameInfo.nextGame}</p>
-                    </div>
-                </div>
-                <div className="text-right">
-                    <p className="text-muted-foreground">Arah Permainan</p>
-                    <div className="flex items-center gap-2 justify-end">
-                       <p className="font-bold text-lg">{gameInfo.direction}</p>
-                       <gameInfo.Icon className="h-5 w-5" />
-                    </div>
-                </div>
-
-                {highestPlayer && gameInfo.nextGame > 1 && (
-                 <>
-                    <div className='flex items-center gap-3 col-span-2'>
-                        <UserX className="h-8 w-8 text-destructive" />
-                        <div>
-                            <p className="text-muted-foreground">Pemain Pertama (Skor Game {gameInfo.nextGame - 1} Tertinggi)</p>
-                            <div className="flex items-baseline gap-2">
-                                <p className="font-bold text-lg">{highestPlayer.name}</p>
-                                <p className="font-bold text-sm text-destructive">({highestPlayer.score > 0 ? `+${highestPlayer.score}`: highestPlayer.score})</p>
-                            </div>
+            <div className="grid grid-cols-1 gap-4 text-sm">
+                <div className="flex items-center justify-between">
+                     <div className="text-left">
+                        <p className="text-muted-foreground">Arah Permainan</p>
+                        <div className="flex items-center gap-2 justify-start">
+                           <p className="font-bold text-lg">{gameInfo.direction}</p>
+                           <gameInfo.Icon className="h-5 w-5" />
                         </div>
                     </div>
-                 </>
-                )}
+                    {highestPlayer && gameInfo.nextGame > 1 && (
+                     <>
+                        <div className='flex items-center gap-3 text-right'>
+                            <div>
+                                <p className="text-muted-foreground">Pemain Pertama (Skor Game {gameInfo.nextGame - 1} Tertinggi)</p>
+                                <div className="flex items-baseline gap-2 justify-end">
+                                    <p className="font-bold text-lg">{highestPlayer.name}</p>
+                                    <p className="font-bold text-sm text-destructive">({highestPlayer.score > 0 ? `+${highestPlayer.score}`: highestPlayer.score})</p>
+                                </div>
+                            </div>
+                             <UserX className="h-8 w-8 text-destructive" />
+                        </div>
+                     </>
+                    )}
+                </div>
 
             </div>
            ) : <InfoSkeleton />}

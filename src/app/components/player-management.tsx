@@ -187,7 +187,7 @@ export default function PlayerManagement() {
                                     <Input
                                     type="number"
                                     placeholder="Pts"
-                                    className="h-8 text-center ml-auto text-sm w-16"
+                                    className="h-8 text-center ml-auto text-sm w-20"
                                     value={pointInputs[player.id] || ''}
                                     onChange={(e) => handlePointInputChange(player.id, e.target.value)}
                                     disabled={isPending}

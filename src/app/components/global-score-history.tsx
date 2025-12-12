@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import type { ScoreEntry } from '@/lib/types';
+import type { Player, ScoreEntry } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { History } from 'lucide-react';
@@ -19,17 +19,18 @@ interface PivotData {
 }
 
 export default function GlobalScoreHistory() {
+  const [players] = useSyncedState<Player[]>('players', []);
   const [history] = useSyncedState<ScoreEntry[]>('scoreHistory', []);
   const [pivotData, setPivotData] = useState<PivotData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-      if (history === undefined) return;
+      if (history === undefined || players === undefined) return;
 
       const sortedHistory = [...history].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
-      if (sortedHistory.length > 0) {
-        const allPlayers = [...new Set(history.map(h => h.playerName))];
+      if (players.length > 0) {
+        let allPlayers = [...players].map(p => p.name);
         
         const playerGameCounts = allPlayers.reduce((acc, player) => {
             acc[player] = history.filter(h => h.playerName === player).length;
@@ -41,9 +42,9 @@ export default function GlobalScoreHistory() {
 
         // Player rotation logic
         if (maxGames % 2 === 0) { // Genap (Even)
-          allPlayers.sort((a, b) => b.localeCompare(a)); // Z-A
-        } else { // Ganjil (Odd)
           allPlayers.sort((a, b) => a.localeCompare(b)); // A-Z
+        } else { // Ganjil (Odd)
+          allPlayers.sort((a, b) => b.localeCompare(a)); // Z-A
         }
 
         const pivotedScores: Record<string, (number | null)[]> = {};
@@ -68,7 +69,7 @@ export default function GlobalScoreHistory() {
       }
 
       setIsLoading(false);
-  }, [history]);
+  }, [history, players]);
 
   const HistorySkeleton = () => (
     <>

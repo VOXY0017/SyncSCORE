@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import type { Player } from '@/lib/types';
+import type { Player, ScoreEntry } from '@/lib/types';
 import Link from 'next/link';
 import { useSyncedState } from '@/hooks/use-synced-state';
 
@@ -10,13 +10,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Trophy, Users } from 'lucide-react';
+import { Trophy, Users, ArrowRight, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 
 export default function Leaderboard() {
   const [players] = useSyncedState<Player[]>('players', []);
+  const [history] = useSyncedState<ScoreEntry[]>('scoreHistory', []);
   const [sortedPlayers, setSortedPlayers] = useState<Player[]>([]);
+  const [gameDirection, setGameDirection] = useState<{text: string, icon: React.FC<any>}>({ text: 'Kanan', icon: ArrowRight });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -25,7 +28,26 @@ export default function Leaderboard() {
         setSortedPlayers(sorted);
         setIsLoading(false);
     }
-  }, [players]);
+    
+    if (history !== undefined) {
+      if (history.length > 0) {
+        const playerGameCounts = players.reduce((acc, player) => {
+            acc[player.name] = history.filter(h => h.playerName === player.name).length;
+            return acc;
+        }, {} as Record<string, number>);
+
+        const maxGames = Math.max(0, ...Object.values(playerGameCounts));
+
+        if (maxGames % 2 === 0) { // Genap (Even)
+          setGameDirection({ text: 'Kiri', icon: ArrowLeft }); // Z-A
+        } else { // Ganjil (Odd)
+          setGameDirection({ text: 'Kanan', icon: ArrowRight }); // A-Z
+        }
+      } else {
+        setGameDirection({ text: 'Kanan', icon: ArrowRight });
+      }
+    }
+  }, [players, history]);
 
   const PlayerListSkeleton = () => (
     <>
@@ -47,6 +69,10 @@ export default function Leaderboard() {
                 <div className="flex items-center gap-3">
                     <Trophy className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
                     Score Markas B7
+                    <Badge variant="outline" className="flex items-center gap-1.5 py-1 px-2 text-sm sm:text-base font-semibold">
+                      {gameDirection.text}
+                      <gameDirection.icon className="h-4 w-4" />
+                    </Badge>
                 </div>
                 <Button variant="ghost" size="icon" asChild aria-label="Go to Player Management">
                     <Link href="/management">

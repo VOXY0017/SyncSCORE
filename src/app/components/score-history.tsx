@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -60,15 +59,15 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
               <CardTitle className="flex items-center justify-between gap-3 text-lg sm:text-xl">
                 <div className="flex items-center gap-2">
                   <History className="h-5 w-5 text-primary" />
-                  Score History: {isLoading ? <Skeleton className="h-6 w-28" /> : player?.name || 'Unknown Player'}
+                  Riwayat Skor: {isLoading ? <Skeleton className="h-6 w-28" /> : player?.name || 'Pemain Tidak Dikenal'}
                 </div>
                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" asChild aria-label="Go to Player Management">
+                    <Button variant="ghost" size="icon" asChild aria-label="Buka Manajemen Pemain">
                         <Link href="/management">
                             <Users className="h-5 w-5" />
                         </Link>
                     </Button>
-                    <Button variant="ghost" size="icon" asChild aria-label="Go Back">
+                    <Button variant="ghost" size="icon" asChild aria-label="Kembali">
                         <Link href="/management">
                             <ArrowLeft className="h-5 w-5" />
                         </Link>
@@ -81,8 +80,8 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[100px] sm:w-[120px] font-bold p-1 sm:p-2">Points</TableHead>
-                      <TableHead className="font-bold p-1 sm:p-2">Timestamp</TableHead>
+                      <TableHead className="w-[100px] sm:w-[120px] font-bold p-1 sm:p-2">Poin</TableHead>
+                      <TableHead className="font-bold p-1 sm:p-2">Waktu</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -101,7 +100,7 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                     {!isLoading && (!playerHistory || playerHistory.length === 0) && (
                       <TableRow>
                         <TableCell colSpan={2} className="h-20 text-center text-muted-foreground">
-                          {player ? 'No score entries yet for this player.' : 'Player not found.'}
+                          {player ? 'Belum ada entri skor untuk pemain ini.' : 'Pemain tidak ditemukan.'}
                         </TableCell>
                       </TableRow>
                     )}

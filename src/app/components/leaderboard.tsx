@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -67,10 +66,10 @@ export default function Leaderboard() {
               <Table>
                   <TableHeader>
                       <TableRow>
-                      <TableHead className="w-[50px] text-center font-bold p-1 sm:p-2">Rank</TableHead>
-                      <TableHead className="font-bold p-1 sm:p-2">Player</TableHead>
-                      <TableHead className="w-[80px] text-right font-bold p-1 sm:p-2">Score</TableHead>
-                      <TableHead className="w-[50px] text-right font-bold p-1 sm:p-2">Gap</TableHead>
+                      <TableHead className="w-[50px] text-center font-bold p-1 sm:p-2">Peringkat</TableHead>
+                      <TableHead className="font-bold p-1 sm:p-2">Pemain</TableHead>
+                      <TableHead className="w-[80px] text-right font-bold p-1 sm:p-2">Skor</TableHead>
+                      <TableHead className="w-[50px] text-right font-bold p-1 sm:p-2">Jarak</TableHead>
                       </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -105,7 +104,7 @@ export default function Leaderboard() {
                         {!isLoading && (!sortedPlayers || sortedPlayers.length === 0) && (
                           <TableRow>
                               <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                                  No players yet. Go to Player Management to add one.
+                                  Belum ada pemain. Tambahkan di menu Kelola.
                               </TableCell>
                           </TableRow>
                       )}

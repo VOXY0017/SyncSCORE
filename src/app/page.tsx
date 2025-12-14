@@ -1,4 +1,3 @@
-
 'use client';
 import Leaderboard from './components/leaderboard';
 import GlobalScoreHistory from './components/global-score-history';
@@ -26,7 +25,7 @@ export default function Home() {
               "text-center text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary via-white to-primary sm:text-4xl",
               fontPoppins.className
             )}>
-              Score Markas B7
+              Papan Skor Markas B7
             </h1>
           <div className="grid grid-cols-3 gap-2 sm:gap-6">
               <RotationInfo />
@@ -39,15 +38,15 @@ export default function Home() {
                  <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="leaderboard">
                       <Trophy className="h-4" />
-                      <span className="hidden sm:inline">Leaderboard</span>
+                      <span className="hidden sm:inline">Peringkat</span>
                     </TabsTrigger>
                     <TabsTrigger value="history">
                       <History className="h-4" />
-                      <span className="hidden sm:inline">History</span>
+                      <span className="hidden sm:inline">Riwayat</span>
                     </TabsTrigger>
                     <TabsTrigger value="management">
                       <Users className="h-4" />
-                      <span className="hidden sm:inline">Manage</span>
+                      <span className="hidden sm:inline">Kelola</span>
                     </TabsTrigger>
                   </TabsList>
               </div>

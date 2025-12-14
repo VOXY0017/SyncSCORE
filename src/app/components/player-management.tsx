@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -54,7 +53,6 @@ export default function PlayerManagement() {
     if (!trimmedName || players === undefined) return;
     
     if (players.find(p => p.name.toLowerCase() === trimmedName.toLowerCase())) {
-        // Player exists toast removed
         return;
     }
 
@@ -141,17 +139,17 @@ export default function PlayerManagement() {
               <div className="flex flex-row items-center gap-2">
                   <form onSubmit={handleAddPlayer} className="flex-grow">
                       <Input
-                          placeholder="Add new player and press Enter..."
+                          placeholder="Tambah pemain baru dan tekan Enter..."
                           value={newPlayerName}
                           onChange={(e) => setNewPlayerName(e.target.value)}
                           disabled={isPending || isLoading}
                           className="h-8 text-sm"
-                          aria-label="New player name"
+                          aria-label="Nama pemain baru"
                       />
                   </form>
-                  <Button variant="outline" size="sm" className="h-8" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Reset all scores">
+                  <Button variant="outline" size="sm" className="h-8" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Atur ulang semua skor">
                       <RotateCcw className="h-4 w-4 md:mr-2" />
-                      <span className="hidden md:inline">Reset All</span>
+                      <span className="hidden md:inline">Atur Ulang</span>
                   </Button>
               </div>
           </div>
@@ -164,7 +162,7 @@ export default function PlayerManagement() {
                   sortedPlayers.map((player) => (
                       <TableRow key={player.id}>
                           <TableCell className="p-1 sm:p-2 w-[40px]">
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Delete player ${player.name}`}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Hapus pemain ${player.name}`}>
                                   <X className="h-4 w-4" />
                               </Button>
                           </TableCell>
@@ -177,17 +175,17 @@ export default function PlayerManagement() {
                               <div className="flex items-center justify-end gap-1">
                                 <Input
                                 type="number"
-                                placeholder="Pts"
+                                placeholder="Poin"
                                 className="h-8 text-center text-sm w-[70px]"
                                 value={pointInputs[player.id] || ''}
                                 onChange={(e) => handlePointInputChange(player.id, e.target.value)}
                                 disabled={isPending}
-                                aria-label={`Points for ${player.name}`}
+                                aria-label={`Poin untuk ${player.name}`}
                                 />
-                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
+                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor untuk ${player.name}`}>
                                     <Plus className="h-4 w-4" />
                                 </Button>
-                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
+                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Kurangi skor untuk ${player.name}`}>
                                     <Minus className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -197,7 +195,7 @@ export default function PlayerManagement() {
                   ) : (
                   <TableRow>
                       <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
-                      {isLoading ? 'Loading players...' : 'Add a player to begin.'}
+                      {isLoading ? 'Memuat pemain...' : 'Tambahkan pemain untuk memulai.'}
                       </TableCell>
                   </TableRow>
                   )}
@@ -209,15 +207,15 @@ export default function PlayerManagement() {
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={handleAlertOpenChange}>
           <AlertDialogContent>
           <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogTitle>Apakah Anda benar-benar yakin?</AlertDialogTitle>
               <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete <strong>{playerToDelete?.name}</strong> and all of their score history.
+                  Tindakan ini tidak dapat dibatalkan. Ini akan menghapus <strong>{playerToDelete?.name}</strong> secara permanen beserta semua riwayat skornya.
               </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>Batal</AlertDialogCancel>
               <AlertDialogAction onClick={confirmDeletePlayer} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isPending}>
-              {isPending ? "Deleting..." : "Delete"}
+              {isPending ? "Menghapus..." : "Hapus"}
               </AlertDialogAction>
           </AlertDialogFooter>
           </AlertDialogContent>
@@ -226,15 +224,15 @@ export default function PlayerManagement() {
       <AlertDialog open={isResetAlertOpen} onOpenChange={setResetAlertOpen}>
           <AlertDialogContent>
           <AlertDialogHeader>
-              <AlertDialogTitle>Reset all scores?</AlertDialogTitle>
+              <AlertDialogTitle>Atur ulang semua skor?</AlertDialogTitle>
               <AlertDialogDescription>
-                  This action cannot be undone. This will reset the score of every player to 0 and clear all score histories.
+                  Tindakan ini tidak dapat dibatalkan. Ini akan mengatur ulang skor setiap pemain menjadi 0 dan menghapus semua riwayat skor.
               </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>Batal</AlertDialogCancel>
               <AlertDialogAction onClick={confirmResetScores} disabled={isPending}>
-              {isPending ? "Resetting..." : "Reset Scores"}
+              {isPending ? "Mengatur ulang..." : "Atur Ulang Skor"}
               </AlertDialogAction>
           </AlertDialogFooter>
           </AlertDialogContent>

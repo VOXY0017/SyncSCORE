@@ -5,7 +5,7 @@ import GlobalScoreHistory from './components/global-score-history';
 import { RotationInfo, TopPlayerInfo, ThemeToggle } from './components/game-info';
 import PlayerManagement from './components/player-management';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardHeader } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Trophy, History, Users } from 'lucide-react';
 import { Poppins } from 'next/font/google';
 import { cn } from '@/lib/utils';
@@ -35,7 +35,7 @@ export default function Home() {
           </div>
           <Tabs defaultValue="leaderboard" className="w-full">
             <Card>
-              <CardHeader className="p-2">
+              <div className="p-2">
                  <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="leaderboard">
                       <Trophy className="h-4 mr-2" />
@@ -50,7 +50,7 @@ export default function Home() {
                       Manage
                     </TabsTrigger>
                   </TabsList>
-              </CardHeader>
+              </div>
               <TabsContent value="leaderboard">
                 <Leaderboard />
               </TabsContent>

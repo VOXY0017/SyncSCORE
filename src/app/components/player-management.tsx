@@ -22,7 +22,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useToast } from '@/hooks/use-toast';
 import { Plus, Minus, X, RotateCcw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -34,7 +33,6 @@ export default function PlayerManagement() {
 
   const [newPlayerName, setNewPlayerName] = useState('');
   const [isPending, startTransition] = useTransition();
-  const { toast } = useToast();
   
   const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
@@ -56,7 +54,7 @@ export default function PlayerManagement() {
     if (!trimmedName || players === undefined) return;
     
     if (players.find(p => p.name.toLowerCase() === trimmedName.toLowerCase())) {
-        toast({ title: "Player Exists", description: "A player with that name already exists.", variant: "destructive" });
+        // Player exists toast removed
         return;
     }
 
@@ -68,7 +66,6 @@ export default function PlayerManagement() {
       };
       setPlayers(prev => [...(prev || []), newPlayer]);
       setNewPlayerName('');
-      toast({ title: "Player Added", description: `${trimmedName} has joined the game!`});
     });
   };
 
@@ -92,7 +89,6 @@ export default function PlayerManagement() {
         setHistory(prev => [...(prev || []), newHistoryEntry]);
 
         setPointInputs(prev => ({...prev, [playerId]: ''}));
-        toast({ title: "Score Updated", description: `Score for ${player.name} has been updated by ${change}.`});
     });
   };
   
@@ -106,7 +102,6 @@ export default function PlayerManagement() {
     startTransition(() => {
       setPlayers(prev => (prev || []).filter(p => p.id !== playerToDelete.id));
       setHistory(prev => (prev || []).filter(h => h.playerName !== playerToDelete.name));
-      toast({ title: "Player Removed", description: `${playerToDelete.name} has been removed.`});
       setDeleteAlertOpen(false);
       setPlayerToDelete(null);
     });
@@ -123,7 +118,6 @@ export default function PlayerManagement() {
     startTransition(() => {
         setPlayers(prev => (prev || []).map(p => ({...p, score: 0})));
         setHistory([]);
-        toast({ title: "Scores Reset", description: "All player scores have been set to 0 and history cleared."});
         setResetAlertOpen(false);
     });
   };

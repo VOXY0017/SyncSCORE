@@ -100,7 +100,7 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                     )}
                     {!isLoading && (!playerHistory || playerHistory.length === 0) && (
                       <TableRow>
-                        <TableCell colSpan={2} className="h-24 text-center text-muted-foreground">
+                        <TableCell colSpan={2} className="h-20 text-center text-muted-foreground">
                           {player ? 'No score entries yet for this player.' : 'Player not found.'}
                         </TableCell>
                       </TableRow>

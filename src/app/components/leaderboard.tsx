@@ -63,7 +63,7 @@ export default function Leaderboard() {
 
   return (
       <CardContent className="p-0">
-          <ScrollArea className="h-[calc(100vh-17.5rem)] sm:h-[calc(100vh-16rem)]">
+          <ScrollArea className="h-[calc(100vh-22rem)] sm:h-[calc(100vh-20rem)]">
               <Table>
                   <TableHeader>
                       <TableRow>
@@ -82,7 +82,7 @@ export default function Leaderboard() {
                                       key={player.id}
                                   >
                                     <TableCell className={cn("text-center font-medium text-base p-1 sm:p-2", 
-                                      index === 0 ? "text-yellow-400" :
+                                      index === 0 ? "text-warning" :
                                       index === 1 ? "text-slate-400" :
                                       index === 2 ? "text-orange-400" :
                                       "text-muted-foreground"
@@ -90,7 +90,9 @@ export default function Leaderboard() {
                                       {index + 1}
                                     </TableCell>
                                     <TableCell className="font-medium text-sm sm:text-base p-1 sm:p-2">{player.name}</TableCell>
-                                    <TableCell className="text-right font-bold text-base sm:text-lg text-primary tabular-nums p-1 sm:p-2">
+                                    <TableCell className={cn("text-right font-bold text-base sm:text-lg tabular-nums p-1 sm:p-2",
+                                        player.score > 0 ? 'text-success' : player.score < 0 ? 'text-destructive' : 'text-foreground'
+                                    )}>
                                       {player.score > 0 ? `+${player.score}` : player.score}
                                     </TableCell>
                                     <TableCell className="text-right text-xs text-muted-foreground tabular-nums p-1 sm:p-2">

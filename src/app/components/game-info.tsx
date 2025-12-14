@@ -57,7 +57,7 @@ export function RotationInfo() {
                     <div className="flex flex-col items-center leading-none">
                         <p className="text-xs text-muted-foreground font-medium">Putaran</p>
                         <div className="flex items-center gap-1 mt-1">
-                            <p className={`font-bold text-base ${gameInfo.direction === 'Kanan' ? 'text-green-500' : 'text-red-500'}`}>
+                            <p className={`font-bold text-base ${gameInfo.direction === 'Kanan' ? 'text-success' : 'text-destructive'}`}>
                                 {gameInfo.direction}
                             </p>
                         </div>
@@ -120,7 +120,7 @@ export function TopPlayerInfo() {
                     <div className='flex flex-col items-center leading-none'>
                         <p className="text-xs text-muted-foreground font-medium">Pemenang Poin Lalu</p>
                         <div className="flex items-center gap-1 mt-1">
-                            <p className="font-bold text-base line-clamp-1 text-yellow-500">
+                            <p className="font-bold text-base line-clamp-1 text-warning">
                                 {topPlayer.name}
                             </p>
                         </div>

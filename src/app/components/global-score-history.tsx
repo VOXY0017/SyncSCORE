@@ -99,7 +99,7 @@ export default function GlobalScoreHistory() {
 
   return (
       <CardContent className="p-0">
-        <ScrollArea className="h-[calc(100vh-17.5rem)] sm:h-[calc(100vh-16rem)] w-full whitespace-nowrap">
+        <ScrollArea className="h-[calc(100vh-22rem)] sm:h-[calc(100vh-20rem)] w-full whitespace-nowrap">
           <Table>
             <TableHeader>
               <TableRow>
@@ -126,7 +126,7 @@ export default function GlobalScoreHistory() {
                             <span
                               className={cn(
                                 "font-bold",
-                                score > 0 ? "text-green-400" : "text-red-400"
+                                score > 0 ? "text-success" : "text-destructive"
                               )}
                             >
                               {score > 0 ? `+${score}` : score}

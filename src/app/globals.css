@@ -20,6 +20,8 @@
     --accent-foreground: 220.9 39.3% 11%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 20% 98%;
+    --success: 142.1 76.2% 36.3%;
+    --warning: 47.9 95.8% 53.1%;
     --border: 220 13% 91%;
     --input: 220 13% 91%;
     --ring: 217.2 91.2% 59.8%;
@@ -43,6 +45,8 @@
     --accent-foreground: 210 20% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 20% 98%;
+    --success: 142.1 70.6% 45.3%;
+    --warning: 47.9 95.8% 53.1%;
     --border: 215 27.9% 11.9%;
     --input: 215 27.9% 11.9%;
     --ring: 217.2 91.2% 59.8%;
@@ -57,18 +61,19 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
-  .ranking-change-active {
-    animation: ranking-change 600ms ease-in-out;
-  }
+}
 
-  @keyframes ranking-change {
-      from {
-          transform: translateY(var(--delta-y));
-          background-color: hsl(var(--primary) / 0.1);
-      }
-      to {
-          transform: translateY(0);
-          background-color: transparent;
-      }
+@layer utilities {
+  .text-success {
+    color: hsl(var(--success));
+  }
+  .bg-success {
+    background-color: hsl(var(--success));
+  }
+  .text-warning {
+    color: hsl(var(--warning));
+  }
+  .bg-warning {
+    background-color: hsl(var(--warning));
   }
 }

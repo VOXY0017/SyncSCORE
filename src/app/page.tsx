@@ -19,7 +19,7 @@ export default function Home() {
            <h1 className="text-center text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary via-white to-primary font-poppins sm:text-4xl">
               Score Markas B7
             </h1>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
               <RotationInfo />
               <TopPlayerInfo />
               <ThemeToggle />

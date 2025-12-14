@@ -43,7 +43,6 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
       {[...Array(10)].map((_, i) => (
         <TableRow key={i}>
           <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-          <TableCell><Skeleton className="h-5 w-24" /></TableCell>
           <TableCell><Skeleton className="h-5 w-48" /></TableCell>
         </TableRow>
       ))}
@@ -81,7 +80,6 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[80px] sm:w-[100px] font-bold text-center">Game</TableHead>
                       <TableHead className="w-[100px] sm:w-[120px] font-bold">Points</TableHead>
                       <TableHead className="font-bold">Timestamp</TableHead>
                     </TableRow>
@@ -90,9 +88,6 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                     {isLoading ? <HistorySkeleton /> : (
                       playerHistory && playerHistory.length > 0 ? playerHistory.map((entry, index) => (
                         <TableRow key={entry.id}>
-                          <TableCell className="font-medium text-muted-foreground text-xs sm:text-sm text-center">
-                            {playerHistory.length - index}
-                          </TableCell>
                           <TableCell className={cn("font-bold text-base", entry.points > 0 ? "text-green-400" : "text-red-400")}>
                             {entry.points > 0 ? `+${entry.points}` : entry.points}
                           </TableCell>
@@ -104,7 +99,7 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                     )}
                     {!isLoading && (!playerHistory || playerHistory.length === 0) && (
                       <TableRow>
-                        <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                        <TableCell colSpan={2} className="h-24 text-center text-muted-foreground">
                           {player ? 'No score entries yet for this player.' : 'Player not found.'}
                         </TableCell>
                       </TableRow>

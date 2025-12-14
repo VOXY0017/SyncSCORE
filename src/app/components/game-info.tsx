@@ -51,7 +51,7 @@ export function RotationInfo() {
                 {isLoading ? (
                     <div className="space-y-2">
                         <Skeleton className="h-4 w-20 mx-auto" />
-                        <Skeleton className="h-6 w-24 mx-auto" />
+                        <Skeleton className="h-4 w-20 mx-auto" />
                     </div>
                 ) : gameInfo ? (
                     <div className="flex flex-col items-center leading-none">

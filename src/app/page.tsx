@@ -38,16 +38,16 @@ export default function Home() {
               <div className="p-2">
                  <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="leaderboard">
-                      <Trophy className="h-4 mr-2" />
-                      Leaderboard
+                      <Trophy className="h-4" />
+                      <span className="hidden sm:inline">Leaderboard</span>
                     </TabsTrigger>
                     <TabsTrigger value="history">
-                      <History className="h-4 mr-2" />
-                      History
+                      <History className="h-4" />
+                      <span className="hidden sm:inline">History</span>
                     </TabsTrigger>
                     <TabsTrigger value="management">
-                      <Users className="h-4 mr-2" />
-                      Manage
+                      <Users className="h-4" />
+                      <span className="hidden sm:inline">Manage</span>
                     </TabsTrigger>
                   </TabsList>
               </div>

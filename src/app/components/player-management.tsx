@@ -144,7 +144,7 @@ export default function PlayerManagement() {
     <>
       <CardContent className="p-0">
           <div className="p-2 sm:p-4">
-              <div className="flex w-full flex-row items-center gap-2">
+              <div className="flex flex-row items-center gap-2">
                   <form onSubmit={handleAddPlayer} className="flex-grow">
                       <Input
                           placeholder="Add new player and press Enter..."
@@ -184,7 +184,7 @@ export default function PlayerManagement() {
                                 <Input
                                 type="number"
                                 placeholder="Pts"
-                                className="h-8 text-center text-sm w-[60px]"
+                                className="h-8 text-center text-sm w-[70px]"
                                 value={pointInputs[player.id] || ''}
                                 onChange={(e) => handlePointInputChange(player.id, e.target.value)}
                                 disabled={isPending}

@@ -89,10 +89,10 @@ export default function GlobalScoreHistory() {
     <>
       {[...Array(5)].map((_, i) => (
         <TableRow key={i}>
-            <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-            <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+            <TableCell className="text-center"><Skeleton className="h-5 w-10 mx-auto" /></TableCell>
+            {[...Array(5)].map((_, j) => (
+              <TableCell key={j} className="text-center"><Skeleton className="h-5 w-16 mx-auto" /></TableCell>
+            ))}
         </TableRow>
       ))}
     </>
@@ -106,10 +106,10 @@ export default function GlobalScoreHistory() {
               <TableRow>
                 <TableHead className="sticky left-0 bg-card z-10 font-bold min-w-[80px] text-center">Game</TableHead>
                 {isLoading ? (
-                  [...Array(4)].map((_, i) => <TableHead key={i}><Skeleton className="h-5 w-24" /></TableHead>)
+                  [...Array(5)].map((_, i) => <TableHead key={i} className="text-center"><Skeleton className="h-5 w-24 mx-auto" /></TableHead>)
                 ) : (
                   pivotData && pivotData.players.map((player) => (
-                    <TableHead key={player} className="text-center">{player}</TableHead>
+                    <TableHead key={player} className="text-center min-w-[80px]">{player}</TableHead>
                   ))
                 )}
               </TableRow>

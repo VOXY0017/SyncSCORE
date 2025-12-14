@@ -147,22 +147,24 @@ export default function PlayerManagement() {
 
   return (
     <>
-      <CardContent className="p-2 sm:p-4 space-y-4">
-          <div className="flex w-full flex-col sm:flex-row items-center gap-2">
-              <form onSubmit={handleAddPlayer} className="flex-grow w-full">
-                  <Input
-                      placeholder="Add new player and press Enter..."
-                      value={newPlayerName}
-                      onChange={(e) => setNewPlayerName(e.target.value)}
-                      disabled={isPending || isLoading}
-                      className="h-8 text-sm"
-                      aria-label="New player name"
-                  />
-              </form>
-              <Button variant="outline" size="sm" className="w-full sm:w-auto h-8" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Reset all scores">
-                  <RotateCcw className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline">Reset All</span>
-              </Button>
+      <CardContent className="p-0">
+          <div className="p-2 sm:p-4 space-y-4">
+              <div className="flex w-full flex-col sm:flex-row items-center gap-2">
+                  <form onSubmit={handleAddPlayer} className="flex-grow w-full">
+                      <Input
+                          placeholder="Add new player and press Enter..."
+                          value={newPlayerName}
+                          onChange={(e) => setNewPlayerName(e.target.value)}
+                          disabled={isPending || isLoading}
+                          className="h-8 text-sm"
+                          aria-label="New player name"
+                      />
+                  </form>
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto h-8" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Reset all scores">
+                      <RotateCcw className="h-4 w-4 md:mr-2" />
+                      <span className="hidden md:inline">Reset All</span>
+                  </Button>
+              </div>
           </div>
           <ScrollArea className="h-[calc(100vh-22.5rem)] sm:h-[calc(100vh-20.5rem)]">
               <Table>

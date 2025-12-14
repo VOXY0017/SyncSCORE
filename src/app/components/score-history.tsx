@@ -81,7 +81,7 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[80px] sm:w-[100px] font-bold">Game</TableHead>
+                      <TableHead className="w-[80px] sm:w-[100px] font-bold text-center">Game</TableHead>
                       <TableHead className="w-[100px] sm:w-[120px] font-bold">Points</TableHead>
                       <TableHead className="font-bold">Timestamp</TableHead>
                     </TableRow>
@@ -90,8 +90,8 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                     {isLoading ? <HistorySkeleton /> : (
                       playerHistory && playerHistory.length > 0 ? playerHistory.map((entry, index) => (
                         <TableRow key={entry.id}>
-                          <TableCell className="font-medium text-muted-foreground text-xs sm:text-sm">
-                            Game {playerHistory.length - index}
+                          <TableCell className="font-medium text-muted-foreground text-xs sm:text-sm text-center">
+                            {playerHistory.length - index}
                           </TableCell>
                           <TableCell className={cn("font-bold text-base", entry.points > 0 ? "text-green-400" : "text-red-400")}>
                             {entry.points > 0 ? `+${entry.points}` : entry.points}

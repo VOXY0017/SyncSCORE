@@ -104,7 +104,7 @@ export default function GlobalScoreHistory() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="sticky left-0 bg-card z-10 font-bold min-w-[80px]">Game</TableHead>
+                <TableHead className="sticky left-0 bg-card z-10 font-bold min-w-[80px] text-center">Game</TableHead>
                 {isLoading ? (
                   [...Array(4)].map((_, i) => <TableHead key={i}><Skeleton className="h-5 w-24" /></TableHead>)
                 ) : (
@@ -120,8 +120,8 @@ export default function GlobalScoreHistory() {
               ) : pivotData && pivotData.games.length > 0 ? (
                 pivotData.games.map((game) => (
                   <TableRow key={game.gameNumber}>
-                    <TableCell className="sticky left-0 bg-card z-10 font-medium">
-                      Game {game.gameNumber}
+                    <TableCell className="sticky left-0 bg-card z-10 font-medium text-center">
+                      {game.gameNumber}
                     </TableCell>
                     {pivotData.players.map((player) => {
                       const score = game.scores[player];

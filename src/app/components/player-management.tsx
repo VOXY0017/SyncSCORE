@@ -55,7 +55,6 @@ export default function PlayerManagement() {
     const trimmedName = newPlayerName.trim();
     if (!trimmedName || players === undefined) return;
     
-    // check for duplicate name
     if (players.find(p => p.name.toLowerCase() === trimmedName.toLowerCase())) {
         toast({ title: "Player Exists", description: "A player with that name already exists.", variant: "destructive" });
         return;
@@ -135,11 +134,7 @@ export default function PlayerManagement() {
         <TableRow key={i}>
             <TableCell className="p-2 w-[40px]"><Skeleton className="h-8 w-8" /></TableCell>
             <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
-            <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
-            <TableCell className="flex justify-end gap-1">
-                <Skeleton className="h-8 w-8" />
-                <Skeleton className="h-8 w-8" />
-            </TableCell>
+            <TableCell className="text-right"><Skeleton className="h-8 w-40 ml-auto" /></TableCell>
         </TableRow>
     ))}
     </>
@@ -150,7 +145,7 @@ export default function PlayerManagement() {
       <CardContent className="p-0">
           <div className="p-2 sm:p-4">
               <div className="flex w-full flex-row items-center gap-2">
-                  <form onSubmit={handleAddPlayer} className="flex-grow w-full">
+                  <form onSubmit={handleAddPlayer} className="flex-grow">
                       <Input
                           placeholder="Add new player and press Enter..."
                           value={newPlayerName}
@@ -184,30 +179,30 @@ export default function PlayerManagement() {
                                   {player.name}
                               </Link>
                           </TableCell>
-                          <TableCell className='text-right p-1 sm:p-2'>
-                              <Input
-                              type="number"
-                              placeholder="Pts"
-                              className="h-8 text-center ml-auto text-sm w-[70px]"
-                              value={pointInputs[player.id] || ''}
-                              onChange={(e) => handlePointInputChange(player.id, e.target.value)}
-                              disabled={isPending}
-                              aria-label={`Points for ${player.name}`}
-                              />
-                          </TableCell>
-                          <TableCell className="text-right w-[70px] space-x-1 p-1 sm:p-2">
-                              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
-                                  <Plus className="h-4 w-4" />
-                              </Button>
-                              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
-                                  <Minus className="h-4 w-4" />
-                              </Button>
+                          <TableCell className="text-right p-1 sm:p-2">
+                              <div className="flex items-center justify-end gap-1">
+                                <Input
+                                type="number"
+                                placeholder="Pts"
+                                className="h-8 text-center text-sm w-[60px]"
+                                value={pointInputs[player.id] || ''}
+                                onChange={(e) => handlePointInputChange(player.id, e.target.value)}
+                                disabled={isPending}
+                                aria-label={`Points for ${player.name}`}
+                                />
+                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Increase score for ${player.name}`}>
+                                    <Plus className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Decrease score for ${player.name}`}>
+                                    <Minus className="h-4 w-4" />
+                                </Button>
+                              </div>
                           </TableCell>
                       </TableRow>
                   ))
                   ) : (
                   <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                      <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
                       {isLoading ? 'Loading players...' : 'Add a player to begin.'}
                       </TableCell>
                   </TableRow>
@@ -253,3 +248,4 @@ export default function PlayerManagement() {
     </>
   );
 }
+

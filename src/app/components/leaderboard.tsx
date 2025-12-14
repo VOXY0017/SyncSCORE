@@ -63,7 +63,7 @@ export default function Leaderboard() {
 
   return (
       <CardContent className="p-0">
-          <ScrollArea className="h-[calc(100vh-14rem)] sm:h-[calc(100vh-11.5rem)] md:h-[calc(100vh-15rem)]">
+          <ScrollArea className="h-[calc(100vh-17.5rem)] sm:h-[calc(100vh-16rem)]">
               <Table>
                   <TableHeader>
                       <TableRow>

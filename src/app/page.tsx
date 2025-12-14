@@ -28,7 +28,7 @@ export default function Home() {
             )}>
               Score Markas B7
             </h1>
-          <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          <div className="grid grid-cols-3 gap-2 sm:gap-6">
               <RotationInfo />
               <TopPlayerInfo />
               <ThemeToggle />

@@ -100,7 +100,7 @@ export default function GlobalScoreHistory() {
 
   return (
       <CardContent className="p-0">
-        <ScrollArea className="h-[calc(100vh-14rem)] sm:h-[calc(100vh-11.5rem)] md:h-[calc(100vh-15rem)] w-full whitespace-nowrap">
+        <ScrollArea className="h-[calc(100vh-17.5rem)] sm:h-[calc(100vh-16rem)] w-full whitespace-nowrap">
           <Table>
             <TableHeader>
               <TableRow>

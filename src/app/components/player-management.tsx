@@ -164,7 +164,7 @@ export default function PlayerManagement() {
                   <span className="hidden md:inline">Reset All</span>
               </Button>
           </div>
-          <ScrollArea className="h-[calc(100vh-19rem)] sm:h-[calc(100vh-16rem)] md:h-[calc(100vh-19.5rem)]">
+          <ScrollArea className="h-[calc(100vh-22.5rem)] sm:h-[calc(100vh-20.5rem)]">
               <Table>
               <TableBody>
                   {isLoading ? (

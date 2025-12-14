@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -42,8 +43,8 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
     <>
       {[...Array(10)].map((_, i) => (
         <TableRow key={i}>
-          <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-          <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+          <TableCell className="p-1 sm:p-2"><Skeleton className="h-5 w-24" /></TableCell>
+          <TableCell className="p-1 sm:p-2"><Skeleton className="h-5 w-48" /></TableCell>
         </TableRow>
       ))}
     </>
@@ -80,18 +81,18 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[100px] sm:w-[120px] font-bold">Points</TableHead>
-                      <TableHead className="font-bold">Timestamp</TableHead>
+                      <TableHead className="w-[100px] sm:w-[120px] font-bold p-1 sm:p-2">Points</TableHead>
+                      <TableHead className="font-bold p-1 sm:p-2">Timestamp</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading ? <HistorySkeleton /> : (
                       playerHistory && playerHistory.length > 0 ? playerHistory.map((entry, index) => (
                         <TableRow key={entry.id}>
-                          <TableCell className={cn("font-bold text-base", entry.points > 0 ? "text-green-400" : "text-red-400")}>
+                          <TableCell className={cn("font-bold text-base p-1 sm:p-2", entry.points > 0 ? "text-green-400" : "text-red-400")}>
                             {entry.points > 0 ? `+${entry.points}` : entry.points}
                           </TableCell>
-                          <TableCell className="text-muted-foreground text-xs sm:text-sm">
+                          <TableCell className="text-muted-foreground text-xs sm:text-sm p-1 sm:p-2">
                             {entry.timestamp ? format(new Date(entry.timestamp), 'Pp') : '...'}
                           </TableCell>
                         </TableRow>

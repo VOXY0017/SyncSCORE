@@ -7,7 +7,7 @@ import { useData } from '@/app/context/data-context';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from "@/components/ui/button"
-import { ArrowRight, ArrowLeft, Crown, Moon, Sun } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Moon, Sun } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface TopPlayerData {
@@ -57,7 +57,6 @@ export function RotationInfo() {
                     <div className="flex flex-col items-center leading-none">
                         <p className="text-xs text-muted-foreground font-medium">Putaran</p>
                         <div className="flex items-center gap-1 mt-1">
-                            <gameInfo.Icon className={`h-5 w-5 ${gameInfo.direction === 'Kanan' ? 'text-green-500' : 'text-red-500'}`} />
                             <p className={`font-bold text-base ${gameInfo.direction === 'Kanan' ? 'text-green-500' : 'text-red-500'}`}>
                                 {gameInfo.direction}
                             </p>

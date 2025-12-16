@@ -367,42 +367,44 @@ export default function PlayerManagement() {
 
                         <Separator />
                         
-                        <div className="grid grid-cols-4 gap-1 sm:gap-2">
-                            <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 50, 'Masuk Biasa', 'shortcut')} disabled={isPending}>+50</Button>
-                            <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 100, 'Joker', 'shortcut')} disabled={isPending}>+100</Button>
-                            <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 150, 'Menang', 'shortcut')} disabled={isPending}>+150</Button>
-                            <Button variant="destructive" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, -150, 'Mati Kartu', 'shortcut')} disabled={isPending}>-150</Button>
-                        </div>
-                        
-                        <Separator />
+                        <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                            {/* Left Column: Shortcut Buttons */}
+                            <div className="grid grid-cols-2 gap-1 sm:gap-2">
+                                <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 50, 'Masuk Biasa', 'shortcut')} disabled={isPending}>+50</Button>
+                                <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 100, 'Joker', 'shortcut')} disabled={isPending}>+100</Button>
+                                <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 150, 'Menang', 'shortcut')} disabled={isPending}>+150</Button>
+                                <Button variant="destructive" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, -150, 'Mati Kartu', 'shortcut')} disabled={isPending}>-150</Button>
+                            </div>
 
-                        <div className="flex flex-col items-center gap-2 pt-1">
-                             <Input
-                                type="text"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
-                                placeholder="Input Poin"
-                                className="h-9 text-center w-40"
-                                value={pointInputs[player.id] || ''}
-                                onChange={(e) => handlePointInputChange(player.id, e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        const value = parseInt(pointInputs[player.id] || '0');
-                                        if (value !== 0) {
-                                            handleScoreChange(player.id, value, 'Manual', 'manual');
+                            {/* Right Column: Manual Input */}
+                            <div className="flex flex-col items-center justify-center gap-2">
+                                <Input
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    placeholder="Input Poin"
+                                    className="h-9 text-center w-full"
+                                    value={pointInputs[player.id] || ''}
+                                    onChange={(e) => handlePointInputChange(player.id, e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            const value = parseInt(pointInputs[player.id] || '0');
+                                            if (value !== 0) {
+                                                handleScoreChange(player.id, value, 'Manual', 'manual');
+                                            }
                                         }
-                                    }
-                                }}
-                                disabled={isPending}
-                                aria-label={`Poin untuk ${player.name}`}
-                            />
-                            <div className="flex items-center justify-center gap-2">
-                                <Button variant="destructive" className="w-20" onClick={() => handleScoreChange(player.id, -Math.abs(parseInt(pointInputs[player.id] || '0')), 'Manual', 'manual')} disabled={isPending || !pointInputs[player.id]}>
-                                    <Minus className="h-4 w-4" />
-                                </Button>
-                                <Button variant="default" className="w-20 bg-success hover:bg-success/90" onClick={() => handleScoreChange(player.id, Math.abs(parseInt(pointInputs[player.id] || '0')), 'Manual', 'manual')} disabled={isPending || !pointInputs[player.id]}>
-                                    <Plus className="h-4 w-4" />
-                                </Button>
+                                    }}
+                                    disabled={isPending}
+                                    aria-label={`Poin untuk ${player.name}`}
+                                />
+                                <div className="flex items-center justify-center gap-2 w-full">
+                                    <Button variant="destructive" className="w-full" onClick={() => handleScoreChange(player.id, -Math.abs(parseInt(pointInputs[player.id] || '0')), 'Manual', 'manual')} disabled={isPending || !pointInputs[player.id]}>
+                                        <Minus className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="default" className="w-full bg-success hover:bg-success/90" onClick={() => handleScoreChange(player.id, Math.abs(parseInt(pointInputs[player.id] || '0')), 'Manual', 'manual')} disabled={isPending || !pointInputs[player.id]}>
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                       </Card>
@@ -486,3 +488,5 @@ export default function PlayerManagement() {
     </>
   );
 }
+
+    

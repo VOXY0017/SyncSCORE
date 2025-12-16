@@ -121,17 +121,24 @@ export default function PlayerManagement() {
 
             const gameCounts = Object.values(playerGameCounts);
             const isFirstEntryEver = scoresSoFar.length === 0;
+
+            // This logic determines if it's time to start a new round.
+            // A new round starts if:
+            // 1. It's the very first score entry of the game.
+            // 2. All players have submitted a score for the previous round, and this is the first entry for the next round.
             const allHaveSameCount = gameCounts.length > 0 && gameCounts.every(count => count === gameCounts[0]);
+            const currentPlayerEntryCount = playerGameCounts[playerId] ?? 0;
+            const lastRoundNumber = session?.lastRoundNumber ?? 0;
             
             let isNewRound = false;
-            if (isFirstEntryEver && players.length > 0) {
+            if (isFirstEntryEver) {
               isNewRound = true; // First score entry ever starts round 1
-            } else if (allHaveSameCount && players.length > 1 && gameCounts[0] > 0) {
-              isNewRound = true; // Everyone finished a round, start a new one
+            } else if (allHaveSameCount && currentPlayerEntryCount === lastRoundNumber && players.length > 1) {
+              isNewRound = true; // Everyone finished the last round, start a new one
             }
 
             if (isNewRound) {
-                const newRoundNumber = (session?.lastRoundNumber ?? 0) + 1;
+                const newRoundNumber = lastRoundNumber + 1;
                 currentRoundRef = doc(collection(sessionRef, 'rounds'));
                 transaction.set(currentRoundRef, { roundNumber: newRoundNumber, createdAt: serverTimestamp() });
                 transaction.update(sessionRef, { lastRoundNumber: newRoundNumber });
@@ -168,7 +175,11 @@ export default function PlayerManagement() {
   };
   
   const handlePointInputChange = (playerId: string, value: string) => {
-    const sanitizedValue = value.replace(/[^0-9]/g, '');
+    // allow negative sign only at the beginning
+    const sanitizedValue = value.replace(/[^-0-9]/g, '');
+    if (sanitizedValue.slice(1).includes('-')) {
+        return;
+    }
     setPointInputs(prev => ({...prev, [playerId]: sanitizedValue}));
   }
 
@@ -400,17 +411,20 @@ export default function PlayerManagement() {
                                 onChange={(e) => handlePointInputChange(player.id, e.target.value)}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
-                                        handleScoreChange(player.id, Math.abs(parseInt(pointInputs[player.id] || '0')), 'Manual', 'manual');
+                                        const value = parseInt(pointInputs[player.id] || '0');
+                                        if (value !== 0) {
+                                            handleScoreChange(player.id, value, 'Manual', 'manual');
+                                        }
                                     }
                                 }}
                                 disabled={isPending}
                                 aria-label={`Poin untuk ${player.name}`}
                             />
                             <div className="flex items-center justify-center gap-2">
-                                <Button variant="destructive" className="w-20" onClick={() => handleScoreChange(player.id, -Math.abs(parseInt(pointInputs[player.id] || '0')), 'Manual', 'manual')} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor negatif untuk ${player.name}`}>
+                                <Button variant="destructive" className="w-20" onClick={() => handleScoreChange(player.id, -Math.abs(parseInt(pointInputs[player.id] || '0')), 'Manual', 'manual')} disabled={isPending || !pointInputs[player.id]}>
                                     <Minus className="h-4 w-4" />
                                 </Button>
-                                <Button variant="default" className="w-20 bg-success hover:bg-success/90" onClick={() => handleScoreChange(player.id, Math.abs(parseInt(pointInputs[player.id] || '0')), 'Manual', 'manual')} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor positif untuk ${player.name}`}>
+                                <Button variant="default" className="w-20 bg-success hover:bg-success/90" onClick={() => handleScoreChange(player.id, Math.abs(parseInt(pointInputs[player.id] || '0')), 'Manual', 'manual')} disabled={isPending || !pointInputs[player.id]}>
                                     <Plus className="h-4 w-4" />
                                 </Button>
                             </div>
@@ -496,3 +510,5 @@ export default function PlayerManagement() {
     </>
   );
 }
+
+    

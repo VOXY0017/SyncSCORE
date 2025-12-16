@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Trophy, History, Users } from 'lucide-react';
 import { useAuth, initiateAnonymousSignIn, useFirebase } from '@/firebase';
 import { useEffect } from 'react';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 
 const DEFAULT_SESSION_ID = 'main';
@@ -29,15 +29,21 @@ export default function Home() {
     useEffect(() => {
         if (firestore && sessionId) {
             const sessionRef = doc(firestore, 'sessions', sessionId);
-            // This is a simplified check. `getDoc` would be more robust.
-            // For now, we just set it, which is fine for a single session app.
-            setDoc(sessionRef, {
-                rotationDirection: 'kanan',
-                status: 'active',
-                lastRoundNumber: 0,
-                createdAt: serverTimestamp(),
-                theme: 'system'
-            }, { merge: true });
+            
+            const initializeSession = async () => {
+                const sessionSnap = await getDoc(sessionRef);
+                if (!sessionSnap.exists()) {
+                    await setDoc(sessionRef, {
+                        rotationDirection: 'kanan',
+                        status: 'active',
+                        lastRoundNumber: 0,
+                        createdAt: serverTimestamp(),
+                        theme: 'system'
+                    });
+                }
+            };
+
+            initializeSession();
         }
     }, [firestore, sessionId]);
 
@@ -78,3 +84,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

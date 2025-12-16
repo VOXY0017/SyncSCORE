@@ -113,29 +113,37 @@ export default function PlayerManagement() {
             
             // 1. Determine current round or create a new one
             let currentRoundRef: DocumentReference;
+            const scoresSoFar = scores ?? [];
             const playerGameCounts = players.reduce((acc, player) => {
-                acc[player.id] = scores?.filter(s => s.playerId === player.id).length ?? 0;
+                acc[player.id] = scoresSoFar.filter(s => s.playerId === player.id).length;
                 return acc;
             }, {} as Record<string, number>);
 
             const gameCounts = Object.values(playerGameCounts);
-            const allHaveSameCount = gameCounts.every(count => count === gameCounts[0]);
-            const isNewRound = allHaveSameCount || players.length === 1;
+            const isFirstEntryEver = scoresSoFar.length === 0;
+            const allHaveSameCount = gameCounts.length > 0 && gameCounts.every(count => count === gameCounts[0]);
+            
+            let isNewRound = false;
+            if (isFirstEntryEver && players.length > 0) {
+              isNewRound = true; // First score entry ever starts round 1
+            } else if (allHaveSameCount && players.length > 1 && gameCounts[0] > 0) {
+              isNewRound = true; // Everyone finished a round, start a new one
+            }
 
-            if (isNewRound && rounds.length > 0 && players.length > 1) {
-                // All players finished a round, create a new one
+            if (isNewRound) {
                 const newRoundNumber = (session?.lastRoundNumber ?? 0) + 1;
                 currentRoundRef = doc(collection(sessionRef, 'rounds'));
                 transaction.set(currentRoundRef, { roundNumber: newRoundNumber, createdAt: serverTimestamp() });
                 transaction.update(sessionRef, { lastRoundNumber: newRoundNumber });
             } else if (rounds.length > 0) {
-                // Continue current round
+                // Continue current round (rounds are sorted desc, so [0] is the latest)
                 currentRoundRef = doc(sessionRef, 'rounds', rounds[0].id);
             } else {
-                // First round ever
-                currentRoundRef = doc(collection(sessionRef, 'rounds'));
-                transaction.set(currentRoundRef, { roundNumber: 1, createdAt: serverTimestamp() });
-                transaction.update(sessionRef, { lastRoundNumber: 1 });
+                 // Fallback for an edge case where there are no rounds yet but it's not detected as a new round
+                 const newRoundNumber = 1;
+                 currentRoundRef = doc(collection(sessionRef, 'rounds'));
+                 transaction.set(currentRoundRef, { roundNumber: newRoundNumber, createdAt: serverTimestamp() });
+                 transaction.update(sessionRef, { lastRoundNumber: newRoundNumber });
             }
             
             // 2. Add the score entry
@@ -362,7 +370,7 @@ export default function PlayerManagement() {
                     players.map((player) => (
                       <Card key={player.id} className="p-3 sm:p-4 space-y-3">
                         <div className="flex items-center justify-between">
-                            <Link href={`/history/${player.id}`} className="hover:underline font-bold text-lg">
+                            <Link href={`/history/${player.id}?name=${encodeURIComponent(player.name)}`} className="hover:underline font-bold text-lg">
                                 {player.name}
                             </Link>
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Hapus pemain ${player.name}`}>

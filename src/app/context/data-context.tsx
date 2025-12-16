@@ -6,7 +6,7 @@ import { createContext, useContext, useMemo, useState, useEffect } from 'react';
 import type { Player, ScoreEntry, Session, Round } from '@/lib/types';
 import { useCollection, useDoc } from '@/firebase';
 import { useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, doc, onSnapshot, getDocs } from 'firebase/firestore';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 
 // --- Default session setup ---
@@ -52,7 +52,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const [roundsData, setRoundsData] = useState<(Round & { scores?: ScoreEntry[] })[] | undefined>(undefined);
     const [areScoresLoading, setAreScoresLoading] = useState(true);
 
-    // This is a complex effect to fetch all scores from all rounds and attach them.
+    // This effect fetches all scores from all rounds and attaches them.
     useEffect(() => {
         if (!firestore || !sessionId || !rawRoundsData) {
             if (!areRoundsLoading) {
@@ -63,44 +63,45 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             return;
         }
 
-        setAreScoresLoading(true);
-
         if (rawRoundsData.length === 0) {
+            setAreScoresLoading(false);
             setScores([]);
             setRoundsData([]);
-            setAreScoresLoading(false);
             return;
         }
 
-        let allScores: ScoreEntry[] = [];
-        let roundsWithScores: (Round & { scores?: ScoreEntry[] })[] = [...rawRoundsData];
+        const fetchScoresForAllRounds = async () => {
+            setAreScoresLoading(true);
+            const roundsWithScores = await Promise.all(
+                rawRoundsData.map(async (round) => {
+                    const scoresQuery = query(collection(firestore, 'sessions', sessionId, 'rounds', round.id, 'scores'), orderBy('timestamp', 'desc'));
+                    const scoresSnapshot = await getDocs(scoresQuery);
+                    const scoresFromThisRound = scoresSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ScoreEntry));
+                    return { ...round, scores: scoresFromThisRound };
+                })
+            );
+            
+            const allScores = roundsWithScores.flatMap(r => r.scores || []);
+            allScores.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
 
-        const unsubscribers = rawRoundsData.map((round, roundIndex) => {
+            setRoundsData(roundsWithScores);
+            setScores(allScores);
+            setAreScoresLoading(false);
+        };
+        
+        fetchScoresForAllRounds();
+
+        // Set up listeners for real-time updates
+        const unsubscribers = rawRoundsData.map(round => {
             const scoresQuery = query(collection(firestore, 'sessions', sessionId, 'rounds', round.id, 'scores'), orderBy('timestamp', 'desc'));
-            return onSnapshot(scoresQuery, (snapshot) => {
-                const scoresFromThisRound = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ScoreEntry));
-                
-                // Update the specific round with its scores
-                roundsWithScores = roundsWithScores.map(r => r.id === round.id ? { ...r, scores: scoresFromThisRound } : r);
-                
-                // Re-aggregate all scores from the updated rounds
-                allScores = roundsWithScores.flatMap(r => r.scores || []);
-                
-                // Sort all scores globally by timestamp
-                allScores.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
-                
-                setScores(allScores);
-                setRoundsData(roundsWithScores);
+            return onSnapshot(scoresQuery, () => {
+                // When any score changes, refetch everything to ensure consistency
+                fetchScoresForAllRounds();
             });
         });
-        
-        const initialLoadTimer = setTimeout(() => {
-            setAreScoresLoading(false);
-        }, 1500); // Heuristic delay
 
         return () => {
             unsubscribers.forEach(unsub => unsub());
-            clearTimeout(initialLoadTimer);
         };
     }, [firestore, sessionId, rawRoundsData, areRoundsLoading]);
 

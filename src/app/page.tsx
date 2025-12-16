@@ -14,7 +14,7 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 
 const DEFAULT_SESSION_ID = 'main';
 
-export default function Home({ params }: { params: { playerId: string } }) {
+export default function Home() {
     const { auth, firestore } = useFirebase();
     const [sessionId, setSessionId] = useLocalStorage('sessionId', DEFAULT_SESSION_ID);
     
@@ -40,11 +40,6 @@ export default function Home({ params }: { params: { playerId: string } }) {
             }, { merge: true });
         }
     }, [firestore, sessionId]);
-
-
-  if (params.playerId) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen w-full flex flex-col">

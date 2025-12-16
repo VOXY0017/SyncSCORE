@@ -116,7 +116,8 @@ export default function PlayerManagement() {
   };
   
   const handlePointInputChange = (playerId: string, value: string) => {
-    setPointInputs(prev => ({...prev, [playerId]: value}));
+    const sanitizedValue = value.replace(/[^0-9]/g, '');
+    setPointInputs(prev => ({...prev, [playerId]: sanitizedValue}));
   }
 
   const confirmDeletePlayer = () => {
@@ -157,23 +158,25 @@ export default function PlayerManagement() {
     startTransition(async () => {
         const batch = writeBatch(firestore);
         
+        const playerGameCounts = players.reduce((acc, player) => {
+            acc[player.id] = history.filter(h => h.playerId === player.id).length;
+            return acc;
+        }, {} as Record<string, number>);
+
+        const minGameCount = Math.min(...Object.values(playerGameCounts));
+        if (minGameCount === 0) return;
+
+        const lastRoundIndex = minGameCount - 1;
+
         for (const player of players) {
-            const playerHistory = history.filter(h => h.playerId === player.id)
-                                         .sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+            const playerHistory = history
+                .filter(h => h.playerId === player.id)
+                .sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
-            if (playerHistory.length > 0) {
-                const lastEntryForPlayer = playerHistory[playerHistory.length-1];
-                
-                const playerGameCount = playerHistory.length;
-                const minGameCount = Math.min(...players.map(p => history.filter(h => h.playerId === p.id).length));
-
-                if(playerGameCount === minGameCount && minGameCount > 0){
-                    const lastRoundEntry = playerHistory[minGameCount-1];
-                    const docRef = doc(firestore, 'history', lastRoundEntry.id);
-                    batch.delete(docRef);
-                } else if (playerGameCount > minGameCount) {
-                    const lastEntry = playerHistory[playerGameCount-1];
-                    const docRef = doc(firestore, 'history', lastEntry.id);
+            if (playerHistory.length >= minGameCount) {
+                const entryToDelete = playerHistory[lastRoundIndex];
+                 if (entryToDelete) {
+                    const docRef = doc(firestore, 'history', entryToDelete.id);
                     batch.delete(docRef);
                 }
             }
@@ -187,6 +190,7 @@ export default function PlayerManagement() {
   const confirmUndoLastEntry = async () => {
     if (!firestore || !history || history.length === 0 || isPending) return;
     startTransition(async () => {
+        // history is already sorted by timestamp desc
         const lastEntryId = history[0].id;
         const docRef = doc(firestore, 'history', lastEntryId);
         await deleteDoc(docRef);
@@ -216,7 +220,7 @@ export default function PlayerManagement() {
                       value={newPlayerName}
                       onChange={(e) => setNewPlayerName(e.target.value)}
                       disabled={isPending || isLoading || isPlayerLimitReached}
-                      className="h-9 text-sm"
+                      className="h-9"
                       aria-label="Nama pemain baru"
                   />
               </form>
@@ -250,7 +254,7 @@ export default function PlayerManagement() {
                                   <X className="h-4 w-4" />
                               </Button>
                           </TableCell>
-                          <TableCell className="font-medium p-1 sm:p-2 text-sm w-full">
+                          <TableCell className="font-medium p-1 sm:p-2 w-full">
                               <Link href={`/history/${player.id}`} className="hover:underline">
                                   {player.name}
                               </Link>
@@ -275,11 +279,11 @@ export default function PlayerManagement() {
                                     <Input
                                         type="text"
                                         inputMode="numeric"
-                                        pattern="[0-9-]*"
+                                        pattern="[0-9]*"
                                         placeholder="Poin"
-                                        className="h-8 text-center text-sm w-[70px] px-1"
+                                        className="h-8 text-center w-[70px] px-1"
                                         value={pointInputs[player.id] || ''}
-                                        onChange={(e) => handlePointInputChange(player.id, e.target.value.replace(/[^0-9]/g, ''))}
+                                        onChange={(e) => handlePointInputChange(player.id, e.target.value)}
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter') {
                                                 handleScoreChange(player.id, Math.abs(parseInt(pointInputs[player.id] || '0')));

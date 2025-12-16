@@ -29,8 +29,7 @@ export default function Home({ params }: { params: { playerId: string } }) {
   }
 
   return (
-    <div className="min-h-screen w-full bg-custom-background bg-cover bg-center relative flex flex-col">
-      <div className="absolute inset-0 bg-black/60 z-0" />
+    <div className="min-h-screen w-full flex flex-col">
       <div className="container flex-grow flex flex-col max-w-screen-lg mx-auto py-2 sm:py-4 relative z-10">
         <main className="space-y-4 flex flex-col flex-grow">
            <h1 className={cn(

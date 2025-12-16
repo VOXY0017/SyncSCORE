@@ -5,11 +5,8 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { useTheme } from "next-themes"
 import { useData } from '@/app/context/data-context';
-import { useFirebase } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
-import { useLocalStorage } from '@/hooks/use-local-storage';
-import { Poppins } from 'next/font/google';
 import Link from 'next/link';
+import { Poppins } from 'next/font/google';
 
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -22,53 +19,30 @@ const fontPoppins = Poppins({
   weight: ['400', '700'],
 });
 
-const DEFAULT_SESSION_ID = 'main';
-
 function RotationInfo() {
     const { session, isDataLoading } = useData();
-    const { firestore } = useFirebase();
-    const [sessionId] = useLocalStorage('sessionId', DEFAULT_SESSION_ID);
-    const [rotationKey, setRotationKey] = useState(0);
-
-    useEffect(() => {
-        if(session?.rotationDirection) {
-            setRotationKey(prev => prev + 1);
-        }
-    }, [session?.rotationDirection]);
-
-    const toggleRotation = () => {
-        if (!firestore || !sessionId || !session) return;
-        const newDirection = session.rotationDirection === 'kanan' ? 'kiri' : 'kanan';
-        const sessionRef = doc(firestore, 'sessions', sessionId);
-        updateDoc(sessionRef, { rotationDirection: newDirection });
-    }
 
     if (isDataLoading || !session) {
         return <Skeleton className="h-5 w-24" />;
     }
 
-    const Icon = session.rotationDirection === 'kanan' ? ArrowRight : ArrowLeft;
+    if (session.lastRoundNumber === 0) {
+        return null; // Don't show rotation if game hasn't started
+    }
+
+    const rotationDirection = session.lastRoundNumber % 2 !== 0 ? 'kanan' : 'kiri';
+    const Icon = rotationDirection === 'kanan' ? ArrowRight : ArrowLeft;
 
     return (
-        <TooltipProvider delayDuration={150}>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <div onClick={toggleRotation} className="flex items-center gap-1 cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
-                        <Icon 
-                            key={rotationKey}
-                            className={cn(
-                                'h-4 w-4 transform transition-transform duration-500 ease-in-out',
-                                session.rotationDirection === 'kanan' ? 'text-success' : 'text-destructive',
-                            )}
-                        />
-                        <span>{session.rotationDirection === 'kanan' ? 'Kanan' : 'Kiri'}</span>
-                    </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                    <p>Putaran ke {session.rotationDirection}. Klik untuk mengubah.</p>
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
+        <div className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
+            <Icon 
+                className={cn(
+                    'h-4 w-4',
+                    rotationDirection === 'kanan' ? 'text-success' : 'text-destructive',
+                )}
+            />
+            <span>{rotationDirection === 'kanan' ? 'Kanan' : 'Kiri'}</span>
+        </div>
     );
 }
 
@@ -82,7 +56,7 @@ function RoundInfo() {
     return (
         <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
             <Gamepad2 className="h-4 w-4" />
-            <span>Ronde {session.lastRoundNumber || 0}</span>
+            <span>Ronde {session.lastRoundNumber}</span>
         </div>
     );
 }
@@ -143,6 +117,7 @@ function ThemeToggle() {
 
 
 export default function AppHeader() {
+    const { session } = useData();
     return (
         <header className="w-full max-w-screen-lg mx-auto space-y-2 px-2 sm:px-0 py-2 sm:py-4">
             {/* Main Header */}
@@ -174,7 +149,7 @@ export default function AppHeader() {
             {/* Sub Header */}
             <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto pb-2">
                 <RoundInfo />
-                <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                {session && session.lastRoundNumber > 0 && <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
                 <RotationInfo />
                 <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <MVPInfo />

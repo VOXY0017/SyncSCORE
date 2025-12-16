@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useData } from '@/app/context/data-context';
 import { useFirebase } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
-import { addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,7 +65,6 @@ export default function PlayerManagement() {
     startTransition(() => {
       const newPlayer: Omit<Player, 'id'> = {
         name: trimmedName,
-        score: 0,
       };
       const playersCollection = collection(firestore, 'players');
       addDocumentNonBlocking(playersCollection, newPlayer);
@@ -74,19 +73,13 @@ export default function PlayerManagement() {
   };
 
   const handleScoreChange = (playerId: string, change: number) => {
-    if (isNaN(change) || change === 0 || !firestore || players === undefined || history === undefined) return;
-    
-    const player = players.find(p => p.id === playerId);
-    if (!player) return;
+    if (isNaN(change) || change === 0 || !firestore || history === undefined) return;
 
     startTransition(() => {
-        const playerDocRef = doc(firestore, 'players', playerId);
-        updateDocumentNonBlocking(playerDocRef, { score: player.score + change });
-        
         const newHistoryEntry: Omit<ScoreEntry, 'id'> = {
             points: change,
             timestamp: new Date(),
-            playerName: player.name,
+            playerId: playerId,
         }
         const historyCollection = collection(firestore, 'history');
         addDocumentNonBlocking(historyCollection, newHistoryEntry);
@@ -122,12 +115,9 @@ export default function PlayerManagement() {
   const confirmResetScores = () => {
       if (!firestore || !players) return;
     startTransition(() => {
-        players.forEach(player => {
-            const playerDocRef = doc(firestore, 'players', player.id);
-            updateDocumentNonBlocking(playerDocRef, { score: 0 });
-        });
         // This is a complex operation. A better approach would be a Cloud Function
         // to delete all documents in the history collection.
+        // For now, we just clear the history on the client, but a proper implementation would clear it from firestore.
         setResetAlertOpen(false);
     });
   };

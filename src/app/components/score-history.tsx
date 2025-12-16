@@ -31,7 +31,7 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
       const foundPlayer = players.find(p => p.id === playerId) || null;
       setPlayer(foundPlayer);
       if (foundPlayer) {
-        const foundHistory = history.filter(h => h.playerName === foundPlayer.name);
+        const foundHistory = history.filter(h => h.playerId === foundPlayer.id);
         setPlayerHistory(foundHistory.sort((a,b) => {
             const timeA = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
             const timeB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
@@ -54,8 +54,7 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
   );
 
   return (
-    <div className="min-h-screen w-full bg-custom-background bg-cover bg-center relative flex flex-col">
-      <div className="absolute inset-0 bg-black/60 z-0" />
+    <div className="min-h-screen w-full flex flex-col">
       <div className="container flex-grow max-w-screen-lg mx-auto py-2 sm:py-4 relative z-10">
         <main>
           <Card className="shadow-md h-full">

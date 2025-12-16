@@ -32,7 +32,7 @@ export function RotationInfo() {
 
             if (players.length > 0) {
                 players.forEach(player => {
-                    playerGameCounts[player.name] = history.filter(h => h.playerName === player.name).length;
+                    playerGameCounts[player.id] = history.filter(h => h.playerId === player.id).length;
                 });
                 if (Object.keys(playerGameCounts).length === players.length && players.length > 0) {
                     completedRounds = Math.min(...Object.values(playerGameCounts));
@@ -78,7 +78,7 @@ export function TopPlayerInfo() {
             let completedRounds = 0;
             if (players.length > 0) {
                 const playerGameCounts = players.reduce((acc, player) => {
-                    acc[player.name] = history.filter(h => h.playerName === player.name).length;
+                    acc[player.id] = history.filter(h => h.playerId === player.id).length;
                     return acc;
                 }, {} as Record<string, number>);
                 if (Object.keys(playerGameCounts).length === players.length) {
@@ -91,7 +91,7 @@ export function TopPlayerInfo() {
                 const scoresFromPreviousRound: TopPlayerData[] = [];
                 const playerHistories = players.map(player => ({
                     player,
-                    history: history.filter(h => h.playerName === player.name).sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+                    history: history.filter(h => h.playerId === player.id).sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
                 }));
 
                 playerHistories.forEach(({ player, history }) => {

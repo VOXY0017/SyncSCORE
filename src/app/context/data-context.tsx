@@ -19,7 +19,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const playersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'players'), orderBy('score', 'desc'));
+        return query(collection(firestore, 'players'), orderBy('name', 'asc'));
     }, [firestore]);
 
     const historyQuery = useMemoFirebase(() => {

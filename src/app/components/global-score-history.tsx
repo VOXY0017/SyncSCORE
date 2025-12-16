@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 
 interface PivotData {
-  players: string[];
+  players: Player[];
   games: {
     gameNumber: number;
     scores: Record<string, number | null>;
@@ -28,42 +28,35 @@ export default function GlobalScoreHistory() {
       if (history === undefined || players === undefined) return;
 
       if (players.length > 0) {
-        const allPlayerNames = players.map(p => p.name);
+        const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name));
         
-        const playerGameCounts = players.reduce((acc, player) => {
-            acc[player.name] = history.filter(h => h.playerName === player.name).length;
+        const playerGameCounts = sortedPlayers.reduce((acc, player) => {
+            acc[player.id] = history.filter(h => h.playerId === player.id).length;
             return acc;
         }, {} as Record<string, number>);
         
         const completedRounds = players.length > 0 ? Math.min(...Object.values(playerGameCounts)) : 0;
         const maxGames = Math.max(0, ...Object.values(playerGameCounts));
         const totalGamesToDisplay = maxGames > completedRounds ? maxGames : completedRounds + 1;
-        const nextGameNumber = completedRounds + 1;
         
-        if (nextGameNumber % 2 !== 0) { // Ganjil (Odd) -> A-Z
-          allPlayerNames.sort((a, b) => a.localeCompare(b)); 
-        } else { // Genap (Even) -> Z-A
-          allPlayerNames.sort((a, b) => b.localeCompare(a)); 
-        }
-
         const gameData: PivotData['games'] = [];
         
         // Group history by game round
         const historyByPlayer: Record<string, ScoreEntry[]> = {};
-        allPlayerNames.forEach(name => {
-          historyByPlayer[name] = history
-            .filter(h => h.playerName === name)
+        sortedPlayers.forEach(p => {
+          historyByPlayer[p.id] = history
+            .filter(h => h.playerId === p.id)
             .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         });
 
         for (let i = 0; i < totalGamesToDisplay; i++) {
             const gameScores: Record<string, number | null> = {};
-            allPlayerNames.forEach(playerName => {
-                const playerHistory = historyByPlayer[playerName];
+            sortedPlayers.forEach(player => {
+                const playerHistory = historyByPlayer[player.id];
                 if (playerHistory && playerHistory[i]) {
-                    gameScores[playerName] = playerHistory[i].points;
+                    gameScores[player.id] = playerHistory[i].points;
                 } else {
-                    gameScores[playerName] = null;
+                    gameScores[player.id] = null;
                 }
             });
             gameData.push({
@@ -73,7 +66,7 @@ export default function GlobalScoreHistory() {
         }
 
         setPivotData({
-          players: allPlayerNames,
+          players: sortedPlayers,
           games: gameData,
         });
 
@@ -106,7 +99,7 @@ export default function GlobalScoreHistory() {
                   [...Array(5)].map((_, i) => <TableHead key={i} className="text-center p-1 sm:p-2"><Skeleton className="h-5 w-16 mx-auto" /></TableHead>)
                 ) : (
                   pivotData && pivotData.players.map((player) => (
-                    <TableHead key={player} className="text-center min-w-[60px] p-1 sm:p-2">{player}</TableHead>
+                    <TableHead key={player.id} className="text-center min-w-[60px] p-1 sm:p-2">{player.name}</TableHead>
                   ))
                 )}
               </TableRow>
@@ -118,9 +111,9 @@ export default function GlobalScoreHistory() {
                 pivotData.games.map((game) => (
                   <TableRow key={game.gameNumber}>
                     {pivotData.players.map((player) => {
-                      const score = game.scores[player];
+                      const score = game.scores[player.id];
                       return (
-                        <TableCell key={`${game.gameNumber}-${player}`} className="text-center p-1 sm:p-2 text-sm">
+                        <TableCell key={`${game.gameNumber}-${player.id}`} className="text-center p-1 sm:p-2 text-sm">
                           {score !== null ? (
                             <span
                               className={cn(

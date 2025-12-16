@@ -23,7 +23,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, Minus, X, RotateCcw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -166,13 +165,13 @@ export default function PlayerManagement() {
                   </Button>
               </div>
           </div>
-          <ScrollArea className="h-[calc(100vh-22.5rem)] sm:h-[calc(100vh-20.5rem)]">
+          <div className="h-auto">
               <Table>
               <TableBody>
                   {isLoading ? (
                   <ManagementSkeleton />
                   ) : sortedPlayers && sortedPlayers.length > 0 ? (
-                  sortedPlayers.slice(0, 5).map((player) => (
+                  sortedPlayers.map((player) => (
                       <TableRow key={player.id}>
                           <TableCell className="p-1 sm:p-2 w-[40px]">
                               <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Hapus pemain ${player.name}`}>
@@ -214,7 +213,7 @@ export default function PlayerManagement() {
                   )}
               </TableBody>
               </Table>
-          </ScrollArea>
+          </div>
       </CardContent>
 
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={handleAlertOpenChange}>

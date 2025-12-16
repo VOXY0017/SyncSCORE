@@ -198,7 +198,7 @@ export default function PlayerManagement() {
   return (
     <>
       <CardContent className="p-0 h-full flex flex-col">
-          <div className="p-2 sm:p-4 space-y-2">
+          <div className="p-2 space-y-2">
               <form onSubmit={handleAddPlayer} className="flex-grow">
                   <Input
                       placeholder={isPlayerLimitReached ? "Maksimal 5 pemain tercapai" : "Tambah pemain baru dan tekan Enter..."}

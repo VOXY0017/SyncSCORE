@@ -1,10 +1,9 @@
 'use client';
 import Leaderboard from './components/leaderboard';
 import GlobalScoreHistory from './components/global-score-history';
-import { RotationInfo, TopPlayerInfo, ThemeToggle } from './components/game-info';
+import { RotationInfo, LowestScorePlayerInfo, ThemeToggle } from './components/game-info';
 import PlayerManagement from './components/player-management';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card } from '@/components/ui/card';
 import { Trophy, History, Users } from 'lucide-react';
 import { Poppins } from 'next/font/google';
 import { cn } from '@/lib/utils';
@@ -40,7 +39,7 @@ export default function Home({ params }: { params: { playerId: string } }) {
             </h1>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-6">
               <RotationInfo />
-              <TopPlayerInfo />
+              <LowestScorePlayerInfo />
               <ThemeToggle />
           </div>
           <Tabs defaultValue="leaderboard" className="w-full flex flex-col flex-grow" id="management">

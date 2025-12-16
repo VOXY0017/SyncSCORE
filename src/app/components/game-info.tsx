@@ -5,6 +5,7 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { useTheme } from "next-themes"
 import { useData } from '@/app/context/data-context';
+import type { Player } from '@/lib/types';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from "@/components/ui/button"
@@ -12,7 +13,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ArrowRight, ArrowLeft, Moon, Sun } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-interface TopPlayerData {
+interface LowestScorePlayer {
+    id: string;
     name: string;
     score: number;
 }
@@ -77,45 +79,32 @@ export function RotationInfo() {
     );
 }
 
-export function TopPlayerInfo() {
-    const { players, history } = useData();
-    const [topPlayer, setTopPlayer] = useState<TopPlayerData | null>(null);
+export function LowestScorePlayerInfo() {
+    const { players, lastRoundLowestScorers } = useData();
+    const [lowestPlayers, setLowestPlayers] = useState<Player[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        if (players !== undefined && history !== undefined) {
-            let completedRounds = 0;
-            if (players.length > 0) {
-                const playerGameCounts = players.reduce((acc, player) => {
-                    acc[player.id] = history.filter(h => h.playerId === player.id).length;
-                    return acc;
-                }, {} as Record<string, number>);
-                if (Object.keys(playerGameCounts).length === players.length) {
-                    completedRounds = Math.min(...Object.values(playerGameCounts));
-                }
-            }
-
-            if (completedRounds > 0) {
-                const previousRoundIndex = completedRounds - 1;
-                const scoresFromPreviousRound: TopPlayerData[] = [];
-                const playerHistories = players.map(player => ({
-                    player,
-                    history: history.filter(h => h.playerId === player.id).sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-                }));
-
-                playerHistories.forEach(({ player, history }) => {
-                    if (history.length > previousRoundIndex) {
-                        scoresFromPreviousRound.push({ name: player.name, score: history[previousRoundIndex].points });
-                    }
-                });
-                
-                setTopPlayer(scoresFromPreviousRound.sort((a, b) => b.score - a.score)[0] || null);
+        if (players !== undefined) {
+             if (lastRoundLowestScorers.length > 0) {
+                const foundPlayers = players.filter(p => lastRoundLowestScorers.includes(p.id));
+                setLowestPlayers(foundPlayers);
             } else {
-                setTopPlayer(null);
+                setLowestPlayers([]);
             }
             setIsLoading(false);
         }
-    }, [players, history]);
+    }, [players, lastRoundLowestScorers]);
+
+    const getDisplayText = () => {
+        if (lowestPlayers.length === 0) {
+            return "Belum ada data.";
+        }
+        if (lowestPlayers.length === 1) {
+            return lowestPlayers[0].name;
+        }
+        return `Seri: ${lowestPlayers.map(p => p.name).join(' & ')}`;
+    };
 
     return (
         <Card className="h-full">
@@ -125,17 +114,15 @@ export function TopPlayerInfo() {
                         <Skeleton className="h-4 w-24 mx-auto" />
                         <Skeleton className="h-4 w-32 mx-auto" />
                     </div>
-                ) : topPlayer ? (
+                ) : (
                     <div className='flex flex-col items-center leading-none'>
-                        <p className="text-xs text-muted-foreground font-medium">Pemenang Poin Lalu</p>
+                        <p className="text-xs text-muted-foreground font-medium">Poin Terkecil Lalu</p>
                         <div className="flex items-center gap-1 mt-1">
-                            <p className="font-bold text-base line-clamp-1 text-warning">
-                                {topPlayer.name}
+                            <p className="font-bold text-base line-clamp-1 text-destructive">
+                                {getDisplayText()}
                             </p>
                         </div>
                     </div>
-                ) : (
-                    <p className="text-xs text-muted-foreground text-center">Belum ada pemenang.</p>
                 )}
             </CardContent>
         </Card>

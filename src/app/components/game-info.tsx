@@ -3,21 +3,9 @@
 
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import { useTheme } from "next-themes"
 import { useData } from '@/app/context/data-context';
 import type { Player } from '@/lib/types';
-import { useFirebase } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
-import { useLocalStorage } from '@/hooks/use-local-storage';
-
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ArrowRight, ArrowLeft, Moon, Sun } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
-
-const DEFAULT_SESSION_ID = 'main';
 
 export function LowestScorePlayerInfo() {
     const { players, lastRoundHighestScorers, isDataLoading } = useData();
@@ -62,39 +50,6 @@ export function LowestScorePlayerInfo() {
                         </div>
                     </div>
                 )}
-            </CardContent>
-        </Card>
-    );
-}
-
-export function ThemeToggle() {
-    const { setTheme, theme } = useTheme();
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => setMounted(true), []);
-
-    const toggleTheme = () => {
-        setTheme(theme === 'dark' ? 'light' : 'dark');
-    };
-
-    if (!mounted) {
-        return (
-            <Card className="h-full">
-                <CardContent className="flex items-center justify-center p-3 h-full">
-                    <Skeleton className="h-7 w-7 rounded-md" />
-                </CardContent>
-            </Card>
-        );
-    }
-
-    return (
-        <Card className="h-full">
-            <CardContent className="flex flex-col items-center justify-center p-3 h-full">
-                <Button variant="outline" size="icon" onClick={toggleTheme} className="h-full w-full flex-shrink-0">
-                    <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                    <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                    <span className="sr-only">Ganti tema</span>
-                </Button>
             </CardContent>
         </Card>
     );

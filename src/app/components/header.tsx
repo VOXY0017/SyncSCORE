@@ -3,7 +3,6 @@
 
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import { useTheme } from "next-themes"
 import { useData } from '@/app/context/data-context';
 import Link from 'next/link';
 import { Poppins } from 'next/font/google';
@@ -13,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ArrowRight, ArrowLeft, Moon, Sun, Settings, Trophy, Gamepad2, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { ThemeToggleSwitch } from '@/app/components/theme-toggle-switch';
 
 const fontPoppins = Poppins({
   subsets: ['latin'],
@@ -22,13 +22,11 @@ const fontPoppins = Poppins({
 function RotationInfo() {
     const { session, isDataLoading } = useData();
     
-    if (isDataLoading || !session) {
+    if (isDataLoading || !session || session.lastRoundNumber === 0 && (session.lastRoundNumber || 0) < 1) {
         return null;
     }
     
-    // We base the direction on the *displayed* round number.
-    // A round number of 0 is an even number, so the direction is 'kanan'.
-    const rotationDirection = session.lastRoundNumber % 2 === 0 ? 'kanan' : 'kiri';
+    const rotationDirection = session.lastRoundNumber % 2 === 0 ? 'kiri' : 'kanan';
     const Icon = rotationDirection === 'kanan' ? ArrowRight : ArrowLeft;
 
     return (
@@ -43,6 +41,7 @@ function RotationInfo() {
         </div>
     );
 }
+
 
 function RoundInfo() {
     const { session, isDataLoading } = useData();
@@ -83,40 +82,6 @@ function MVPInfo() {
     );
 }
 
-
-function ThemeToggle() {
-    const { setTheme, theme } = useTheme();
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => setMounted(true), []);
-
-    const toggleTheme = () => {
-        setTheme(theme === 'dark' ? 'light' : 'dark');
-    };
-
-    if (!mounted) {
-        return <Skeleton className="h-8 w-8 rounded-md" />;
-    }
-
-    return (
-        <TooltipProvider delayDuration={150}>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-8 w-8 flex-shrink-0">
-                        <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                        <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                        <span className="sr-only">Ganti tema</span>
-                    </Button>
-                </TooltipTrigger>
-                 <TooltipContent>
-                    <p>Ganti tema</p>
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
-    );
-}
-
-
 export default function AppHeader() {
     const { session } = useData();
     return (
@@ -130,13 +95,13 @@ export default function AppHeader() {
                     Papan Skor Markas B7
                 </h1>
                 <div className="flex items-center gap-1">
-                    <ThemeToggle />
+                    <ThemeToggleSwitch />
                 </div>
             </div>
             {/* Sub Header */}
             <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto pb-2">
                 <RoundInfo />
-                {session && <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
+                {session && (session.lastRoundNumber > 0) && <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
                 <RotationInfo />
                 <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <MVPInfo />

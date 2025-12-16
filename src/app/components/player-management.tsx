@@ -57,7 +57,7 @@ export default function PlayerManagement() {
 
     if (Object.keys(playerGameCounts).length < players.length) return false;
     const gameCounts = Object.values(playerGameCounts);
-    if (gameCounts.length === 0 || !gameCounts.every(count => count > 0)) return false;
+    if (gameCounts.length === 0) return false;
     
     // Check if all players have the same number of games played
     const firstCount = gameCounts[0];
@@ -157,14 +157,25 @@ export default function PlayerManagement() {
     startTransition(async () => {
         const batch = writeBatch(firestore);
         
-        // Find the last entry for each player
         for (const player of players) {
-            const playerHistory = history.filter(h => h.playerId === player.id);
-            // The history is already sorted by timestamp desc, so the first element is the latest
+            const playerHistory = history.filter(h => h.playerId === player.id)
+                                         .sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
             if (playerHistory.length > 0) {
-                const lastEntryForPlayer = playerHistory[0];
-                const docRef = doc(firestore, 'history', lastEntryForPlayer.id);
-                batch.delete(docRef);
+                const lastEntryForPlayer = playerHistory[playerHistory.length-1];
+                
+                const playerGameCount = playerHistory.length;
+                const minGameCount = Math.min(...players.map(p => history.filter(h => h.playerId === p.id).length));
+
+                if(playerGameCount === minGameCount && minGameCount > 0){
+                    const lastRoundEntry = playerHistory[minGameCount-1];
+                    const docRef = doc(firestore, 'history', lastRoundEntry.id);
+                    batch.delete(docRef);
+                } else if (playerGameCount > minGameCount) {
+                    const lastEntry = playerHistory[playerGameCount-1];
+                    const docRef = doc(firestore, 'history', lastEntry.id);
+                    batch.delete(docRef);
+                }
             }
         }
 
@@ -268,17 +279,20 @@ export default function PlayerManagement() {
                                         placeholder="Poin"
                                         className="h-8 text-center text-sm w-[70px] px-1"
                                         value={pointInputs[player.id] || ''}
-                                        onChange={(e) => handlePointInputChange(player.id, e.target.value.replace(/[^0-9-]/g, ''))}
+                                        onChange={(e) => handlePointInputChange(player.id, e.target.value.replace(/[^0-9]/g, ''))}
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter') {
-                                                handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'));
+                                                handleScoreChange(player.id, Math.abs(parseInt(pointInputs[player.id] || '0')));
                                             }
                                         }}
                                         disabled={isPending}
                                         aria-label={`Poin untuk ${player.name}`}
                                     />
-                                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor untuk ${player.name}`}>
+                                    <Button variant="outline" size="icon" className="h-8 w-8 bg-success/20 hover:bg-success/30" onClick={() => handleScoreChange(player.id, Math.abs(parseInt(pointInputs[player.id] || '0')))} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor positif untuk ${player.name}`}>
                                         <Plus className="h-4 w-4" />
+                                    </Button>
+                                     <Button variant="outline" size="icon" className="h-8 w-8 bg-destructive/20 hover:bg-destructive/30" onClick={() => handleScoreChange(player.id, -Math.abs(parseInt(pointInputs[player.id] || '0')))} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor negatif untuk ${player.name}`}>
+                                        <Minus className="h-4 w-4" />
                                     </Button>
                                 </div>
                               </div>

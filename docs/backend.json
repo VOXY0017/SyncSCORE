@@ -1,0 +1,72 @@
+{
+  "entities": {
+    "Player": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Player",
+      "type": "object",
+      "description": "Represents a player in the ScoreSync application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Player entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the player."
+        },
+        "score": {
+          "type": "number",
+          "description": "The player's score."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "score"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/players/{playerId}",
+        "definition": {
+          "entityName": "Player",
+          "schema": {
+            "$ref": "#/backend/entities/Player"
+          },
+          "description": "Stores individual player data, including name and score. Allows real-time score updates and ranking display.",
+          "params": [
+            {
+              "name": "playerId",
+              "description": "Unique identifier for the player document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "roles_admin",
+          "schema": {
+            "$ref": "#/backend/entities/Player"
+          },
+          "description": "Marks a user as administrator. Existence in this collection grants admin privileges.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user who is an admin."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support a real-time, multi-player score system (ScoreSync). The primary collection is `players`, which stores individual player documents. Each player document contains the player's `name` and `score`. To support real-time updates and ranking, Firebase listeners will monitor changes to the `players` collection. This design allows for easy retrieval of player data for displaying rankings. Security rules will control access, allowing score updates and admin-level player deletion. To ensure scalability (NFR1), Firebase's auto-scaling capabilities will be utilized. Firestore queries, particularly `orderBy('score', 'desc')`, will optimize ranking display and minimize client-side sorting. Data integrity (NFR4) is maintained through Firebase Rules to limit direct client-side score modifications without validation.\n\nThis design enforces Authorization Independence, as there are no hierarchical dependencies, which are avoided by keeping all the needed information within each player document.\n\nIt provides QAPs by using a single collection `players` with all documents having the same security posture, which is to allow any authenticated user to register a player, and update their own scores, but only allow admins to delete players."
+  }
+}

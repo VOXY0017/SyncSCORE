@@ -1,0 +1,129 @@
+/**
+ * This ruleset defines the security model for the ScoreSync application, a real-time
+ * multiplayer scoreboard.
+ *
+ * Core Philosophy:
+ * The security model is designed to be open for reads but strict for writes. It allows
+ * for a public, real-time leaderboard that anyone can view. Write access is
+ * controlled through a combination of user ownership and role-based administration.
+ * Any authenticated user can create their own player profile, but only they can update it.
+ * A separate, client-inaccessible collection (`roles_admin`) grants administrative
+ * privileges, such as the ability to delete any player.
+ *
+ * Data Structure:
+ * The data is organized into two top-level collections:
+ * 1. /players/{playerId}: Stores public player data. The document ID `{playerId}`
+ *    is expected to match the UID of the user who owns it.
+ * 2. /roles_admin/{userId}: A private collection used solely for authorization. The
+ *    existence of a document here signifies that the user is an admin.
+ *
+ * Key Security Decisions:
+ * - Public Scoreboard: The `/players` collection is publicly readable (`get`, `list`)
+ *   to allow anyone, including unauthenticated visitors, to view scores.
+ * - User Ownership via Document ID: A user's player data is stored in a document
+ *   where the ID matches their authentication UID (`/players/{userId}`). This creates a
+ *   simple and performant ownership check for create and update operations.
+ * - Admin-Only Deletion: Deleting players is a privileged action restricted to users
+ *   marked as admins in the `/roles_admin` collection. Regular users cannot delete
+ *   their own or other players' data.
+ * - Server-Managed Roles: The `/roles_admin` collection is locked down completely from
+ *   client-side access. Roles must be assigned through a trusted environment like the
+ *   Firebase Console or a Cloud Function.
+ *
+ * Denormalization for Authorization:
+ * The `roles_admin` collection is a classic example of denormalization for authorization.
+ * Instead of checking a custom claim or a field on a user profile, we use the
+ * existence of a document (`exists()`) for a fast, non-billable read within security
+ * rules to determine if a user is an admin.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------------------------------------------------------------------------
+    // Helper Functions
+    // -------------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the authenticated user's UID matches the provided userId.
+     * This is the primary mechanism for verifying document ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks if the authenticated user has an admin role document.
+     * Uses a fast, non-billable `exists()` check on the private roles collection.
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /**
+     * On document creation, validates that the 'id' field inside the document
+     * matches the document's ID in the path. This enforces data consistency.
+     */
+    function hasMatchingIdOnCreate(docId) {
+      return request.resource.data.id == docId;
+    }
+
+    /**
+     * On document update, validates that the 'id' field is immutable.
+     * This prevents re-associating a document with a different entity.
+     */
+    function isIdImmutable() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    // -------------------------------------------------------------------------
+    // Collection Rules
+    // -------------------------------------------------------------------------
+
+    /**
+     * @description Public scoreboard data. Anyone can read player scores. Authenticated
+     *   users can create and update their own player entry. Only admins can delete players.
+     * @path /players/{playerId}
+     * @allow (get, list) - Any user, authenticated or not, can view the scoreboard.
+     * @allow (create) - An authenticated user ('user123') creates their own document at `/players/user123`.
+     * @allow (update) - The owner of `/players/user123` updates their score.
+     * @allow (delete) - An admin user deletes the player document at `/players/user456`.
+     * @deny (create) - User 'user123' tries to create a document at `/players/another_user`.
+     * @deny (update) - User 'user123' tries to update the score for player '/players/another_user'.
+     * @deny (delete) - A non-admin user tries to delete any player document.
+     * @principle Implements a public-read model with owner-only writes for create/update and
+     *   role-based access for destructive operations (delete).
+     */
+    match /players/{playerId} {
+      allow get, list: if true;
+      allow create: if isOwner(playerId) && hasMatchingIdOnCreate(playerId);
+      allow update: if isOwner(playerId) && resource != null && isIdImmutable();
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description A private collection that marks users as administrators. The existence
+     *   of a document here grants special privileges. This collection is not readable or
+     *   writable by any client to protect the integrity of the role system.
+     * @path /roles_admin/{userId}
+     * @allow No client operations are ever permitted on this collection.
+     * @deny Any attempt by a client to read or write to `/roles_admin/{any_user}` will be rejected.
+     * @principle Security-sensitive data should be managed by trusted server-side processes
+     *   only, never by the client application.
+     */
+    match /roles_admin/{userId} {
+      allow get: if false;
+      allow list: if false;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}

@@ -61,9 +61,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                     });
 
                     if (scoresFromPreviousRound.length > 0) {
-                        const minScore = Math.min(...scoresFromPreviousRound.map(s => s.score));
-                        const lowestScorers = scoresFromPreviousRound.filter(s => s.score === minScore);
-                        setLastRoundLowestScorers(lowestScorers.map(s => s.playerId));
+                        // FIX: Find the highest score, as in card games, the highest point is the "worst" or "lowest" rank.
+                        const maxScoreInRound = Math.max(...scoresFromPreviousRound.map(s => s.score));
+                        const worstScorers = scoresFromPreviousRound.filter(s => s.score === maxScoreInRound);
+                        setLastRoundLowestScorers(worstScorers.map(s => s.playerId));
                     } else {
                         setLastRoundLowestScorers([]);
                     }

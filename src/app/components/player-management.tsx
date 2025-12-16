@@ -44,6 +44,8 @@ export default function PlayerManagement() {
   const [isResetAlertOpen, setResetAlertOpen] = useState(false);
   
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
+  
+  const isPlayerLimitReached = players ? players.length >= 5 : false;
 
   useEffect(() => {
     if (players !== undefined) {
@@ -55,7 +57,7 @@ export default function PlayerManagement() {
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = newPlayerName.trim();
-    if (!trimmedName || !firestore || players === undefined) return;
+    if (!trimmedName || !firestore || players === undefined || isPlayerLimitReached) return;
     
     if (players.find(p => p.name.toLowerCase() === trimmedName.toLowerCase())) {
         return;
@@ -150,10 +152,10 @@ export default function PlayerManagement() {
               <div className="flex flex-row items-center gap-2">
                   <form onSubmit={handleAddPlayer} className="flex-grow">
                       <Input
-                          placeholder="Tambah pemain baru dan tekan Enter..."
+                          placeholder={isPlayerLimitReached ? "Maksimal 5 pemain tercapai" : "Tambah pemain baru dan tekan Enter..."}
                           value={newPlayerName}
                           onChange={(e) => setNewPlayerName(e.target.value)}
-                          disabled={isPending || isLoading}
+                          disabled={isPending || isLoading || isPlayerLimitReached}
                           className="h-8 text-sm"
                           aria-label="Nama pemain baru"
                       />
@@ -170,7 +172,7 @@ export default function PlayerManagement() {
                   {isLoading ? (
                   <ManagementSkeleton />
                   ) : sortedPlayers && sortedPlayers.length > 0 ? (
-                  sortedPlayers.map((player) => (
+                  sortedPlayers.slice(0, 5).map((player) => (
                       <TableRow key={player.id}>
                           <TableCell className="p-1 sm:p-2 w-[40px]">
                               <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Hapus pemain ${player.name}`}>

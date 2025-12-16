@@ -30,7 +30,7 @@ export default function Leaderboard() {
 
       playerScores.sort((a, b) => b.score - a.score);
 
-      setSortedPlayers(playerScores);
+      setSortedPlayers(playerScores.slice(0, 5));
       setIsLoading(false);
     }
   }, [players, history]);
@@ -78,7 +78,7 @@ export default function Leaderboard() {
                                       className={cn("transition-colors", rankClass)}
                                   >
                                     <TableCell className="text-center p-1 sm:p-2 font-bold text-lg">
-                                      {index + 1}
+                                        {index + 1}
                                     </TableCell>
                                     <TableCell className="font-medium text-sm sm:text-base p-1 sm:p-2">{player.name}</TableCell>
                                     <TableCell className={cn("text-right font-bold text-base sm:text-lg tabular-nums p-1 sm:p-2",

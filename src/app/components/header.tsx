@@ -22,18 +22,12 @@ const fontPoppins = Poppins({
 function RotationInfo() {
     const { session, isDataLoading } = useData();
     
-    // Always show rotation info once session is loaded, unless game hasn't started at all.
-    // The logic inside will determine what to show based on round number.
     if (isDataLoading || !session) {
         return null;
     }
     
     // We base the direction on the *displayed* round number.
-    // Displayed round is lastRoundNumber + 1 (or just lastRoundNumber if > 0).
-    // Let's simplify: if lastRoundNumber is 0, it's round 1 (odd) -> kanan
-    // if lastRoundNumber is 1, it's round 2 (even) -> kiri
-    // if lastRoundNumber is 2, it's round 3 (odd) -> kanan
-    // So, an even lastRoundNumber corresponds to an odd displayed round.
+    // A round number of 0 is an even number, so the direction is 'kanan'.
     const rotationDirection = session.lastRoundNumber % 2 === 0 ? 'kanan' : 'kiri';
     const Icon = rotationDirection === 'kanan' ? ArrowRight : ArrowLeft;
 
@@ -137,20 +131,6 @@ export default function AppHeader() {
                 </h1>
                 <div className="flex items-center gap-1">
                     <ThemeToggle />
-                    <TooltipProvider delayDuration={150}>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" asChild className="h-8 w-8">
-                                    <Link href="/#management">
-                                        <Settings className="h-5 w-5" />
-                                    </Link>
-                                </Button>
-                            </TooltipTrigger>
-                             <TooltipContent>
-                                <p>Kelola Pemain & Sesi</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
                 </div>
             </div>
             {/* Sub Header */}

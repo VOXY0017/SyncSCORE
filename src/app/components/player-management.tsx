@@ -2,18 +2,19 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition } from 'react';
 import type { Player, ScoreEntry, Round } from '@/lib/types';
 import Link from 'next/link';
 import { useData } from '@/app/context/data-context';
 import { useFirebase } from '@/firebase';
-import { collection, doc, writeBatch, deleteDoc, serverTimestamp, runTransaction, DocumentReference, getDocs, query, orderBy, limit, addDoc } from 'firebase/firestore';
+import { collection, doc, writeBatch, deleteDoc, serverTimestamp, runTransaction, DocumentReference, getDocs, query, addDoc } from 'firebase/firestore';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -111,7 +112,6 @@ export default function PlayerManagement() {
                 throw "Player does not exist!";
             }
             
-            // 1. Determine current round or create a new one
             let currentRoundRef: DocumentReference;
             const scoresSoFar = scores ?? [];
             const playerGameCounts = players.reduce((acc, player) => {
@@ -122,20 +122,19 @@ export default function PlayerManagement() {
             const gameCounts = Object.values(playerGameCounts);
             const isFirstEntryEver = scoresSoFar.length === 0;
 
-            // This logic determines if it's time to start a new round.
-            // A new round starts if:
-            // 1. It's the very first score entry of the game.
-            // 2. All players have submitted a score for the previous round, and this is the first entry for the next round.
             const allHaveSameCount = gameCounts.length > 0 && gameCounts.every(count => count === gameCounts[0]);
             const currentPlayerEntryCount = playerGameCounts[playerId] ?? 0;
             const lastRoundNumber = session?.lastRoundNumber ?? 0;
             
             let isNewRound = false;
             if (isFirstEntryEver) {
-              isNewRound = true; // First score entry ever starts round 1
+              isNewRound = true;
             } else if (allHaveSameCount && currentPlayerEntryCount === lastRoundNumber && players.length > 1) {
-              isNewRound = true; // Everyone finished the last round, start a new one
+              isNewRound = true;
+            } else if (players.length === 1 && lastRoundNumber > 0) {
+              isNewRound = true;
             }
+
 
             if (isNewRound) {
                 const newRoundNumber = lastRoundNumber + 1;
@@ -143,17 +142,14 @@ export default function PlayerManagement() {
                 transaction.set(currentRoundRef, { roundNumber: newRoundNumber, createdAt: serverTimestamp() });
                 transaction.update(sessionRef, { lastRoundNumber: newRoundNumber });
             } else if (rounds.length > 0) {
-                // Continue current round (rounds are sorted desc, so [0] is the latest)
                 currentRoundRef = doc(sessionRef, 'rounds', rounds[0].id);
             } else {
-                 // Fallback for an edge case where there are no rounds yet but it's not detected as a new round
                  const newRoundNumber = 1;
                  currentRoundRef = doc(collection(sessionRef, 'rounds'));
                  transaction.set(currentRoundRef, { roundNumber: newRoundNumber, createdAt: serverTimestamp() });
                  transaction.update(sessionRef, { lastRoundNumber: newRoundNumber });
             }
             
-            // 2. Add the score entry
             const scoreRef = doc(collection(currentRoundRef, 'scores'));
             transaction.set(scoreRef, {
                 playerId: playerId,
@@ -163,7 +159,6 @@ export default function PlayerManagement() {
                 timestamp: serverTimestamp()
             });
 
-            // 3. Update player's total score
             const newTotalPoints = playerDoc.data().totalPoints + points;
             transaction.update(playerRef, { totalPoints: newTotalPoints });
         });
@@ -175,7 +170,6 @@ export default function PlayerManagement() {
   };
   
   const handlePointInputChange = (playerId: string, value: string) => {
-    // allow negative sign only at the beginning
     const sanitizedValue = value.replace(/[^-0-9]/g, '');
     if (sanitizedValue.slice(1).includes('-')) {
         return;
@@ -189,7 +183,6 @@ export default function PlayerManagement() {
     startTransition(async () => {
         const playerDocRef = doc(firestore, 'sessions', sessionId, 'players', playerToDelete.id);
         await deleteDoc(playerDocRef);
-        // Note: Score history is intentionally kept
         toast({ title: `${playerToDelete.name} telah dihapus.`});
         setDeleteAlertOpen(false);
         setPlayerToDelete(null);
@@ -210,21 +203,17 @@ export default function PlayerManagement() {
         const sessionRef = doc(firestore, 'sessions', sessionId);
         const batch = writeBatch(firestore);
 
-        // Delete all scores in all rounds
         for (const round of rounds) {
             const scoresSnapshot = await getDocs(collection(sessionRef, 'rounds', round.id, 'scores'));
             scoresSnapshot.forEach(scoreDoc => batch.delete(scoreDoc.ref));
-            // Delete the round itself
             batch.delete(doc(sessionRef, 'rounds', round.id));
         }
 
-        // Reset player scores
         players.forEach(player => {
             const playerRef = doc(sessionRef, 'players', player.id);
             batch.update(playerRef, { totalPoints: 0 });
         });
         
-        // Reset session
         batch.update(sessionRef, { lastRoundNumber: 0 });
 
         await batch.commit();
@@ -240,9 +229,7 @@ export default function PlayerManagement() {
         await runTransaction(firestore, async (transaction) => {
             const sessionRef = doc(firestore, 'sessions', sessionId);
             const entriesToDelete: {score: ScoreEntry, ref: DocumentReference}[] = [];
-            const pointChanges: Record<string, number> = {};
 
-            // Find the last score entry for each player
             for (const player of players) {
                 const playerHistory = scores
                     .filter(s => s.playerId === player.id)
@@ -250,21 +237,14 @@ export default function PlayerManagement() {
 
                 if (playerHistory.length > 0) {
                     const lastEntry = playerHistory[0];
-                    const roundId = rounds?.find(r => {
-                        // This is a weak link, needs improvement if rounds are complex
-                        return true;
-                    })?.id;
 
-                    if (roundId) { // We need to find which round the score belongs to. This is hard without direct refs.
-                        // For now, let's assume the latest score is in the latest round
+                    if (rounds && rounds[0]) {
                          const scoreRef = doc(sessionRef, 'rounds', rounds[0].id, 'scores', lastEntry.id);
                          entriesToDelete.push({score: lastEntry, ref: scoreRef });
-                         pointChanges[player.id] = (pointChanges[player.id] || 0) - lastEntry.points;
                     }
                 }
             }
             
-            // Delete the score entries and update player totals
             for (const { score, ref } of entriesToDelete) {
                 transaction.delete(ref);
                 const playerRef = doc(sessionRef, 'players', score.playerId);
@@ -284,10 +264,8 @@ export default function PlayerManagement() {
   const confirmUndoLastEntry = async () => {
     if (!firestore || !scores || scores.length === 0 || isPending || !sessionId || !rounds) return;
     startTransition(async () => {
-        const lastEntry = scores[0]; // scores are pre-sorted desc by timestamp
+        const lastEntry = scores[0]; 
         
-        // This is a big assumption: that the last score is in the last round doc.
-        // This will break if rounds are manipulated manually.
         if (rounds.length === 0) return;
         const lastRoundId = rounds[0].id;
 
@@ -301,11 +279,9 @@ export default function PlayerManagement() {
                 throw "Player for score to undo does not exist.";
             }
 
-            // Decrement player's total points
             const newTotalPoints = playerDoc.data().totalPoints - lastEntry.points;
             transaction.update(playerRef, { totalPoints: newTotalPoints });
 
-            // Delete the score entry
             transaction.delete(scoreRef);
         });
 
@@ -315,7 +291,7 @@ export default function PlayerManagement() {
   };
 
   const ManagementSkeleton = () => (
-    <div className="space-y-4 px-2 sm:px-0">
+    <div className="space-y-4 px-4">
     {[...Array(3)].map((_, i) => (
         <Card key={i} className="p-4 space-y-3">
           <div className="flex items-center justify-between">
@@ -345,7 +321,7 @@ export default function PlayerManagement() {
   return (
     <>
       <CardContent className="p-0 h-full flex flex-col">
-          <div className="p-2 space-y-2">
+          <div className="p-4 space-y-2">
               <form onSubmit={handleAddPlayer} className="flex-grow">
                   <Input
                       placeholder={isPlayerLimitReached ? "Maksimal 5 pemain tercapai" : "Tambah pemain baru dan tekan Enter..."}
@@ -373,8 +349,8 @@ export default function PlayerManagement() {
                   </Button>
               </div>
           </div>
-          <div className="flex-grow overflow-auto p-2 sm:p-0">
-              <div className="space-y-4">
+          <ScrollArea className="flex-grow">
+              <div className="space-y-4 p-4 pt-0">
                   {isDataLoading ? (
                     <ManagementSkeleton />
                   ) : players && players.length > 0 ? (
@@ -437,7 +413,7 @@ export default function PlayerManagement() {
                     </div>
                   )}
               </div>
-          </div>
+          </ScrollArea>
       </CardContent>
 
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={handleAlertOpenChange}>
@@ -510,5 +486,3 @@ export default function PlayerManagement() {
     </>
   );
 }
-
-    

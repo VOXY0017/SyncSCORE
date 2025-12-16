@@ -11,6 +11,7 @@ import { useAuth, initiateAnonymousSignIn, useFirebase } from '@/firebase';
 import { useEffect } from 'react';
 import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { cn } from '@/lib/utils';
 
 const DEFAULT_SESSION_ID = 'main';
 
@@ -48,41 +49,44 @@ export default function Home() {
     }, [firestore, sessionId]);
 
   return (
-    <div className="min-h-screen w-full flex flex-col">
+    <div className="fixed inset-0 flex flex-col bg-background">
       <AppHeader />
-      <div className="w-full max-w-screen-lg mx-auto flex flex-col flex-grow px-2 sm:px-0 pb-2 sm:pb-4">
-        <main className="flex flex-col flex-grow">
-          <Tabs defaultValue="leaderboard" className="w-full flex flex-col flex-grow" id="management">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="leaderboard">
-                  <Trophy className="h-4 w-4 mr-1 sm:mr-2"/>
-                  <span>Peringkat</span>
-              </TabsTrigger>
-              <TabsTrigger value="history">
-                  <History className="h-4 w-4 mr-1 sm:mr-2"/>
-                  <span>Riwayat</span>
-              </TabsTrigger>
-              <TabsTrigger value="management">
-                  <Users className="h-4 w-4 mr-1 sm:mr-2"/>
-                  <span>Kelola</span>
-              </TabsTrigger>
-            </TabsList>
-            <Card className="flex-grow rounded-t-none sm:rounded-t-lg">
-                <TabsContent value="leaderboard" className="m-0 h-full">
-                    <Leaderboard />
-                </TabsContent>
-                <TabsContent value="history" className="m-0 h-full">
-                    <GlobalScoreHistory />
-                </TabsContent>
-                <TabsContent value="management" className="m-0 h-full">
-                    <PlayerManagement />
-                </TabsContent>
-            </Card>
-          </Tabs>
-        </main>
-      </div>
+      <main className="flex-grow flex flex-col overflow-hidden">
+        <Tabs defaultValue="leaderboard" className="w-full flex-grow flex flex-col" id="management">
+          
+          {/* Konten Tab */}
+          <div className="flex-grow overflow-y-auto px-4 sm:px-6">
+              <TabsContent value="leaderboard" className="m-0 h-full">
+                  <Leaderboard />
+              </TabsContent>
+              <TabsContent value="history" className="m-0 h-full">
+                  <GlobalScoreHistory />
+              </TabsContent>
+              <TabsContent value="management" className="m-0 h-full">
+                  <PlayerManagement />
+              </TabsContent>
+          </div>
+          
+          {/* Navigasi Tab di Bawah */}
+          <TabsList className={cn(
+              "grid w-full grid-cols-3 rounded-none h-16 sm:h-20",
+              "border-t"
+              )}>
+            <TabsTrigger value="leaderboard" className="h-full flex-col gap-1 rounded-none text-xs sm:text-sm">
+                <Trophy className="h-5 w-5 sm:h-6 sm:w-6"/>
+                <span>Peringkat</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="h-full flex-col gap-1 rounded-none text-xs sm:text-sm">
+                <History className="h-5 w-5 sm:h-6 sm:w-6"/>
+                <span>Riwayat</span>
+            </TabsTrigger>
+            <TabsTrigger value="management" className="h-full flex-col gap-1 rounded-none text-xs sm:text-sm">
+                <Users className="h-5 w-5 sm:h-6 sm:w-6"/>
+                <span>Kelola</span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </main>
     </div>
   );
 }
-
-    

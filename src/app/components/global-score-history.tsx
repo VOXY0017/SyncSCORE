@@ -33,8 +33,6 @@ export default function GlobalScoreHistory() {
       
       const scoresByRoundId: Record<string, ScoreEntry[]> = {};
       for (const score of scores) {
-          // This is inefficient. Ideally, score object would have a roundId.
-          // For now, we find the round for each score.
           const roundForScore = rounds.find(r => r.scores?.some(s => s.id === score.id));
           if (roundForScore) {
             if (!scoresByRoundId[roundForScore.id]) {
@@ -71,7 +69,7 @@ export default function GlobalScoreHistory() {
 
       setPivotData({
         players: sortedPlayers,
-        rounds: roundData, // Already sorted by round number descending from context
+        rounds: roundData,
       });
 
     } else {
@@ -134,7 +132,7 @@ export default function GlobalScoreHistory() {
                             <span
                               className={cn(
                                 "font-bold",
-                                score < 0 ? "text-destructive" : "text-success",
+                                score > 0 ? "text-success" : "text-destructive",
                                 isHighest && "text-yellow-500 dark:text-yellow-400"
                               )}
                             >

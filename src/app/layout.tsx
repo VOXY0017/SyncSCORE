@@ -14,8 +14,13 @@ const fontSans = FontSans({
 });
 
 export const metadata: Metadata = {
-  title: 'Papan Skor Markas B7',
-  description: 'Papan skor untuk Markas B7',
+  title: 'Papan Skor',
+  description: 'Papan Skor Digital',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Papan Skor",
+  },
 };
 
 export default function RootLayout({
@@ -25,6 +30,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" suppressHydrationWarning>
+       <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+       </head>
       <body
         className={cn(
           'min-h-screen bg-background font-sans antialiased',
@@ -38,7 +46,9 @@ export default function RootLayout({
         >
           <FirebaseClientProvider>
             <DataProvider>
-              {children}
+              <div className="relative flex flex-col h-screen">
+                  {children}
+              </div>
               <Toaster />
             </DataProvider>
           </FirebaseClientProvider>

@@ -8,6 +8,7 @@ import { useData } from '@/app/context/data-context';
 
 import { CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -30,9 +31,9 @@ export default function Leaderboard() {
               const prevPlayer = prevPlayersRef.current?.find(p => p.id === currentPlayer.id);
               if (prevPlayer) {
                   if (currentPlayer.totalPoints > prevPlayer.totalPoints) {
-                      changes[currentPlayer.id] = 'increase'; // Score got better
+                      changes[currentPlayer.id] = 'increase';
                   } else if (currentPlayer.totalPoints < prevPlayer.totalPoints) {
-                      changes[currentPlayer.id] = 'decrease'; // Score got worse
+                      changes[currentPlayer.id] = 'decrease';
                   }
               }
           });
@@ -40,7 +41,7 @@ export default function Leaderboard() {
 
           const timer = setTimeout(() => {
               setScoreChanges({});
-          }, 1500); // Animation duration
+          }, 1500);
 
           return () => clearTimeout(timer);
       }
@@ -72,6 +73,7 @@ export default function Leaderboard() {
 
   return (
       <CardContent className="p-0 h-full">
+        <ScrollArea className="h-full">
           <Table>
               <TableHeader>
                   <TableRow>
@@ -99,8 +101,8 @@ export default function Leaderboard() {
                                   className={cn(
                                     "transition-colors", 
                                     rankClass,
-                                    change === 'increase' && 'animate-flash-success', // Better score is green
-                                    change === 'decrease' && 'animate-flash-destructive'      // Worse score is red
+                                    change === 'increase' && 'animate-flash-success',
+                                    change === 'decrease' && 'animate-flash-destructive'
                                     )}
                               >
                                 <TableCell className="text-center p-1 sm:p-2 font-bold text-xl">
@@ -127,6 +129,7 @@ export default function Leaderboard() {
                   )}
               </TableBody>
           </Table>
+        </ScrollArea>
       </CardContent>
   );
 }

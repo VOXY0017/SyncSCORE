@@ -33,7 +33,7 @@ export default function Leaderboard() {
 
       playerScores.sort((a, b) => b.score - a.score);
 
-      setSortedPlayers(playerScores.slice(0, 5));
+      setSortedPlayers(playerScores);
       setIsLoading(false);
     }
   }, [players, history]);
@@ -51,6 +51,13 @@ export default function Leaderboard() {
     </>
   );
 
+  const getRankContent = (index: number) => {
+    if (index === 0) return '🥇';
+    if (index === 1) return '🥈';
+    if (index === 2) return '🥉';
+    return index + 1;
+  }
+
   return (
       <CardContent className="p-0 h-full">
           <Table>
@@ -67,7 +74,6 @@ export default function Leaderboard() {
                       sortedPlayers && sortedPlayers.map((player, index) => {
                           const gap = index > 0 && sortedPlayers ? sortedPlayers[index - 1].score - player.score : null;
                           
-                          const isTopThree = index < 3;
                           const rankClass = 
                             index === 0 ? "bg-yellow-400/10 hover:bg-yellow-400/20" :
                             index === 1 ? "bg-slate-400/10 hover:bg-slate-400/20" :
@@ -79,8 +85,8 @@ export default function Leaderboard() {
                                   key={player.id}
                                   className={cn("transition-colors", rankClass)}
                               >
-                                <TableCell className="text-center p-1 sm:p-2 font-bold text-lg">
-                                  {index + 1}
+                                <TableCell className="text-center p-1 sm:p-2 font-bold text-xl">
+                                  {getRankContent(index)}
                                 </TableCell>
                                 <TableCell className="font-medium text-sm sm:text-base p-1 sm:p-2">{player.name}</TableCell>
                                 <TableCell className={cn("text-right font-bold text-base sm:text-lg tabular-nums p-1 sm:p-2",

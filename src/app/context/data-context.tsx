@@ -6,7 +6,7 @@ import { createContext, useContext, useMemo, useState, useEffect } from 'react';
 import type { Player, ScoreEntry, Session, Round } from '@/lib/types';
 import { useCollection, useDoc } from '@/firebase';
 import { useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, limit } from 'firebase/firestore';
+import { collection, query, orderBy, doc, onSnapshot } from 'firebase/firestore';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 
 // --- Default session setup ---

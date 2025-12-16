@@ -165,14 +165,11 @@ export default function PlayerManagement() {
                         .filter(h => h.playerId === player.id)
                         .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
                     
-                    if (playerHistory.length > 0) {
-                        const lastEntryIndex = playerHistory.length - 1;
-                        if(playerHistory.length > completedRounds -1) {
-                            const entryToDelete = playerHistory[lastEntryIndex];
-                            if (entryToDelete) {
-                                const docRef = doc(firestore, 'history', entryToDelete.id);
-                                batch.delete(docRef);
-                            }
+                    if (playerHistory.length >= completedRounds) {
+                        const entryToDelete = playerHistory[playerHistory.length - completedRounds];
+                        if (entryToDelete) {
+                            const docRef = doc(firestore, 'history', entryToDelete.id);
+                            batch.delete(docRef);
                         }
                     }
                 }
@@ -255,31 +252,35 @@ export default function PlayerManagement() {
                               </Link>
                           </TableCell>
                           <TableCell className="text-right p-1 sm:p-2">
-                              <div className="flex items-center justify-end gap-1 flex-wrap">
-                                <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 50)} disabled={isPending}>
-                                    <Plus className="h-4 w-4 mr-1" />50
-                                </Button>
-                                <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 100)} disabled={isPending}>
-                                    <Plus className="h-4 w-4 mr-1" />100
-                                </Button>
-                                <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 150)} disabled={isPending}>
-                                    <Plus className="h-4 w-4 mr-1" />150
-                                </Button>
-                                <Button variant="destructive" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, -150)} disabled={isPending}>
-                                    <Minus className="h-4 w-4 mr-1" />150
-                                </Button>
-                                <Input
-                                type="number"
-                                placeholder="Poin"
-                                className="h-9 text-center text-sm w-[70px]"
-                                value={pointInputs[player.id] || ''}
-                                onChange={(e) => handlePointInputChange(player.id, e.target.value)}
-                                disabled={isPending}
-                                aria-label={`Poin untuk ${player.name}`}
-                                />
-                                <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor untuk ${player.name}`}>
-                                    <Plus className="h-4 w-4" />
-                                </Button>
+                              <div className="flex flex-col items-end gap-1">
+                                <div className="flex items-center justify-end gap-1">
+                                    <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => handleScoreChange(player.id, 50)} disabled={isPending}>
+                                        <Plus className="h-4 w-4 mr-1" />50
+                                    </Button>
+                                    <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => handleScoreChange(player.id, 100)} disabled={isPending}>
+                                        <Plus className="h-4 w-4 mr-1" />100
+                                    </Button>
+                                    <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => handleScoreChange(player.id, 150)} disabled={isPending}>
+                                        <Plus className="h-4 w-4 mr-1" />150
+                                    </Button>
+                                </div>
+                                <div className="flex items-center justify-end gap-1">
+                                    <Button variant="destructive" size="sm" className="h-8 px-2" onClick={() => handleScoreChange(player.id, -150)} disabled={isPending}>
+                                        <Minus className="h-4 w-4 mr-1" />150
+                                    </Button>
+                                    <Input
+                                    type="number"
+                                    placeholder="Poin"
+                                    className="h-8 text-center text-sm w-[70px] px-1"
+                                    value={pointInputs[player.id] || ''}
+                                    onChange={(e) => handlePointInputChange(player.id, e.target.value)}
+                                    disabled={isPending}
+                                    aria-label={`Poin untuk ${player.name}`}
+                                    />
+                                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor untuk ${player.name}`}>
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                </div>
                               </div>
                           </TableCell>
                       </TableRow>

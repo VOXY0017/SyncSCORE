@@ -13,8 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 interface PivotData {
   players: Player[];
-  games: {
-    gameNumber: number;
+  rounds: {
+    roundNumber: number;
     scores: Record<string, number | null>;
     highestScore: number | null;
   }[];
@@ -28,50 +28,54 @@ export default function GlobalScoreHistory() {
   useEffect(() => {
     if (isDataLoading || !players || !scores || !rounds) return;
 
-    if (players.length > 0) {
+    if (players.length > 0 && rounds.length > 0) {
       const sortedPlayers = [...players].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       
-      const scoresByPlayer: Record<string, ScoreEntry[]> = {};
-      sortedPlayers.forEach(p => {
-        scoresByPlayer[p.id] = scores
-          .filter(s => s.playerId === p.id)
-          .sort((a, b) => a.timestamp.toMillis() - b.timestamp.toMillis());
-      });
-
-      const maxGames = Math.max(0, ...Object.values(scoresByPlayer).map(s => s.length));
-      
-      const gameData: PivotData['games'] = [];
-
-      for (let i = 0; i < maxGames; i++) {
-          const gameScores: Record<string, number | null> = {};
-          let highestScoreInRound: number | null = null;
-          
-          sortedPlayers.forEach(player => {
-              const scoreEntry = scoresByPlayer[player.id]?.[i];
-              if (scoreEntry) {
-                  gameScores[player.id] = scoreEntry.points;
-                  if (highestScoreInRound === null || scoreEntry.points > highestScoreInRound) {
-                      highestScoreInRound = scoreEntry.points;
-                  }
-              } else {
-                  gameScores[player.id] = null;
-              }
-          });
-
-          gameData.push({
-              gameNumber: i + 1,
-              scores: gameScores,
-              highestScore: highestScoreInRound
-          });
+      const scoresByRoundId: Record<string, ScoreEntry[]> = {};
+      for (const score of scores) {
+          // This is inefficient. Ideally, score object would have a roundId.
+          // For now, we find the round for each score.
+          const roundForScore = rounds.find(r => r.scores?.some(s => s.id === score.id));
+          if (roundForScore) {
+            if (!scoresByRoundId[roundForScore.id]) {
+                scoresByRoundId[roundForScore.id] = [];
+            }
+            scoresByRoundId[roundForScore.id].push(score);
+          }
       }
+
+      const roundData = rounds.map(round => {
+        const roundScores: Record<string, number | null> = {};
+        let highestScoreInRound: number | null = null;
+        
+        const scoresInThisRound = scoresByRoundId[round.id] || [];
+        
+        sortedPlayers.forEach(player => {
+            const playerScore = scoresInThisRound.find(s => s.playerId === player.id);
+            if(playerScore) {
+                roundScores[player.id] = playerScore.points;
+                if (highestScoreInRound === null || playerScore.points > highestScoreInRound) {
+                    highestScoreInRound = playerScore.points;
+                }
+            } else {
+                roundScores[player.id] = null;
+            }
+        });
+        
+        return {
+            roundNumber: round.roundNumber,
+            scores: roundScores,
+            highestScore: highestScoreInRound,
+        };
+      });
 
       setPivotData({
         players: sortedPlayers,
-        games: gameData.reverse(), // Show latest game first
+        rounds: roundData, // Already sorted by round number descending from context
       });
 
     } else {
-      setPivotData({ players: [], games: [] });
+      setPivotData({ players: players || [], rounds: [] });
     }
 
   }, [isDataLoading, players, rounds, scores]);
@@ -81,7 +85,8 @@ export default function GlobalScoreHistory() {
     <>
       {[...Array(5)].map((_, i) => (
         <TableRow key={i}>
-            {[...Array(4)].map((_, j) => (
+            <TableCell className="text-center p-1 sm:p-2"><Skeleton className="h-5 w-8 mx-auto" /></TableCell>
+            {[...Array(3)].map((_, j) => (
               <TableCell key={j} className="text-center p-1 sm:p-2"><Skeleton className="h-5 w-12 mx-auto" /></TableCell>
             ))}
         </TableRow>
@@ -95,8 +100,9 @@ export default function GlobalScoreHistory() {
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
+                <TableHead className="w-[80px] text-center p-1 sm:p-2">Ronde</TableHead>
                 {isDataLoading ? (
-                  [...Array(4)].map((_, i) => <TableHead key={i} className="text-center p-1 sm:p-2"><Skeleton className="h-5 w-16 mx-auto" /></TableHead>)
+                  [...Array(3)].map((_, i) => <TableHead key={i} className="text-center p-1 sm:p-2"><Skeleton className="h-5 w-16 mx-auto" /></TableHead>)
                 ) : pivotData && pivotData.players.length > 0 ? (
                   pivotData.players.map((player) => (
                     <TableHead key={player.id} className="text-center min-w-[80px] p-1 sm:p-2">{player.name}</TableHead>
@@ -109,15 +115,16 @@ export default function GlobalScoreHistory() {
             <TableBody>
               {isDataLoading ? (
                 <HistorySkeleton />
-              ) : pivotData && pivotData.games.length > 0 ? (
-                pivotData.games.map((game) => (
-                  <TableRow key={game.gameNumber}>
+              ) : pivotData && pivotData.rounds.length > 0 ? (
+                pivotData.rounds.map((round) => (
+                  <TableRow key={round.roundNumber}>
+                    <TableCell className="text-center p-1 sm:p-2 font-medium text-muted-foreground">{round.roundNumber}</TableCell>
                     {pivotData.players.map((player) => {
-                      const score = game.scores[player.id];
-                      const isHighest = score !== null && score === game.highestScore && game.highestScore > 0;
+                      const score = round.scores[player.id];
+                      const isHighest = score !== null && score === round.highestScore && round.highestScore > 0;
                       return (
                         <TableCell 
-                          key={`${game.gameNumber}-${player.id}`} 
+                          key={`${round.roundNumber}-${player.id}`} 
                           className={cn(
                             "text-center p-1 sm:p-2 text-sm transition-colors",
                             isHighest && "bg-yellow-400/10"
@@ -127,7 +134,7 @@ export default function GlobalScoreHistory() {
                             <span
                               className={cn(
                                 "font-bold",
-                                score > 0 ? "text-destructive" : "text-success",
+                                score < 0 ? "text-destructive" : "text-success",
                                 isHighest && "text-yellow-500 dark:text-yellow-400"
                               )}
                             >
@@ -143,7 +150,7 @@ export default function GlobalScoreHistory() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={pivotData ? pivotData.players.length || 1 : 1} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={pivotData ? pivotData.players.length + 1 : 2} className="h-24 text-center text-muted-foreground">
                     {players && players.length > 0 ? "Belum ada riwayat skor." : "Tambahkan pemain untuk melihat riwayat."}
                   </TableCell>
                 </TableRow>

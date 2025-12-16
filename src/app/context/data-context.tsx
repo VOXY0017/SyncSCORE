@@ -15,7 +15,7 @@ const DEFAULT_SESSION_ID = 'main';
 interface DataContextType {
     session: Session | null | undefined;
     players: Player[] | undefined;
-    rounds: Round[] | undefined;
+    rounds: (Round & { scores?: ScoreEntry[] })[] | undefined;
     scores: ScoreEntry[] | undefined;
     lastRoundHighestScorers: string[];
     isDataLoading: boolean;
@@ -46,17 +46,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     // --- Data Hooks ---
     const { data: sessionData, isLoading: isSessionLoading } = useDoc<Session>(sessionRef);
     const { data: playersData, isLoading: arePlayersLoading } = useCollection<Player>(playersQuery);
-    const { data: roundsData, isLoading: areRoundsLoading } = useCollection<Round>(roundsQuery);
+    const { data: rawRoundsData, isLoading: areRoundsLoading } = useCollection<Round>(roundsQuery);
 
     const [scores, setScores] = useState<ScoreEntry[] | undefined>(undefined);
+    const [roundsData, setRoundsData] = useState<(Round & { scores?: ScoreEntry[] })[] | undefined>(undefined);
     const [areScoresLoading, setAreScoresLoading] = useState(true);
 
-    // This is a complex effect to fetch all scores from all rounds.
-    // It's not the most performant for very large datasets, but it's effective for this app's scale.
+    // This is a complex effect to fetch all scores from all rounds and attach them.
     useEffect(() => {
-        if (!firestore || !sessionId || !roundsData) {
-            if (!areRoundsLoading) { // Only set loading to false if rounds are confirmed loaded/empty
+        if (!firestore || !sessionId || !rawRoundsData) {
+            if (!areRoundsLoading) {
                 setScores([]);
+                setRoundsData([]);
                 setAreScoresLoading(false);
             }
             return;
@@ -64,35 +65,35 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
         setAreScoresLoading(true);
 
-        if (roundsData.length === 0) {
+        if (rawRoundsData.length === 0) {
             setScores([]);
+            setRoundsData([]);
             setAreScoresLoading(false);
             return;
         }
 
-        const unsubscribers = roundsData.map(round => {
+        let allScores: ScoreEntry[] = [];
+        let roundsWithScores: (Round & { scores?: ScoreEntry[] })[] = [...rawRoundsData];
+
+        const unsubscribers = rawRoundsData.map((round, roundIndex) => {
             const scoresQuery = query(collection(firestore, 'sessions', sessionId, 'rounds', round.id, 'scores'), orderBy('timestamp', 'desc'));
             return onSnapshot(scoresQuery, (snapshot) => {
                 const scoresFromThisRound = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ScoreEntry));
                 
-                setScores(prevScores => {
-                    const otherScores = prevScores ? prevScores.filter(s => !scoresFromThisRound.some(n => n.id === s.id)) : [];
-                    const updatedScores = [...otherScores, ...scoresFromThisRound];
-                    // Also filter out scores from rounds that no longer exist
-                    const roundIds = new Set(roundsData.map(r => r.id));
-                    // This part is tricky because we don't store roundId on the score.
-                    // We rely on the snapshot updates to clear scores for deleted rounds.
-                    
-                    // Re-sort everything every time.
-                    return updatedScores.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
-                });
+                // Update the specific round with its scores
+                roundsWithScores = roundsWithScores.map(r => r.id === round.id ? { ...r, scores: scoresFromThisRound } : r);
+                
+                // Re-aggregate all scores from the updated rounds
+                allScores = roundsWithScores.flatMap(r => r.scores || []);
+                
+                // Sort all scores globally by timestamp
+                allScores.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
+                
+                setScores(allScores);
+                setRoundsData(roundsWithScores);
             });
         });
         
-        // Combine all scores and set loading to false after the initial fetch
-        // This part is tricky with multiple listeners. We'll set loading false after a small delay
-        // assuming initial data has arrived. A more robust solution might involve Promise.all
-        // with getDocs first, then switching to listeners.
         const initialLoadTimer = setTimeout(() => {
             setAreScoresLoading(false);
         }, 1500); // Heuristic delay
@@ -101,7 +102,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             unsubscribers.forEach(unsub => unsub());
             clearTimeout(initialLoadTimer);
         };
-    }, [firestore, sessionId, roundsData, areRoundsLoading]);
+    }, [firestore, sessionId, rawRoundsData, areRoundsLoading]);
 
 
     const isDataLoading = isSessionLoading || arePlayersLoading || areRoundsLoading || areScoresLoading;
@@ -111,43 +112,28 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         const players = playersData || [];
         const rounds = roundsData || [];
 
-        if (players.length < 2 || rounds.length === 0 || !scores) {
+        if (players.length < 2 || rounds.length < 2) {
             return [];
         }
 
-        const playerScoresInLastRound = players.map(player => {
-            const playerHistory = scores
-                .filter(s => s.playerId === player.id)
-                .sort((a,b) => a.timestamp.toMillis() - b.timestamp.toMillis());
-            return {
-                player,
-                history: playerHistory
-            }
-        });
-
-        const gameCounts = playerScoresInLastRound.map(p => p.history.length);
-        if (gameCounts.length < players.length || !gameCounts.every(c => c === gameCounts[0])) {
-            return []; // Not all players have completed the same number of rounds
+        // The rounds are sorted descending, so rounds[0] is the latest, rounds[1] is the one before.
+        const lastCompletedRound = rounds[1];
+        if (!lastCompletedRound || !lastCompletedRound.scores) {
+            return [];
         }
 
-        const completedRounds = gameCounts[0];
-        if (completedRounds === 0) return [];
-
-        const previousRoundIndex = completedRounds - 1;
-        const scoresFromPreviousRound = playerScoresInLastRound.map(({ player, history }) => ({
-            playerId: player.id,
-            score: history[previousRoundIndex]?.points ?? 0
-        }));
+        const scoresFromPreviousRound = lastCompletedRound.scores;
         
         if (scoresFromPreviousRound.length > 0) {
-            const maxScoreInRound = Math.max(...scoresFromPreviousRound.map(s => s.score));
-            const worstScorers = scoresFromPreviousRound.filter(s => s.score === maxScoreInRound);
+            const maxScoreInRound = Math.max(...scoresFromPreviousRound.map(s => s.points));
+            if (maxScoreInRound <= 0) return []; // Don't highlight if no penalty
+            const worstScorers = scoresFromPreviousRound.filter(s => s.points === maxScoreInRound);
             return worstScorers.map(s => s.playerId);
         }
 
         return [];
 
-    }, [playersData, roundsData, scores]);
+    }, [playersData, roundsData]);
 
 
     const value = useMemo(() => ({

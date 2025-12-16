@@ -22,6 +22,7 @@ export interface Round {
     id: string;
     roundNumber: number;
     createdAt: Timestamp;
+    scores?: ScoreEntry[];
 }
 
 export interface ScoreEntry {

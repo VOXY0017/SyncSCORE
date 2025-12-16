@@ -88,8 +88,8 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {isLoading ? <HistorySkeleton /> : (
-                      playerHistory && playerHistory.length > 0 ? playerHistory.map((entry, index) => (
+                    {isLoading ? <HistorySkeleton /> : playerHistory && playerHistory.length > 0 ? (
+                      playerHistory.map((entry, index) => (
                         <TableRow key={entry.id}>
                           <TableCell className={cn("font-bold text-base p-1 sm:p-2", entry.points > 0 ? "text-success" : "text-destructive")}>
                             {entry.points > 0 ? `+${entry.points}` : entry.points}
@@ -98,11 +98,10 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                             {entry.timestamp ? format(new Date(entry.timestamp), 'Pp') : '...'}
                           </TableCell>
                         </TableRow>
-                      )) : null
-                    )}
-                    {!isLoading && (!playerHistory || playerHistory.length === 0) && (
+                      ))
+                    ) : (
                       <TableRow>
-                        <TableCell colSpan={2} className="h-20 text-center text-muted-foreground">
+                        <TableCell colSpan={2} className="h-24 text-center text-muted-foreground">
                           {player ? 'Belum ada entri skor untuk pemain ini.' : 'Pemain tidak ditemukan.'}
                         </TableCell>
                       </TableRow>

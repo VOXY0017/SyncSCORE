@@ -38,7 +38,7 @@ export default function GlobalScoreHistory() {
       
       const completedRounds = players.length > 0 ? Math.min(...Object.values(playerGameCounts)) : 0;
       const maxGames = Math.max(0, ...Object.values(playerGameCounts));
-      const totalGamesToDisplay = maxGames > completedRounds ? maxGames : completedRounds + 1;
+      const totalGamesToDisplay = maxGames > completedRounds ? maxGames : completedRounds;
       
       const gameData: PivotData['games'] = [];
       
@@ -87,10 +87,13 @@ export default function GlobalScoreHistory() {
 
   useEffect(() => {
     if (scrollAreaRef.current) {
-        scrollAreaRef.current.scrollTo({
-            top: scrollAreaRef.current.scrollHeight,
-            behavior: 'smooth'
-        });
+        const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+        if (viewport) {
+            viewport.scrollTo({
+                top: viewport.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
     }
   }, [pivotData]);
 
@@ -108,16 +111,18 @@ export default function GlobalScoreHistory() {
 
   return (
       <CardContent className="p-0 h-full">
-        <ScrollArea className="h-full w-full whitespace-nowrap" viewportRef={scrollAreaRef}>
+        <ScrollArea className="h-full w-full whitespace-nowrap" ref={scrollAreaRef}>
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
                 {isLoading ? (
                   [...Array(5)].map((_, i) => <TableHead key={i} className="text-center p-1 sm:p-2"><Skeleton className="h-5 w-16 mx-auto" /></TableHead>)
-                ) : (
-                  pivotData && pivotData.players.map((player) => (
+                ) : pivotData && pivotData.players.length > 0 ? (
+                  pivotData.players.map((player) => (
                     <TableHead key={player.id} className="text-center min-w-[80px] p-1 sm:p-2">{player.name}</TableHead>
                   ))
+                ) : (
+                    <TableHead className="text-center p-2 w-full">Riwayat Skor</TableHead>
                 )}
               </TableRow>
             </TableHeader>
@@ -158,8 +163,8 @@ export default function GlobalScoreHistory() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={pivotData ? pivotData.players.length : 1} className="h-24 text-center text-muted-foreground">
-                    Belum ada riwayat skor.
+                  <TableCell colSpan={pivotData ? pivotData.players.length || 1 : 1} className="h-24 text-center text-muted-foreground">
+                    {players && players.length > 0 ? "Belum ada riwayat skor." : "Tambahkan pemain untuk melihat riwayat."}
                   </TableCell>
                 </TableRow>
               )}

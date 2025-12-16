@@ -39,7 +39,12 @@ export function RotationInfo() {
                     playerGameCounts[player.id] = history.filter(h => h.playerId === player.id).length;
                 });
                 if (Object.keys(playerGameCounts).length === players.length && players.length > 0) {
-                    completedRounds = Math.min(...Object.values(playerGameCounts));
+                    const gameCounts = Object.values(playerGameCounts);
+                    if (gameCounts.every(count => count === gameCounts[0])) {
+                        completedRounds = gameCounts[0];
+                    } else {
+                        completedRounds = Math.min(...gameCounts);
+                    }
                 }
             }
             
@@ -73,7 +78,7 @@ export function RotationInfo() {
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
-                ) : <p className="text-xs text-muted-foreground">...</p>}
+                ) : <p className="text-xs text-muted-foreground">Mainkan ronde pertama.</p>}
             </CardContent>
         </Card>
     );
@@ -116,7 +121,7 @@ export function LowestScorePlayerInfo() {
                     </div>
                 ) : (
                     <div className='flex flex-col items-center leading-none'>
-                        <p className="text-xs text-muted-foreground font-medium">Poin Terkecil Lalu</p>
+                        <p className="text-xs text-muted-foreground font-medium">Poin Terbesar Lalu</p>
                         <div className="flex items-center gap-1 mt-1">
                             <p className="font-bold text-base line-clamp-1 text-destructive">
                                 {getDisplayText()}

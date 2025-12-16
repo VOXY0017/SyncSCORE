@@ -55,7 +55,9 @@ export default function PlayerManagement() {
         return acc;
     }, {} as Record<string, number>);
     if (Object.keys(playerGameCounts).length < players.length) return false;
-    const completedRounds = Math.min(...Object.values(playerGameCounts));
+    const gameCounts = Object.values(playerGameCounts);
+    if (gameCounts.length === 0 || !gameCounts.every(count => count > 0)) return false;
+    const completedRounds = Math.min(...gameCounts);
     return completedRounds > 0;
   }, [players, history]);
 
@@ -150,24 +152,6 @@ export default function PlayerManagement() {
     startTransition(async () => {
         const batch = writeBatch(firestore);
 
-        // Client-side logic to find the last entries for each player
-        const lastEntriesToDelete: { [playerId: string]: string } = {};
-        const playerLastEntryTimestamps: { [playerId: string]: number } = {};
-
-        // Find the latest entry timestamp for each player
-        for (const player of players) {
-            const playerHistory = history
-                .filter(h => h.playerId === player.id)
-                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
-            if (playerHistory.length > 0) {
-                lastEntriesToDelete[player.id] = playerHistory[0].id;
-                playerLastEntryTimestamps[player.id] = new Date(playerHistory[0].timestamp).getTime();
-            }
-        }
-        
-        // This logic assumes a round is complete if all players have an entry.
-        // We find the documents to delete based on the client-side history data.
         const playerGameCounts = players.reduce((acc, player) => {
             acc[player.id] = history.filter(h => h.playerId === player.id).length;
             return acc;
@@ -182,8 +166,7 @@ export default function PlayerManagement() {
                     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
                 if (playerHistory.length >= completedRounds) {
-                     // The entry to delete is the newest one, which is at index 0 of the sorted history
-                    const entryToDelete = playerHistory[0];
+                    const entryToDelete = playerHistory[playerHistory.length - 1]; // This logic is simplified
                     const docRef = doc(firestore, 'history', entryToDelete.id);
                     batch.delete(docRef);
                 }
@@ -198,7 +181,7 @@ export default function PlayerManagement() {
   const confirmUndoLastEntry = async () => {
     if (!firestore || !history || history.length === 0 || isPending) return;
     startTransition(async () => {
-        // history is already sorted by timestamp desc, so the first element is the latest
+        // history is already sorted by timestamp desc from the hook
         const lastEntryId = history[0].id;
         const docRef = doc(firestore, 'history', lastEntryId);
         await deleteDoc(docRef);
@@ -208,7 +191,7 @@ export default function PlayerManagement() {
 
   const ManagementSkeleton = () => (
     <>
-    {[...Array(5)].map((_, i) => (
+    {[...Array(3)].map((_, i) => (
         <TableRow key={i}>
             <TableCell className="p-2 w-[40px]"><Skeleton className="h-8 w-8" /></TableCell>
             <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
@@ -243,13 +226,13 @@ export default function PlayerManagement() {
                         <span className="hidden md:inline">Undo Ronde</span>
                     </Button>
                   </div>
-                  <Button variant="outline" size="sm" className="h-9" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Atur ulang semua skor">
+                  <Button variant="destructive" size="sm" className="h-9" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Atur ulang semua skor">
                       <RotateCcw className="h-4 w-4 md:mr-2" />
                       <span className="hidden md:inline">Atur Ulang</span>
                   </Button>
               </div>
           </div>
-          <div className="flex-grow">
+          <div className="flex-grow overflow-auto">
               <Table>
               <TableBody>
                   {isLoading ? (
@@ -374,4 +357,3 @@ export default function PlayerManagement() {
     </>
   );
 }
-    

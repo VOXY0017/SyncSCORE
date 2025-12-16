@@ -96,8 +96,8 @@ export default function Leaderboard() {
                   </TableRow>
               </TableHeader>
               <TableBody>
-                  {isLoading ? <PlayerListSkeleton /> : (
-                      sortedPlayers && sortedPlayers.map((player, index) => {
+                  {isLoading ? <PlayerListSkeleton /> : sortedPlayers && sortedPlayers.length > 0 ? (
+                      sortedPlayers.map((player, index) => {
                           const gap = index > 0 && sortedPlayers ? sortedPlayers[index - 1].score - player.score : null;
                           const change = scoreChanges[player.id];
                           
@@ -132,13 +132,12 @@ export default function Leaderboard() {
                               </TableRow>
                           );
                       })
-                  )}
-                    {!isLoading && (!sortedPlayers || sortedPlayers.length === 0) && (
-                      <TableRow>
-                          <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                              Belum ada pemain. Tambahkan di menu Kelola.
-                          </TableCell>
-                      </TableRow>
+                  ) : (
+                    <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                            Belum ada pemain. Tambahkan di menu Kelola.
+                        </TableCell>
+                    </TableRow>
                   )}
               </TableBody>
           </Table>

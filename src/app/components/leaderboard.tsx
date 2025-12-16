@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Player } from '@/lib/types';
 import { useData } from '@/app/context/data-context';
 
@@ -14,10 +14,14 @@ interface PlayerWithScore extends Player {
     score: number;
 }
 
+type ScoreChange = 'increase' | 'decrease' | 'none';
+
 export default function Leaderboard() {
   const { players, history } = useData();
   const [sortedPlayers, setSortedPlayers] = useState<PlayerWithScore[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [scoreChanges, setScoreChanges] = useState<Record<string, ScoreChange>>({});
+  const prevPlayersRef = useRef<PlayerWithScore[]>();
 
   useEffect(() => {
     if (players !== undefined && history !== undefined) {
@@ -33,8 +37,30 @@ export default function Leaderboard() {
 
       playerScores.sort((a, b) => b.score - a.score);
 
+      if (prevPlayersRef.current) {
+          const changes: Record<string, ScoreChange> = {};
+          playerScores.forEach(currentPlayer => {
+              const prevPlayer = prevPlayersRef.current?.find(p => p.id === currentPlayer.id);
+              if (prevPlayer) {
+                  if (currentPlayer.score > prevPlayer.score) {
+                      changes[currentPlayer.id] = 'increase';
+                  } else if (currentPlayer.score < prevPlayer.score) {
+                      changes[currentPlayer.id] = 'decrease';
+                  }
+              }
+          });
+          setScoreChanges(changes);
+
+          const timer = setTimeout(() => {
+              setScoreChanges({});
+          }, 1500); // Animation duration
+
+          return () => clearTimeout(timer);
+      }
+
       setSortedPlayers(playerScores);
       setIsLoading(false);
+      prevPlayersRef.current = playerScores;
     }
   }, [players, history]);
 
@@ -73,6 +99,7 @@ export default function Leaderboard() {
                   {isLoading ? <PlayerListSkeleton /> : (
                       sortedPlayers && sortedPlayers.map((player, index) => {
                           const gap = index > 0 && sortedPlayers ? sortedPlayers[index - 1].score - player.score : null;
+                          const change = scoreChanges[player.id];
                           
                           const rankClass = 
                             index === 0 ? "bg-yellow-400/10 hover:bg-yellow-400/20" :
@@ -83,7 +110,12 @@ export default function Leaderboard() {
                           return (
                               <TableRow 
                                   key={player.id}
-                                  className={cn("transition-colors", rankClass)}
+                                  className={cn(
+                                    "transition-colors", 
+                                    rankClass,
+                                    change === 'increase' && 'animate-flash-success',
+                                    change === 'decrease' && 'animate-flash-destructive'
+                                    )}
                               >
                                 <TableCell className="text-center p-1 sm:p-2 font-bold text-xl">
                                   {getRankContent(index)}

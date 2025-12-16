@@ -78,10 +78,20 @@ export default {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' },
         },
+        'flash-success': {
+            '0%, 100%': { backgroundColor: 'transparent' },
+            '50%': { backgroundColor: 'hsl(var(--success) / 0.2)' },
+        },
+        'flash-destructive': {
+            '0%, 100%': { backgroundColor: 'transparent' },
+            '50%': { backgroundColor: 'hsl(var(--destructive) / 0.2)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'flash-success': 'flash-success 1.5s ease-out',
+        'flash-destructive': 'flash-destructive 1.5s ease-out',
       },
     },
   },

@@ -3,48 +3,25 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper Functions
+    // Helper function to check if the user is signed in.
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // By default, deny all reads and writes
+    // Default to denying all access.
     match /{document=**} {
       allow read, write: if false;
     }
 
-    /**
-     * SESSIONS
-     * - Siapapun (bahkan anonim) dapat membuat sesi baru.
-     * - Siapapun dapat membaca sesi (untuk bergabung atau melihat).
-     * - Hanya pengguna yang terautentikasi yang dapat memperbarui sesi (misalnya, mengubah tema atau rotasi).
-     */
+    // Allow authenticated users to perform actions within a session.
     match /sessions/{sessionId} {
-      allow read, create: if true;
-      allow update: if isSignedIn();
+      // Allow read, create, and update on the session document if signed in.
+      allow read, create, update: if isSignedIn();
 
-      /**
-       * PLAYERS
-       * - Siapapun dapat menambahkan pemain baru ke sesi.
-       * - Siapapun dapat melihat daftar pemain.
-       * - Siapapun dapat memperbarui skor pemain atau menghapusnya.
-       */
-      match /players/{playerId} {
-        allow read, write: if true;
-      }
-      
-      /**
-       * ROUNDS & SCORES
-       * - Siapapun dapat membuat ronde baru dan menambahkan skor baru.
-       * - Siapapun dapat membaca riwayat ronde dan skor.
-       * - Siapapun dapat menghapus skor (untuk fitur undo).
-       */
-      match /rounds/{roundId} {
-        allow read, create: if true;
-
-        match /scores/{scoreId} {
-          allow read, create, delete: if true;
-        }
+      // Allow full read/write access to players, rounds, and scores subcollections
+      // for any authenticated user.
+      match /{subcollection=**} {
+        allow read, write: if isSignedIn();
       }
     }
   }

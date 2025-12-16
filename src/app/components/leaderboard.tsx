@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Medal } from 'lucide-react';
 
 export default function Leaderboard() {
   const { players, history } = useData();
@@ -35,11 +36,24 @@ export default function Leaderboard() {
     }
   }, [players, history]);
 
+  const getRankContent = (index: number) => {
+    switch (index) {
+      case 0:
+        return <Medal className="h-6 w-6 text-yellow-400" fill="gold" />;
+      case 1:
+        return <Medal className="h-6 w-6 text-slate-400" fill="silver" />;
+      case 2:
+        return <Medal className="h-6 w-6 text-orange-500" fill="#cd7f32" />;
+      default:
+        return <span className="font-medium text-base text-muted-foreground">{index + 1}</span>;
+    }
+  }
+
   const PlayerListSkeleton = () => (
     <>
         {[...Array(5)].map((_, i) => (
             <TableRow key={i}>
-                <TableCell><Skeleton className="h-5 w-5 rounded-full" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-5 rounded-full mx-auto" /></TableCell>
                 <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
                 <TableCell><Skeleton className="h-5 w-1/2 ml-auto" /></TableCell>
                 <TableCell><Skeleton className="h-5 w-1/2 ml-auto" /></TableCell>
@@ -54,27 +68,31 @@ export default function Leaderboard() {
               <Table>
                   <TableHeader>
                       <TableRow>
-                      <TableHead className="w-[50px] text-center font-bold p-1 sm:p-2">Peringkat</TableHead>
+                      <TableHead className="w-[60px] text-center font-bold p-1 sm:p-2">Peringkat</TableHead>
                       <TableHead className="font-bold p-1 sm:p-2">Pemain</TableHead>
                       <TableHead className="w-[80px] text-right font-bold p-1 sm:p-2">Skor</TableHead>
-                      <TableHead className="w-[50px] text-right font-bold p-1 sm:p-2">Jarak</TableHead>
+                      <TableHead className="w-[60px] text-right font-bold p-1 sm:p-2">Jarak</TableHead>
                       </TableRow>
                   </TableHeader>
                   <TableBody>
                       {isLoading ? <PlayerListSkeleton /> : (
                           sortedPlayers && sortedPlayers.map((player, index) => {
                               const gap = index > 0 && sortedPlayers ? sortedPlayers[index - 1].score - player.score : null;
+                              
+                              const isTopThree = index < 3;
+                              const rankClass = 
+                                index === 0 ? "bg-yellow-400/10 hover:bg-yellow-400/20" :
+                                index === 1 ? "bg-slate-400/10 hover:bg-slate-400/20" :
+                                index === 2 ? "bg-orange-500/10 hover:bg-orange-500/20" :
+                                "";
+
                               return (
                                   <TableRow 
                                       key={player.id}
+                                      className={cn("transition-colors", rankClass)}
                                   >
-                                    <TableCell className={cn("text-center font-medium text-base p-1 sm:p-2", 
-                                      index === 0 ? "text-warning" :
-                                      index === 1 ? "text-slate-400" :
-                                      index === 2 ? "text-orange-400" :
-                                      "text-muted-foreground"
-                                    )}>
-                                      {index + 1}
+                                    <TableCell className="text-center p-1 sm:p-2">
+                                      {getRankContent(index)}
                                     </TableCell>
                                     <TableCell className="font-medium text-sm sm:text-base p-1 sm:p-2">{player.name}</TableCell>
                                     <TableCell className={cn("text-right font-bold text-base sm:text-lg tabular-nums p-1 sm:p-2",

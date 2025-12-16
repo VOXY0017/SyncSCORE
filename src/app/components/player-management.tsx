@@ -6,7 +6,7 @@ import type { Player, ScoreEntry } from '@/lib/types';
 import Link from 'next/link';
 import { useData } from '@/app/context/data-context';
 import { useFirebase } from '@/firebase';
-import { collection, doc, writeBatch, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, doc, writeBatch, query, where, getDocs, orderBy, limit, deleteDoc } from 'firebase/firestore';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Minus, X, RotateCcw, Undo2 } from 'lucide-react';
+import { Plus, Minus, X, RotateCcw, Undo2, Undo } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
@@ -41,13 +41,14 @@ export default function PlayerManagement() {
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
 
   const [isResetAlertOpen, setResetAlertOpen] = useState(false);
-  const [isUndoAlertOpen, setUndoAlertOpen] = useState(false);
+  const [isUndoRoundAlertOpen, setUndoRoundAlertOpen] = useState(false);
+  const [isUndoEntryAlertOpen, setUndoEntryAlertOpen] = useState(false);
   
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
   
   const isPlayerLimitReached = players ? players.length >= 5 : false;
 
-  const canUndo = React.useMemo(() => {
+  const canUndoRound = React.useMemo(() => {
     if (!players || players.length < 2 || !history) return false;
     const playerGameCounts = players.reduce((acc, player) => {
         acc[player.id] = history.filter(h => h.playerId === player.id).length;
@@ -57,6 +58,8 @@ export default function PlayerManagement() {
     const completedRounds = Math.min(...Object.values(playerGameCounts));
     return completedRounds > 0;
   }, [players, history]);
+
+  const canUndoEntry = history && history.length > 0;
 
   useEffect(() => {
     if (players !== undefined) {
@@ -71,7 +74,6 @@ export default function PlayerManagement() {
     if (!trimmedName || !firestore || players === undefined || isPlayerLimitReached || isPending) return;
     
     if (players.find(p => p.name.toLowerCase() === trimmedName.toLowerCase())) {
-        // Optionally, add user feedback here (e.g., a toast)
         return;
     }
 
@@ -88,9 +90,7 @@ export default function PlayerManagement() {
   const handleScoreChange = (playerId: string, change: number) => {
     if (isNaN(change) || change === 0 || !firestore || history === undefined || isPending) return;
 
-    // Validation for manual input
     if (Math.abs(change) > 500) {
-        // Here you could show a toast or some other feedback
         console.warn("Input score is out of the accepted range (-500 to 500).");
         return;
     }
@@ -118,8 +118,6 @@ export default function PlayerManagement() {
     startTransition(() => {
         const playerDocRef = doc(firestore, 'players', playerToDelete.id);
         deleteDocumentNonBlocking(playerDocRef);
-        // Deleting history is more complex and might require a cloud function for atomicity.
-        // For now, we'll leave the history.
       setDeleteAlertOpen(false);
       setPlayerToDelete(null);
     });
@@ -147,7 +145,7 @@ export default function PlayerManagement() {
   };
 
   const confirmUndoLastRound = async () => {
-    if (!firestore || !players || !history || !canUndo || isPending) return;
+    if (!firestore || !players || !history || !canUndoRound || isPending) return;
 
     startTransition(async () => {
         const batch = writeBatch(firestore);
@@ -168,7 +166,17 @@ export default function PlayerManagement() {
 
         await Promise.all(playerHistories);
         await batch.commit();
-        setUndoAlertOpen(false);
+        setUndoRoundAlertOpen(false);
+    });
+  };
+  
+  const confirmUndoLastEntry = async () => {
+    if (!firestore || !history || history.length === 0 || isPending) return;
+    startTransition(async () => {
+        const lastEntryId = history[0].id;
+        const docRef = doc(firestore, 'history', lastEntryId);
+        await deleteDoc(docRef);
+        setUndoEntryAlertOpen(false);
     });
   };
 
@@ -187,22 +195,28 @@ export default function PlayerManagement() {
   return (
     <>
       <CardContent className="p-0 h-full flex flex-col">
-          <div className="p-2 sm:p-4">
+          <div className="p-2 sm:p-4 space-y-2">
+              <form onSubmit={handleAddPlayer} className="flex-grow">
+                  <Input
+                      placeholder={isPlayerLimitReached ? "Maksimal 5 pemain tercapai" : "Tambah pemain baru dan tekan Enter..."}
+                      value={newPlayerName}
+                      onChange={(e) => setNewPlayerName(e.target.value)}
+                      disabled={isPending || isLoading || isPlayerLimitReached}
+                      className="h-9 text-sm"
+                      aria-label="Nama pemain baru"
+                  />
+              </form>
               <div className="flex flex-row items-center gap-2">
-                  <form onSubmit={handleAddPlayer} className="flex-grow">
-                      <Input
-                          placeholder={isPlayerLimitReached ? "Maksimal 5 pemain tercapai" : "Tambah pemain baru dan tekan Enter..."}
-                          value={newPlayerName}
-                          onChange={(e) => setNewPlayerName(e.target.value)}
-                          disabled={isPending || isLoading || isPlayerLimitReached}
-                          className="h-9 text-sm"
-                          aria-label="Nama pemain baru"
-                      />
-                  </form>
-                   <Button variant="outline" size="sm" className="h-9" onClick={() => setUndoAlertOpen(true)} disabled={isPending || isLoading || !canUndo} aria-label="Batalkan ronde terakhir">
-                      <Undo2 className="h-4 w-4 md:mr-2" />
-                      <span className="hidden md:inline">Undo</span>
-                  </Button>
+                  <div className="flex-grow flex gap-2">
+                    <Button variant="outline" size="sm" className="h-9" onClick={() => setUndoEntryAlertOpen(true)} disabled={isPending || isLoading || !canUndoEntry} aria-label="Batalkan input terakhir">
+                        <Undo className="h-4 w-4 md:mr-2" />
+                        <span className="hidden md:inline">Undo Input</span>
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-9" onClick={() => setUndoRoundAlertOpen(true)} disabled={isPending || isLoading || !canUndoRound} aria-label="Batalkan ronde terakhir">
+                        <Undo2 className="h-4 w-4 md:mr-2" />
+                        <span className="hidden md:inline">Undo Ronde</span>
+                    </Button>
+                  </div>
                   <Button variant="outline" size="sm" className="h-9" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Atur ulang semua skor">
                       <RotateCcw className="h-4 w-4 md:mr-2" />
                       <span className="hidden md:inline">Atur Ulang</span>
@@ -298,7 +312,7 @@ export default function PlayerManagement() {
           </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={isUndoAlertOpen} onOpenChange={isPending ? () => {} : setUndoAlertOpen}>
+      <AlertDialog open={isUndoRoundAlertOpen} onOpenChange={isPending ? () => {} : setUndoRoundAlertOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Batalkan ronde terakhir?</AlertDialogTitle>
@@ -309,7 +323,24 @@ export default function PlayerManagement() {
             <AlertDialogFooter>
                 <AlertDialogCancel disabled={isPending}>Batal</AlertDialogCancel>
                 <AlertDialogAction onClick={confirmUndoLastRound} disabled={isPending}>
-                    {isPending ? "Membatalkan..." : "Ya, Batalkan"}
+                    {isPending ? "Membatalkan..." : "Ya, Batalkan Ronde"}
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isUndoEntryAlertOpen} onOpenChange={isPending ? () => {} : setUndoEntryAlertOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Batalkan input terakhir?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Tindakan ini akan menghapus entri skor terakhir yang dimasukkan. Ini tidak dapat dibatalkan.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel disabled={isPending}>Batal</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmUndoLastEntry} disabled={isPending}>
+                    {isPending ? "Membatalkan..." : "Ya, Batalkan Input"}
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
@@ -317,4 +348,4 @@ export default function PlayerManagement() {
     </>
   );
 }
-
+    

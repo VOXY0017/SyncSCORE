@@ -19,62 +19,6 @@ import { cn } from '@/lib/utils';
 
 const DEFAULT_SESSION_ID = 'main';
 
-export function RotationInfo() {
-    const { session, isDataLoading } = useData();
-    const { firestore } = useFirebase();
-    const [sessionId] = useLocalStorage('sessionId', DEFAULT_SESSION_ID);
-    const [rotationKey, setRotationKey] = useState(0);
-
-    // Trigger re-render animation when direction changes
-    useEffect(() => {
-        setRotationKey(prev => prev + 1);
-    }, [session?.rotationDirection]);
-
-    const toggleRotation = () => {
-        if (!firestore || !sessionId || !session) return;
-        const newDirection = session.rotationDirection === 'kanan' ? 'kiri' : 'kanan';
-        const sessionRef = doc(firestore, 'sessions', sessionId);
-        updateDoc(sessionRef, { rotationDirection: newDirection });
-    }
-
-    const Icon = session?.rotationDirection === 'kanan' ? ArrowRight : ArrowLeft;
-
-    return (
-        <Card className="h-full">
-            <CardContent className="flex flex-col items-center justify-center p-3 text-center h-full">
-                {isDataLoading || !session ? (
-                    <div className="space-y-2">
-                        <Skeleton className="h-4 w-20 mx-auto" />
-                        <Skeleton className="h-8 w-8 mx-auto mt-1" />
-                    </div>
-                ) : (
-                    <TooltipProvider delayDuration={150}>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <div onClick={toggleRotation} className="flex flex-col items-center leading-none cursor-pointer">
-                                    <p className="text-xs text-muted-foreground font-medium">Putaran</p>
-                                    <div className="flex items-center gap-2 mt-1">
-                                         <Icon 
-                                            key={rotationKey}
-                                            className={cn(
-                                                'h-6 w-6 transform transition-transform duration-500 ease-in-out',
-                                                session.rotationDirection === 'kanan' ? 'text-success animate-rotate-cw' : 'text-destructive animate-rotate-ccw',
-                                            )}
-                                         />
-                                    </div>
-                                </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Putaran selanjutnya ke {session.rotationDirection}. Klik untuk mengubah.</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                )}
-            </CardContent>
-        </Card>
-    );
-}
-
 export function LowestScorePlayerInfo() {
     const { players, lastRoundHighestScorers, isDataLoading } = useData();
     const [highestScorers, setHighestScorers] = useState<Player[]>([]);

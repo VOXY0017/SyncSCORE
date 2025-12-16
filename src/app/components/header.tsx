@@ -5,7 +5,6 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { useTheme } from "next-themes"
 import { useData } from '@/app/context/data-context';
-import type { Player } from '@/lib/types';
 import { useFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useLocalStorage } from '@/hooks/use-local-storage';
@@ -32,7 +31,9 @@ function RotationInfo() {
     const [rotationKey, setRotationKey] = useState(0);
 
     useEffect(() => {
-        setRotationKey(prev => prev + 1);
+        if(session?.rotationDirection) {
+            setRotationKey(prev => prev + 1);
+        }
     }, [session?.rotationDirection]);
 
     const toggleRotation = () => {
@@ -95,8 +96,8 @@ function MVPInfo() {
 
     const mvp = [...players].sort((a,b) => b.totalPoints - a.totalPoints)[0];
 
-    if (!mvp) {
-        return <div className="text-sm font-medium text-muted-foreground">Belum ada pemain</div>;
+    if (!mvp || mvp.totalPoints <= 0) {
+        return <div className="text-sm font-medium text-muted-foreground">Belum ada MVP</div>;
     }
     
     return (

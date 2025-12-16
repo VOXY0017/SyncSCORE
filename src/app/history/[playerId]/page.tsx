@@ -9,8 +9,6 @@ export default function PlayerHistoryPage({ params }: { params: { playerId: stri
   const playerName = searchParams.get('name') || 'Pemain';
 
   return (
-    <main>
       <ScoreHistory playerId={params.playerId} playerName={decodeURIComponent(playerName)} />
-    </main>
   );
 }

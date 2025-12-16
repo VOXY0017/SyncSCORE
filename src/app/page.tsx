@@ -16,13 +16,17 @@ const fontPoppins = Poppins({
   weight: ['400', '700'],
 });
 
-export default function Home() {
+export default function Home({ params }: { params: { playerId: string } }) {
     const auth = useAuth();
     useEffect(() => {
         if (auth) {
             initiateAnonymousSignIn(auth);
         }
     }, [auth]);
+
+  if (params.playerId) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen w-full bg-custom-background bg-cover bg-center relative flex flex-col">

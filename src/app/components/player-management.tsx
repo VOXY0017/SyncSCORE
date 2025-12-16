@@ -5,7 +5,7 @@ import { useState, useTransition, useEffect } from 'react';
 import type { Player, ScoreEntry } from '@/lib/types';
 import Link from 'next/link';
 import { useData } from '@/app/context/data-context';
-import { useFirebase } from '@/firebase/client-provider';
+import { useFirebase } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 

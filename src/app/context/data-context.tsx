@@ -4,7 +4,7 @@ import * as React from 'react';
 import { createContext, useContext, useMemo } from 'react';
 import type { Player, ScoreEntry } from '@/lib/types';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirebase } from '@/firebase/client-provider';
+import { useFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 
 interface DataContextType {

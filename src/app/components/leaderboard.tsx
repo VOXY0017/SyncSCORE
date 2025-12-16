@@ -108,9 +108,9 @@ export default function Leaderboard() {
                                 </TableCell>
                                 <TableCell className="font-medium text-sm sm:text-base p-1 sm:p-2">{player.name}</TableCell>
                                 <TableCell className={cn("text-right font-bold text-base sm:text-lg tabular-nums p-1 sm:p-2",
-                                    player.totalPoints > 0 ? 'text-destructive' : player.totalPoints < 0 ? 'text-success' : 'text-foreground'
+                                    player.totalPoints > 0 ? 'text-success' : player.totalPoints < 0 ? 'text-destructive' : 'text-foreground'
                                 )}>
-                                  {player.totalPoints}
+                                  {player.totalPoints > 0 ? `+${player.totalPoints}` : player.totalPoints}
                                 </TableCell>
                                 <TableCell className="text-right text-xs text-muted-foreground tabular-nums p-1 sm:p-2">
                                   {gap !== null && gap != 0 ? `${gap}` : '–'}

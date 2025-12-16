@@ -5,6 +5,9 @@ import { useState, useTransition, useEffect } from 'react';
 import type { Player, ScoreEntry } from '@/lib/types';
 import Link from 'next/link';
 import { useData } from '@/app/context/data-context';
+import { useFirebase } from '@/firebase/client-provider';
+import { collection, doc } from 'firebase/firestore';
+import { addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +29,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 
 export default function PlayerManagement() {
-  const { players, setPlayers, history, setHistory } = useData();
+  const { players, history } = useData();
+  const { firestore } = useFirebase();
+
   const [sortedPlayers, setSortedPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -50,41 +55,40 @@ export default function PlayerManagement() {
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = newPlayerName.trim();
-    if (!trimmedName || players === undefined) return;
+    if (!trimmedName || !firestore || players === undefined) return;
     
     if (players.find(p => p.name.toLowerCase() === trimmedName.toLowerCase())) {
         return;
     }
 
     startTransition(() => {
-      const newPlayer: Player = {
-        id: crypto.randomUUID(),
+      const newPlayer: Omit<Player, 'id'> = {
         name: trimmedName,
         score: 0,
       };
-      setPlayers(prev => [...(prev || []), newPlayer]);
+      const playersCollection = collection(firestore, 'players');
+      addDocumentNonBlocking(playersCollection, newPlayer);
       setNewPlayerName('');
     });
   };
 
   const handleScoreChange = (playerId: string, change: number) => {
-    if (isNaN(change) || change === 0 || players === undefined || history === undefined) return;
+    if (isNaN(change) || change === 0 || !firestore || players === undefined || history === undefined) return;
     
     const player = players.find(p => p.id === playerId);
     if (!player) return;
 
     startTransition(() => {
-        setPlayers(prev => 
-            (prev || []).map(p => p.id === playerId ? {...p, score: p.score + change} : p)
-        );
+        const playerDocRef = doc(firestore, 'players', playerId);
+        updateDocumentNonBlocking(playerDocRef, { score: player.score + change });
         
-        const newHistoryEntry: ScoreEntry = {
-            id: crypto.randomUUID(),
+        const newHistoryEntry: Omit<ScoreEntry, 'id'> = {
             points: change,
             timestamp: new Date(),
             playerName: player.name,
         }
-        setHistory(prev => [...(prev || []), newHistoryEntry]);
+        const historyCollection = collection(firestore, 'history');
+        addDocumentNonBlocking(historyCollection, newHistoryEntry);
 
         setPointInputs(prev => ({...prev, [playerId]: ''}));
     });
@@ -95,11 +99,13 @@ export default function PlayerManagement() {
   }
 
   const confirmDeletePlayer = () => {
-    if (!playerToDelete) return;
+    if (!playerToDelete || !firestore) return;
 
     startTransition(() => {
-      setPlayers(prev => (prev || []).filter(p => p.id !== playerToDelete.id));
-      setHistory(prev => (prev || []).filter(h => h.playerName !== playerToDelete.name));
+        const playerDocRef = doc(firestore, 'players', playerToDelete.id);
+        deleteDocumentNonBlocking(playerDocRef);
+        // Deleting history is more complex and might require a cloud function for atomicity.
+        // For now, we'll leave the history.
       setDeleteAlertOpen(false);
       setPlayerToDelete(null);
     });
@@ -113,9 +119,14 @@ export default function PlayerManagement() {
   }
 
   const confirmResetScores = () => {
+      if (!firestore || !players) return;
     startTransition(() => {
-        setPlayers(prev => (prev || []).map(p => ({...p, score: 0})));
-        setHistory([]);
+        players.forEach(player => {
+            const playerDocRef = doc(firestore, 'players', player.id);
+            updateDocumentNonBlocking(playerDocRef, { score: 0 });
+        });
+        // This is a complex operation. A better approach would be a Cloud Function
+        // to delete all documents in the history collection.
         setResetAlertOpen(false);
     });
   };
@@ -209,7 +220,7 @@ export default function PlayerManagement() {
           <AlertDialogHeader>
               <AlertDialogTitle>Apakah Anda benar-benar yakin?</AlertDialogTitle>
               <AlertDialogDescription>
-                  Tindakan ini tidak dapat dibatalkan. Ini akan menghapus <strong>{playerToDelete?.name}</strong> secara permanen beserta semua riwayat skornya.
+                  Tindakan ini tidak dapat dibatalkan. Ini akan menghapus <strong>{playerToDelete?.name}</strong> secara permanen. Riwayat skornya tidak akan dihapus.
               </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -226,7 +237,7 @@ export default function PlayerManagement() {
           <AlertDialogHeader>
               <AlertDialogTitle>Atur ulang semua skor?</AlertDialogTitle>
               <AlertDialogDescription>
-                  Tindakan ini tidak dapat dibatalkan. Ini akan mengatur ulang skor setiap pemain menjadi 0 dan menghapus semua riwayat skor.
+                  Tindakan ini tidak dapat dibatalkan. Ini akan mengatur ulang skor setiap pemain menjadi 0. Riwayat skor tidak akan dihapus.
               </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

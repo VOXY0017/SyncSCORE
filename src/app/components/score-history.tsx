@@ -32,7 +32,11 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
       setPlayer(foundPlayer);
       if (foundPlayer) {
         const foundHistory = history.filter(h => h.playerName === foundPlayer.name);
-        setPlayerHistory(foundHistory.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+        setPlayerHistory(foundHistory.sort((a,b) => {
+            const timeA = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
+            const timeB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
+            return timeB - timeA;
+        }));
       }
       setIsLoading(false);
     }
@@ -63,12 +67,12 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                 </div>
                  <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" asChild aria-label="Buka Manajemen Pemain">
-                        <Link href="/management">
+                        <Link href="/#management">
                             <Users className="h-5 w-5" />
                         </Link>
                     </Button>
                     <Button variant="ghost" size="icon" asChild aria-label="Kembali">
-                        <Link href="/management">
+                        <Link href="/">
                             <ArrowLeft className="h-5 w-5" />
                         </Link>
                     </Button>

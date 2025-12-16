@@ -1,29 +1,39 @@
 'use client';
 
 import * as React from 'react';
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import type { Player, ScoreEntry } from '@/lib/types';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useFirebase } from '@/firebase/client-provider';
+import { collection, query, orderBy } from 'firebase/firestore';
 
 interface DataContextType {
     players: Player[] | undefined;
-    setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
     history: ScoreEntry[] | undefined;
-    setHistory: React.Dispatch<React.SetStateAction<ScoreEntry[]>>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
-    const [players, setPlayers] = useLocalStorage<Player[]>('players', []);
-    const [history, setHistory] = useLocalStorage<ScoreEntry[]>('scoreHistory', []);
+    const { firestore } = useFirebase();
 
-    const value = {
-        players,
-        setPlayers,
-        history,
-        setHistory
-    };
+    const playersQuery = useMemo(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'players'), orderBy('score', 'desc'));
+    }, [firestore]);
+
+    const historyQuery = useMemo(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'history'), orderBy('timestamp', 'desc'));
+    }, [firestore]);
+
+    const { data: playersData } = useCollection<Player>(playersQuery);
+    const { data: historyData } = useCollection<ScoreEntry>(historyQuery);
+
+    const value = useMemo(() => ({
+        players: playersData || [],
+        history: historyData || [],
+    }), [playersData, historyData]);
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }

@@ -4,6 +4,7 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/theme-provider';
 import { DataProvider } from '@/app/context/data-context';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -33,9 +34,11 @@ export default function RootLayout({
           defaultTheme="dark"
           disableTransitionOnChange
         >
+          <FirebaseClientProvider>
             <DataProvider>
               {children}
             </DataProvider>
+          </FirebaseClientProvider>
         </ThemeProvider>
       </body>
     </html>

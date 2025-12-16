@@ -8,6 +8,8 @@ import { Card } from '@/components/ui/card';
 import { Trophy, History, Users } from 'lucide-react';
 import { Poppins } from 'next/font/google';
 import { cn } from '@/lib/utils';
+import { useAuth, initiateAnonymousSignIn } from '@/firebase';
+import { useEffect } from 'react';
 
 const fontPoppins = Poppins({
   subsets: ['latin'],
@@ -15,6 +17,12 @@ const fontPoppins = Poppins({
 });
 
 export default function Home() {
+    const auth = useAuth();
+    useEffect(() => {
+        if (auth) {
+            initiateAnonymousSignIn(auth);
+        }
+    }, [auth]);
 
   return (
     <div className="min-h-screen w-full bg-custom-background bg-cover bg-center relative flex flex-col">
@@ -32,7 +40,7 @@ export default function Home() {
               <TopPlayerInfo />
               <ThemeToggle />
           </div>
-          <Tabs defaultValue="leaderboard" className="w-full">
+          <Tabs defaultValue="leaderboard" className="w-full" id="management">
             <Card>
               <div className="p-2">
                  <TabsList className="grid w-full grid-cols-3">

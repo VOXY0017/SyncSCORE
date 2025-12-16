@@ -22,11 +22,7 @@ const fontPoppins = Poppins({
 function RotationInfo() {
     const { session, isDataLoading } = useData();
 
-    if (isDataLoading || !session) {
-        return <Skeleton className="h-5 w-24" />;
-    }
-
-    if (session.lastRoundNumber === 0) {
+    if (isDataLoading || !session || session.lastRoundNumber === 0) {
         return null; // Don't show rotation if game hasn't started
     }
 
@@ -53,10 +49,13 @@ function RoundInfo() {
         return <Skeleton className="h-5 w-20" />;
     }
 
+    // If game hasn't started (round 0), show it as Round 1 to the user.
+    const displayRound = session.lastRoundNumber === 0 ? 1 : session.lastRoundNumber;
+
     return (
         <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
             <Gamepad2 className="h-4 w-4" />
-            <span>Ronde {session.lastRoundNumber}</span>
+            <span>Ronde {displayRound}</span>
         </div>
     );
 }

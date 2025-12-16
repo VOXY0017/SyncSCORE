@@ -86,12 +86,22 @@ export default {
             '0%, 100%': { backgroundColor: 'transparent' },
             '50%': { backgroundColor: 'hsl(var(--destructive) / 0.2)' },
         },
+        'rotate-cw': {
+          '0%': { transform: 'rotate(-90deg)' },
+          '100%': { transform: 'rotate(0deg)' },
+        },
+        'rotate-ccw': {
+          '0%': { transform: 'rotate(90deg)' },
+          '100%': { transform: 'rotate(0deg)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'flash-success': 'flash-success 1.5s ease-out',
         'flash-destructive': 'flash-destructive 1.5s ease-out',
+        'rotate-cw': 'rotate-cw 0.5s ease-out forwards',
+        'rotate-ccw': 'rotate-ccw 0.5s ease-out forwards',
       },
     },
   },

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ArrowRight, ArrowLeft, Moon, Sun } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 interface LowestScorePlayer {
     id: string;
@@ -28,6 +29,7 @@ export function RotationInfo() {
     const { players, history } = useData();
     const [gameInfo, setGameInfo] = useState<GameInfoData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [rotationKey, setRotationKey] = useState(0);
 
     useEffect(() => {
         if (players !== undefined && history !== undefined) {
@@ -49,10 +51,16 @@ export function RotationInfo() {
             }
             
             const nextGameNum = completedRounds + 1;
-            setGameInfo(nextGameNum % 2 !== 0 ? { direction: 'Kanan', Icon: ArrowRight } : { direction: 'Kiri', Icon: ArrowLeft });
+            const newDirection = nextGameNum % 2 !== 0 ? 'Kanan' : 'Kiri';
+            
+            if (gameInfo?.direction !== newDirection) {
+                setRotationKey(prev => prev + 1);
+            }
+            
+            setGameInfo({ direction: newDirection, Icon: newDirection === 'Kanan' ? ArrowRight : ArrowLeft });
             setIsLoading(false);
         }
-    }, [players, history]);
+    }, [players, history, gameInfo?.direction]);
 
     return (
         <Card className="h-full">
@@ -69,7 +77,13 @@ export function RotationInfo() {
                                 <div className="flex flex-col items-center leading-none cursor-help">
                                     <p className="text-xs text-muted-foreground font-medium">Putaran</p>
                                     <div className="flex items-center gap-2 mt-1">
-                                         <gameInfo.Icon className={`h-6 w-6 ${gameInfo.direction === 'Kanan' ? 'text-success' : 'text-destructive'}`} />
+                                         <gameInfo.Icon 
+                                            key={rotationKey}
+                                            className={cn(
+                                                'h-6 w-6 transform transition-transform duration-500 ease-in-out',
+                                                gameInfo.direction === 'Kanan' ? 'text-success animate-rotate-cw' : 'text-destructive animate-rotate-ccw',
+                                            )}
+                                         />
                                     </div>
                                 </div>
                             </TooltipTrigger>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -7,6 +8,7 @@ import { useData } from '@/app/context/data-context';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ArrowRight, ArrowLeft, Moon, Sun } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -51,17 +53,24 @@ export function RotationInfo() {
                 {isLoading ? (
                     <div className="space-y-2">
                         <Skeleton className="h-4 w-20 mx-auto" />
-                        <Skeleton className="h-4 w-20 mx-auto" />
+                        <Skeleton className="h-8 w-8 mx-auto mt-1" />
                     </div>
                 ) : gameInfo ? (
-                    <div className="flex flex-col items-center leading-none">
-                        <p className="text-xs text-muted-foreground font-medium">Putaran</p>
-                        <div className="flex items-center gap-1 mt-1">
-                            <p className={`font-bold text-base ${gameInfo.direction === 'Kanan' ? 'text-success' : 'text-destructive'}`}>
-                                {gameInfo.direction}
-                            </p>
-                        </div>
-                    </div>
+                    <TooltipProvider delayDuration={150}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className="flex flex-col items-center leading-none cursor-help">
+                                    <p className="text-xs text-muted-foreground font-medium">Putaran</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                         <gameInfo.Icon className={`h-6 w-6 ${gameInfo.direction === 'Kanan' ? 'text-success' : 'text-destructive'}`} />
+                                    </div>
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Putaran selanjutnya ke {gameInfo.direction}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 ) : <p className="text-xs text-muted-foreground">...</p>}
             </CardContent>
         </Card>
@@ -156,9 +165,9 @@ export function ThemeToggle() {
     return (
         <Card className="h-full">
             <CardContent className="flex flex-col items-center justify-center p-3 h-full">
-                <Button variant="outline" size="icon" onClick={toggleTheme} className="h-20 w-20 flex-shrink-0">
-                    <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                    <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <Button variant="outline" size="icon" onClick={toggleTheme} className="h-full w-full flex-shrink-0">
+                    <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                    <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                     <span className="sr-only">Ganti tema</span>
                 </Button>
             </CardContent>

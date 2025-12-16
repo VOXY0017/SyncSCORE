@@ -6,7 +6,7 @@ import type { Player, ScoreEntry } from '@/lib/types';
 import Link from 'next/link';
 import { useData } from '@/app/context/data-context';
 import { useFirebase } from '@/firebase';
-import { collection, doc, writeBatch, query, where, getDocs, orderBy, limit, deleteDoc } from 'firebase/firestore';
+import { collection, doc, writeBatch, deleteDoc } from 'firebase/firestore';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 import { Button } from '@/components/ui/button';
@@ -146,39 +146,42 @@ export default function PlayerManagement() {
       });
   };
 
-  const confirmUndoLastRound = async () => {
-    if (!firestore || !players || !history || !canUndoRound || isPending) return;
+    const confirmUndoLastRound = async () => {
+        if (!firestore || !players || !history || !canUndoRound || isPending) return;
 
-    startTransition(async () => {
-        const batch = writeBatch(firestore);
+        startTransition(async () => {
+            const batch = writeBatch(firestore);
 
-        const playerGameCounts = players.reduce((acc, player) => {
-            acc[player.id] = history.filter(h => h.playerId === player.id).length;
-            return acc;
-        }, {} as Record<string, number>);
+            const playerGameCounts = players.reduce((acc, player) => {
+                acc[player.id] = history.filter(h => h.playerId === player.id).length;
+                return acc;
+            }, {} as Record<string, number>);
 
-        const completedRounds = Math.min(...Object.values(playerGameCounts));
+            const completedRounds = Math.min(...Object.values(playerGameCounts));
 
-        if (completedRounds > 0) {
-            for (const player of players) {
-                const playerHistory = history
-                    .filter(h => h.playerId === player.id)
-                    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-
-                if (playerHistory.length >= completedRounds) {
-                    const entryToDelete = playerHistory[playerHistory.length - 1];
-                    if (entryToDelete) {
-                      const docRef = doc(firestore, 'history', entryToDelete.id);
-                      batch.delete(docRef);
+            if (completedRounds > 0) {
+                for (const player of players) {
+                    const playerHistory = history
+                        .filter(h => h.playerId === player.id)
+                        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+                    
+                    if (playerHistory.length > 0) {
+                        const lastEntryIndex = playerHistory.length - 1;
+                        if(playerHistory.length > completedRounds -1) {
+                            const entryToDelete = playerHistory[lastEntryIndex];
+                            if (entryToDelete) {
+                                const docRef = doc(firestore, 'history', entryToDelete.id);
+                                batch.delete(docRef);
+                            }
+                        }
                     }
                 }
             }
-        }
 
-        await batch.commit();
-        setUndoRoundAlertOpen(false);
-    });
-  };
+            await batch.commit();
+            setUndoRoundAlertOpen(false);
+        });
+    };
   
   const confirmUndoLastEntry = async () => {
     if (!firestore || !history || history.length === 0 || isPending) return;

@@ -7,6 +7,6 @@ export interface Player {
 export interface ScoreEntry {
   id: string;
   points: number;
-  timestamp: Date;
+  timestamp: any;
   playerId: string;
 }

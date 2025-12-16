@@ -6,7 +6,7 @@ import type { Player, ScoreEntry } from '@/lib/types';
 import Link from 'next/link';
 import { useData } from '@/app/context/data-context';
 import { useFirebase } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, writeBatch, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Minus, X, RotateCcw } from 'lucide-react';
+import { Plus, Minus, X, RotateCcw, Undo2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
@@ -41,10 +41,22 @@ export default function PlayerManagement() {
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
 
   const [isResetAlertOpen, setResetAlertOpen] = useState(false);
+  const [isUndoAlertOpen, setUndoAlertOpen] = useState(false);
   
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
   
   const isPlayerLimitReached = players ? players.length >= 5 : false;
+
+  const canUndo = React.useMemo(() => {
+    if (!players || players.length < 2 || !history) return false;
+    const playerGameCounts = players.reduce((acc, player) => {
+        acc[player.id] = history.filter(h => h.playerId === player.id).length;
+        return acc;
+    }, {} as Record<string, number>);
+    if (Object.keys(playerGameCounts).length < players.length) return false;
+    const completedRounds = Math.min(...Object.values(playerGameCounts));
+    return completedRounds > 0;
+  }, [players, history]);
 
   useEffect(() => {
     if (players !== undefined) {
@@ -112,13 +124,42 @@ export default function PlayerManagement() {
     }
   }
 
-  const confirmResetScores = () => {
-      if (!firestore || !players) return;
-    startTransition(() => {
-        // This is a complex operation. A better approach would be a Cloud Function
-        // to delete all documents in the history collection.
-        // For now, we just clear the history on the client, but a proper implementation would clear it from firestore.
+  const confirmResetScores = async () => {
+      if (!firestore || !history) return;
+      startTransition(async () => {
+        const batch = writeBatch(firestore);
+        history.forEach(entry => {
+            const docRef = doc(firestore, 'history', entry.id);
+            batch.delete(docRef);
+        });
+        await batch.commit();
         setResetAlertOpen(false);
+      });
+  };
+
+  const confirmUndoLastRound = async () => {
+    if (!firestore || !players || !history || !canUndo) return;
+
+    startTransition(async () => {
+        const batch = writeBatch(firestore);
+
+        const playerHistories: Promise<void>[] = players.map(async (player) => {
+            const q = query(
+                collection(firestore, 'history'),
+                where('playerId', '==', player.id),
+                orderBy('timestamp', 'desc'),
+                limit(1)
+            );
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                const lastEntry = snapshot.docs[0];
+                batch.delete(lastEntry.ref);
+            }
+        });
+
+        await Promise.all(playerHistories);
+        await batch.commit();
+        setUndoAlertOpen(false);
     });
   };
 
@@ -149,6 +190,10 @@ export default function PlayerManagement() {
                           aria-label="Nama pemain baru"
                       />
                   </form>
+                   <Button variant="outline" size="sm" className="h-8" onClick={() => setUndoAlertOpen(true)} disabled={isPending || isLoading || !canUndo} aria-label="Batalkan ronde terakhir">
+                      <Undo2 className="h-4 w-4 md:mr-2" />
+                      <span className="hidden md:inline">Undo</span>
+                  </Button>
                   <Button variant="outline" size="sm" className="h-8" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Atur ulang semua skor">
                       <RotateCcw className="h-4 w-4 md:mr-2" />
                       <span className="hidden md:inline">Atur Ulang</span>
@@ -215,7 +260,7 @@ export default function PlayerManagement() {
           <AlertDialogHeader>
               <AlertDialogTitle>Apakah Anda benar-benar yakin?</AlertDialogTitle>
               <AlertDialogDescription>
-                  Tindakan ini tidak dapat dibatalkan. Ini akan menghapus <strong>{playerToDelete?.name}</strong> secara permanen. Riwayat skornya tidak akan dihapus.
+                  Tindakan ini tidak dapat dibatalkan. Ini akan menghapus <strong>{playerToDelete?.name}</strong> secara permanen. Riwayat skornya akan tetap ada.
               </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -232,16 +277,33 @@ export default function PlayerManagement() {
           <AlertDialogHeader>
               <AlertDialogTitle>Atur ulang semua skor?</AlertDialogTitle>
               <AlertDialogDescription>
-                  Tindakan ini tidak dapat dibatalkan. Ini akan mengatur ulang skor setiap pemain menjadi 0. Riwayat skor tidak akan dihapus.
+                  Tindakan ini tidak dapat dibatalkan. Ini akan menghapus seluruh riwayat skor dan mengembalikan skor semua pemain ke 0.
               </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
               <AlertDialogCancel>Batal</AlertDialogCancel>
-              <AlertDialogAction onClick={confirmResetScores} disabled={isPending}>
-              {isPending ? "Mengatur ulang..." : "Atur Ulang Skor"}
+              <AlertDialogAction onClick={confirmResetScores} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isPending}>
+              {isPending ? "Mengatur ulang..." : "Ya, Atur Ulang Skor"}
               </AlertDialogAction>
           </AlertDialogFooter>
           </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isUndoAlertOpen} onOpenChange={setUndoAlertOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Batalkan ronde terakhir?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Tindakan ini akan menghapus entri skor terakhir untuk setiap pemain di ronde yang sudah selesai. Ini tidak dapat dibatalkan.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Batal</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmUndoLastRound} disabled={isPending}>
+                    {isPending ? "Membatalkan..." : "Ya, Batalkan"}
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
       </AlertDialog>
     </>
   );

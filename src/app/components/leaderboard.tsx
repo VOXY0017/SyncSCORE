@@ -22,7 +22,7 @@ export default function Leaderboard() {
   useEffect(() => {
     if (players) {
       const playerScores = [...players];
-      playerScores.sort((a, b) => a.totalPoints - b.totalPoints); // Lower score is better
+      playerScores.sort((a, b) => b.totalPoints - a.totalPoints); // Higher score is better
 
       if (prevPlayersRef.current) {
           const changes: Record<string, ScoreChange> = {};
@@ -30,9 +30,9 @@ export default function Leaderboard() {
               const prevPlayer = prevPlayersRef.current?.find(p => p.id === currentPlayer.id);
               if (prevPlayer) {
                   if (currentPlayer.totalPoints > prevPlayer.totalPoints) {
-                      changes[currentPlayer.id] = 'increase'; // Score got worse
+                      changes[currentPlayer.id] = 'increase'; // Score got better
                   } else if (currentPlayer.totalPoints < prevPlayer.totalPoints) {
-                      changes[currentPlayer.id] = 'decrease'; // Score got better
+                      changes[currentPlayer.id] = 'decrease'; // Score got worse
                   }
               }
           });
@@ -99,8 +99,8 @@ export default function Leaderboard() {
                                   className={cn(
                                     "transition-colors", 
                                     rankClass,
-                                    change === 'increase' && 'animate-flash-destructive', // Worse score is red
-                                    change === 'decrease' && 'animate-flash-success'      // Better score is green
+                                    change === 'increase' && 'animate-flash-success', // Better score is green
+                                    change === 'decrease' && 'animate-flash-destructive'      // Worse score is red
                                     )}
                               >
                                 <TableCell className="text-center p-1 sm:p-2 font-bold text-xl">
@@ -113,7 +113,7 @@ export default function Leaderboard() {
                                   {player.totalPoints}
                                 </TableCell>
                                 <TableCell className="text-right text-xs text-muted-foreground tabular-nums p-1 sm:p-2">
-                                  {gap !== null && gap > 0 ? `+${gap}` : '–'}
+                                  {gap !== null && gap != 0 ? `${gap}` : '–'}
                                 </TableCell>
                               </TableRow>
                           );

@@ -21,12 +21,20 @@ const fontPoppins = Poppins({
 
 function RotationInfo() {
     const { session, isDataLoading } = useData();
-
-    if (isDataLoading || !session || session.lastRoundNumber === 0) {
-        return null; // Don't show rotation if game hasn't started
+    
+    // Always show rotation info once session is loaded, unless game hasn't started at all.
+    // The logic inside will determine what to show based on round number.
+    if (isDataLoading || !session) {
+        return null;
     }
-
-    const rotationDirection = session.lastRoundNumber % 2 !== 0 ? 'kanan' : 'kiri';
+    
+    // We base the direction on the *displayed* round number.
+    // Displayed round is lastRoundNumber + 1 (or just lastRoundNumber if > 0).
+    // Let's simplify: if lastRoundNumber is 0, it's round 1 (odd) -> kanan
+    // if lastRoundNumber is 1, it's round 2 (even) -> kiri
+    // if lastRoundNumber is 2, it's round 3 (odd) -> kanan
+    // So, an even lastRoundNumber corresponds to an odd displayed round.
+    const rotationDirection = session.lastRoundNumber % 2 === 0 ? 'kanan' : 'kiri';
     const Icon = rotationDirection === 'kanan' ? ArrowRight : ArrowLeft;
 
     return (
@@ -148,7 +156,7 @@ export default function AppHeader() {
             {/* Sub Header */}
             <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto pb-2">
                 <RoundInfo />
-                {session && session.lastRoundNumber > 0 && <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
+                {session && <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
                 <RotationInfo />
                 <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <MVPInfo />

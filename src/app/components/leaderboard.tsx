@@ -10,7 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Medal } from 'lucide-react';
 
 export default function Leaderboard() {
   const { players, history } = useData();
@@ -35,19 +34,6 @@ export default function Leaderboard() {
       setIsLoading(false);
     }
   }, [players, history]);
-
-  const getRankContent = (index: number) => {
-    switch (index) {
-      case 0:
-        return <Medal className="h-6 w-6 text-yellow-400" fill="gold" />;
-      case 1:
-        return <Medal className="h-6 w-6 text-slate-400" fill="silver" />;
-      case 2:
-        return <Medal className="h-6 w-6 text-orange-500" fill="#cd7f32" />;
-      default:
-        return <span className="font-medium text-base text-muted-foreground">{index + 1}</span>;
-    }
-  }
 
   const PlayerListSkeleton = () => (
     <>
@@ -91,8 +77,8 @@ export default function Leaderboard() {
                                       key={player.id}
                                       className={cn("transition-colors", rankClass)}
                                   >
-                                    <TableCell className="text-center p-1 sm:p-2">
-                                      {getRankContent(index)}
+                                    <TableCell className="text-center p-1 sm:p-2 font-bold text-lg">
+                                      {index + 1}
                                     </TableCell>
                                     <TableCell className="font-medium text-sm sm:text-base p-1 sm:p-2">{player.name}</TableCell>
                                     <TableCell className={cn("text-right font-bold text-base sm:text-lg tabular-nums p-1 sm:p-2",

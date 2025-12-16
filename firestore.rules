@@ -1,98 +1,51 @@
-/**
- * This ruleset defines the security model for the ScoreSync application, a real-time
- * multiplayer scoreboard.
- *
- * Core Philosophy:
- * The security model is configured to be completely open. Any user, authenticated
- * or not, can create, read, update, and delete any data within the 'players'
- * and 'history' collections. This is suitable for public, anonymous applications
- * or during early development but is not recommended for production environments
- * with sensitive data.
- *
- * Data Structure:
- * The data is organized into two primary top-level collections:
- * 1. /players/{playerId}: Stores public player data.
- * 2. /history/{historyId}: Stores score change history.
- *
- * Key Security Decisions:
- * - Public Access: All collections are publicly readable and writable.
- *   This decision simplifies development but offers no data protection.
- * - No Ownership or Roles: The concepts of user ownership and administrative
- *   roles have been removed in favor of open access.
- *
- * Denormalization for Authorization:
- * The `roles_admin` collection is left in for potential future use but is currently
- * not referenced by any active rules. It is completely locked down.
- */
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // -------------------------------------------------------------------------
-    // Helper Functions (Currently Unused in active rules)
-    // -------------------------------------------------------------------------
-
-    /**
-     * Checks if the user is authenticated.
-     */
+    // Helper Functions
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * Checks if the authenticated user's UID matches the provided userId.
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+    // By default, deny all reads and writes
+    match /{document=**} {
+      allow read, write: if false;
     }
 
     /**
-     * Checks if the authenticated user has an admin role document.
+     * SESSIONS
+     * - Siapapun (bahkan anonim) dapat membuat sesi baru.
+     * - Siapapun dapat membaca sesi (untuk bergabung atau melihat).
+     * - Hanya pengguna yang terautentikasi yang dapat memperbarui sesi (misalnya, mengubah tema atau rotasi).
      */
-    function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-    }
+    match /sessions/{sessionId} {
+      allow read, create: if true;
+      allow update: if isSignedIn();
 
-    // -------------------------------------------------------------------------
-    // Collection Rules
-    // -------------------------------------------------------------------------
+      /**
+       * PLAYERS
+       * - Siapapun dapat menambahkan pemain baru ke sesi.
+       * - Siapapun dapat melihat daftar pemain.
+       * - Siapapun dapat memperbarui skor pemain atau menghapusnya.
+       */
+      match /players/{playerId} {
+        allow read, write: if true;
+      }
+      
+      /**
+       * ROUNDS & SCORES
+       * - Siapapun dapat membuat ronde baru dan menambahkan skor baru.
+       * - Siapapun dapat membaca riwayat ronde dan skor.
+       * - Siapapun dapat menghapus skor (untuk fitur undo).
+       */
+      match /rounds/{roundId} {
+        allow read, create: if true;
 
-    /**
-     * @description Public scoreboard data. Anyone can create, read, update,
-     *   and delete player data.
-     * @path /players/{playerId}
-     * @allow (read, write) - Any user, authenticated or not, can perform any action.
-     */
-    match /players/{playerId} {
-      allow read, write: if true;
-    }
-
-    /**
-     * @description Public score history. Anyone can create, read, update,
-     *   and delete score history entries.
-     * @path /history/{historyId}
-     * @allow (read, write) - Any user, authenticated or not, can perform any action.
-     */
-    match /history/{historyId} {
-      allow read, write: if true;
-    }
-
-    /**
-     * @description A private collection that marks users as administrators. The existence
-     *   of a document here grants special privileges. This collection is not readable or
-     *   writable by any client to protect the integrity of the role system.
-     * @path /roles_admin/{userId}
-     * @allow No client operations are ever permitted on this collection.
-     * @deny Any attempt by a client to read or write to `/roles_admin/{any_user}` will be rejected.
-     * @principle Security-sensitive data should be managed by trusted server-side processes
-     *   only, never by the client application.
-     */
-    match /roles_admin/{userId} {
-      allow get: if false;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+        match /scores/{scoreId} {
+          allow read, create, delete: if true;
+        }
+      }
     }
   }
 }

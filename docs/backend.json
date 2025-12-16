@@ -1,114 +1,94 @@
 {
   "entities": {
+    "Session": {
+      "title": "Session",
+      "type": "object",
+      "description": "Merepresentasikan satu sesi permainan. Menyimpan informasi global seperti rotasi, tema, dan status.",
+      "properties": {
+        "rotationDirection": { "type": "string", "enum": ["kanan", "kiri"] },
+        "theme": { "type": "string", "enum": ["light", "dark"] },
+        "status": { "type": "string", "enum": ["active", "locked"] },
+        "lastRoundNumber": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["rotationDirection", "status", "lastRoundNumber", "createdAt"]
+    },
     "Player": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Player",
       "type": "object",
-      "description": "Represents a player in the ScoreSync application.",
+      "description": "Mewakili seorang pemain dalam sebuah sesi.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Player entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the player."
-        }
+        "name": { "type": "string" },
+        "totalPoints": { "type": "number" },
+        "addedAt": { "type": "string", "format": "date-time" },
+        "order": { "type": "number" }
       },
-      "required": [
-        "id",
-        "name"
-      ]
+      "required": ["name", "totalPoints", "addedAt"]
     },
-    "ScoreEntry": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ScoreEntry",
+    "Round": {
+      "title": "Round",
       "type": "object",
-      "description": "Represents a score entry for a player at a specific time.",
+      "description": "Mewakili satu ronde dalam sebuah sesi permainan.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ScoreEntry."
-        },
-        "points": {
-          "type": "number",
-          "description": "The points awarded in this entry."
-        },
-        "timestamp": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The timestamp of when the score was recorded."
-        },
-        "playerId": {
-          "type": "string",
-          "description": "Reference to the Player this score belongs to."
-        }
+        "roundNumber": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "points",
-        "timestamp",
-        "playerId"
-      ]
+      "required": ["roundNumber", "createdAt"]
+    },
+    "Score": {
+      "title": "Score",
+      "type": "object",
+      "description": "Mewakili satu entri skor dalam sebuah ronde.",
+      "properties": {
+        "playerId": { "type": "string" },
+        "points": { "type": "number" },
+        "inputType": { "type": "string", "enum": ["shortcut", "manual"] },
+        "actionLabel": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["playerId", "points", "timestamp"]
     }
   },
   "auth": {
     "providers": [
-      "password",
       "anonymous"
     ]
   },
   "firestore": {
     "structure": [
       {
-        "path": "/players/{playerId}",
+        "path": "/sessions/{sessionId}",
+        "definition": {
+          "entityName": "Session",
+          "schema": { "$ref": "#/entities/Session" },
+          "description": "Dokumen utama untuk setiap sesi permainan."
+        }
+      },
+      {
+        "path": "/sessions/{sessionId}/players/{playerId}",
         "definition": {
           "entityName": "Player",
-          "schema": {
-            "$ref": "#/backend/entities/Player"
-          },
-          "description": "Stores individual player data, including name. Allows real-time score updates and ranking display.",
-          "params": [
-            {
-              "name": "playerId",
-              "description": "Unique identifier for the player document."
-            }
-          ]
+          "schema": { "$ref": "#/entities/Player" },
+          "description": "Subkoleksi untuk menyimpan data pemain dalam sesi tersebut."
         }
       },
       {
-        "path": "/history/{historyId}",
+        "path": "/sessions/{sessionId}/rounds/{roundId}",
         "definition": {
-          "entityName": "ScoreEntry",
-          "schema": {
-            "$ref": "#/backend/entities/ScoreEntry"
-          },
-          "description": "Stores individual score entries for each player.",
-          "params": [
-            {
-              "name": "historyId",
-              "description": "Unique identifier for the score history document."
-            }
-          ]
+          "entityName": "Round",
+          "schema": { "$ref": "#/entities/Round" },
+          "description": "Subkoleksi untuk mengelompokkan skor per ronde."
         }
       },
       {
-        "path": "/roles_admin/{userId}",
+        "path": "/sessions/{sessionId}/rounds/{roundId}/scores/{scoreId}",
         "definition": {
-          "entityName": "roles_admin",
-          "schema": {
-            "$ref": "#/backend/entities/Player"
-          },
-          "description": "Marks a user as administrator. Existence in this collection grants admin privileges.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "Unique identifier for the user who is an admin."
-            }
-          ]
+          "entityName": "Score",
+          "schema": { "$ref": "#/entities/Score" },
+          "description": "Subkoleksi untuk setiap entri skor dalam satu ronde."
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to support a real-time, multi-player score system (ScoreSync). The primary collection is `players`, which stores individual player documents. Each player document contains the player's `name`. The `history` collection stores all score entries, linked to a player via `playerId`. This ensures a strong, relational link between a player and their scores. The total score is calculated on the client-side by aggregating the `points` from the `history` collection. This avoids data redundancy and ensures the score is always consistent with the history. Security rules control access, and Firestore queries with `orderBy` will be used for ranking."
+    "reasoning": "Struktur data dirancang di sekitar konsep 'session' untuk merangkum setiap permainan. Ini memungkinkan beberapa permainan berjalan secara bersamaan (fitur masa depan) dan menjaga data tetap terorganisir. Subkoleksi untuk players, rounds, dan scores memastikan skalabilitas dan query yang efisien. Menyimpan totalPoints di level pemain mempercepat pemuatan papan peringkat. Memisahkan 'rounds' memungkinkan pengelompokan riwayat yang bersih. 'scores' yang terperinci memungkinkan analisis dan fitur undo yang fleksibel."
   }
 }

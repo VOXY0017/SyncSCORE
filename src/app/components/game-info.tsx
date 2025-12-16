@@ -6,6 +6,9 @@ import { useState, useEffect } from 'react';
 import { useTheme } from "next-themes"
 import { useData } from '@/app/context/data-context';
 import type { Player } from '@/lib/types';
+import { useFirebase } from '@/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+import { useLocalStorage } from '@/hooks/use-local-storage';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from "@/components/ui/button"
@@ -14,121 +17,93 @@ import { ArrowRight, ArrowLeft, Moon, Sun } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
-interface LowestScorePlayer {
-    id: string;
-    name: string;
-    score: number;
-}
-
-interface GameInfoData {
-    direction: 'Kanan' | 'Kiri';
-    Icon: React.FC<any>;
-}
+const DEFAULT_SESSION_ID = 'main';
 
 export function RotationInfo() {
-    const { players, history } = useData();
-    const [gameInfo, setGameInfo] = useState<GameInfoData | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const { session, isDataLoading } = useData();
+    const { firestore } = useFirebase();
+    const [sessionId] = useLocalStorage('sessionId', DEFAULT_SESSION_ID);
     const [rotationKey, setRotationKey] = useState(0);
 
+    // Trigger re-render animation when direction changes
     useEffect(() => {
-        if (players !== undefined && history !== undefined) {
-            let completedRounds = 0;
-            const playerGameCounts: Record<string, number> = {};
+        setRotationKey(prev => prev + 1);
+    }, [session?.rotationDirection]);
 
-            if (players.length > 0) {
-                players.forEach(player => {
-                    playerGameCounts[player.id] = history.filter(h => h.playerId === player.id).length;
-                });
-                if (Object.keys(playerGameCounts).length === players.length && players.length > 0) {
-                    const gameCounts = Object.values(playerGameCounts);
-                    if (gameCounts.every(count => count === gameCounts[0])) {
-                        completedRounds = gameCounts[0];
-                    } else {
-                        completedRounds = Math.min(...gameCounts);
-                    }
-                }
-            }
-            
-            const nextGameNum = completedRounds + 1;
-            const newDirection = nextGameNum % 2 !== 0 ? 'Kanan' : 'Kiri';
-            
-            if (gameInfo?.direction !== newDirection) {
-                setRotationKey(prev => prev + 1);
-            }
-            
-            setGameInfo({ direction: newDirection, Icon: newDirection === 'Kanan' ? ArrowRight : ArrowLeft });
-            setIsLoading(false);
-        }
-    }, [players, history, gameInfo?.direction]);
+    const toggleRotation = () => {
+        if (!firestore || !sessionId || !session) return;
+        const newDirection = session.rotationDirection === 'kanan' ? 'kiri' : 'kanan';
+        const sessionRef = doc(firestore, 'sessions', sessionId);
+        updateDoc(sessionRef, { rotationDirection: newDirection });
+    }
+
+    const Icon = session?.rotationDirection === 'kanan' ? ArrowRight : ArrowLeft;
 
     return (
         <Card className="h-full">
             <CardContent className="flex flex-col items-center justify-center p-3 text-center h-full">
-                {isLoading ? (
+                {isDataLoading || !session ? (
                     <div className="space-y-2">
                         <Skeleton className="h-4 w-20 mx-auto" />
                         <Skeleton className="h-8 w-8 mx-auto mt-1" />
                     </div>
-                ) : gameInfo ? (
+                ) : (
                     <TooltipProvider delayDuration={150}>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <div className="flex flex-col items-center leading-none cursor-help">
+                                <div onClick={toggleRotation} className="flex flex-col items-center leading-none cursor-pointer">
                                     <p className="text-xs text-muted-foreground font-medium">Putaran</p>
                                     <div className="flex items-center gap-2 mt-1">
-                                         <gameInfo.Icon 
+                                         <Icon 
                                             key={rotationKey}
                                             className={cn(
                                                 'h-6 w-6 transform transition-transform duration-500 ease-in-out',
-                                                gameInfo.direction === 'Kanan' ? 'text-success animate-rotate-cw' : 'text-destructive animate-rotate-ccw',
+                                                session.rotationDirection === 'kanan' ? 'text-success animate-rotate-cw' : 'text-destructive animate-rotate-ccw',
                                             )}
                                          />
                                     </div>
                                 </div>
                             </TooltipTrigger>
                             <TooltipContent>
-                                <p>Putaran selanjutnya ke {gameInfo.direction}</p>
+                                <p>Putaran selanjutnya ke {session.rotationDirection}. Klik untuk mengubah.</p>
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
-                ) : <p className="text-xs text-muted-foreground">Mainkan ronde pertama.</p>}
+                )}
             </CardContent>
         </Card>
     );
 }
 
 export function LowestScorePlayerInfo() {
-    const { players, lastRoundLowestScorers } = useData();
-    const [lowestPlayers, setLowestPlayers] = useState<Player[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { players, lastRoundHighestScorers, isDataLoading } = useData();
+    const [highestScorers, setHighestScorers] = useState<Player[]>([]);
 
     useEffect(() => {
-        if (players !== undefined) {
-             if (lastRoundLowestScorers.length > 0) {
-                const foundPlayers = players.filter(p => lastRoundLowestScorers.includes(p.id));
-                setLowestPlayers(foundPlayers);
+        if (players && lastRoundHighestScorers) {
+             if (lastRoundHighestScorers.length > 0) {
+                const foundPlayers = players.filter(p => lastRoundHighestScorers.includes(p.id));
+                setHighestScorers(foundPlayers);
             } else {
-                setLowestPlayers([]);
+                setHighestScorers([]);
             }
-            setIsLoading(false);
         }
-    }, [players, lastRoundLowestScorers]);
+    }, [players, lastRoundHighestScorers]);
 
     const getDisplayText = () => {
-        if (lowestPlayers.length === 0) {
+        if (highestScorers.length === 0) {
             return "Belum ada data.";
         }
-        if (lowestPlayers.length === 1) {
-            return lowestPlayers[0].name;
+        if (highestScorers.length === 1) {
+            return highestScorers[0].name;
         }
-        return `Seri: ${lowestPlayers.map(p => p.name).join(' & ')}`;
+        return `Seri: ${highestScorers.map(p => p.name).join(' & ')}`;
     };
 
     return (
         <Card className="h-full">
             <CardContent className="flex flex-col items-center justify-center p-3 text-center h-full">
-                {isLoading ? (
+                {isDataLoading ? (
                     <div className="space-y-2">
                         <Skeleton className="h-4 w-24 mx-auto" />
                         <Skeleton className="h-4 w-32 mx-auto" />

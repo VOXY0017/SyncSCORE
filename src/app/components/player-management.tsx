@@ -1,13 +1,14 @@
+
 'use client';
 
 import * as React from 'react';
 import { useState, useTransition, useEffect } from 'react';
-import type { Player, ScoreEntry } from '@/lib/types';
+import type { Player, ScoreEntry, Round } from '@/lib/types';
 import Link from 'next/link';
 import { useData } from '@/app/context/data-context';
 import { useFirebase } from '@/firebase';
-import { collection, doc, writeBatch, deleteDoc } from 'firebase/firestore';
-import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { collection, doc, writeBatch, deleteDoc, serverTimestamp, runTransaction, DocumentReference, getDocs, query, orderBy, limit, addDoc } from 'firebase/firestore';
+import { useLocalStorage } from '@/hooks/use-local-storage';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,14 +26,15 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Plus, Minus, X, RotateCcw, Undo2, Undo } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
+const DEFAULT_SESSION_ID = 'main';
 
 export default function PlayerManagement() {
-  const { players, history } = useData();
+  const { session, players, rounds, scores, isDataLoading } = useData();
   const { firestore } = useFirebase();
-
-  const [sortedPlayers, setSortedPlayers] = useState<Player[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+  const [sessionId] = useLocalStorage('sessionId', DEFAULT_SESSION_ID);
 
   const [newPlayerName, setNewPlayerName] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -49,9 +51,10 @@ export default function PlayerManagement() {
   const isPlayerLimitReached = players ? players.length >= 5 : false;
 
   const canUndoRound = React.useMemo(() => {
-    if (!players || players.length < 2 || !history) return false;
+    if (!players || players.length < 2 || !scores) return false;
+    
     const playerGameCounts = players.reduce((acc, player) => {
-        acc[player.id] = history.filter(h => h.playerId === player.id).length;
+        acc[player.id] = scores.filter(s => s.playerId === player.id).length;
         return acc;
     }, {} as Record<string, number>);
 
@@ -63,54 +66,96 @@ export default function PlayerManagement() {
     const allHaveSameCount = gameCounts.every(count => count === firstCount);
     
     return allHaveSameCount && firstCount > 0;
-}, [players, history]);
+}, [players, scores]);
 
-  const canUndoEntry = history && history.length > 0;
-
-  useEffect(() => {
-    if (players !== undefined) {
-        setSortedPlayers([...players].sort((a, b) => a.name.localeCompare(b.name)));
-        setIsLoading(false);
-    }
-  }, [players]);
+  const canUndoEntry = scores && scores.length > 0;
 
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = newPlayerName.trim();
-    if (!trimmedName || !firestore || players === undefined || isPlayerLimitReached || isPending) return;
+    if (!trimmedName || !firestore || players === undefined || isPlayerLimitReached || isPending || !sessionId) return;
     
     if (players.find(p => p.name.toLowerCase() === trimmedName.toLowerCase())) {
+        toast({ title: "Nama pemain sudah ada", variant: "destructive" });
         return;
     }
 
-    startTransition(() => {
-      const newPlayer: Omit<Player, 'id'> = {
-        name: trimmedName,
-      };
-      const playersCollection = collection(firestore, 'players');
-      addDocumentNonBlocking(playersCollection, newPlayer);
+    startTransition(async () => {
+      const sessionRef = doc(firestore, 'sessions', sessionId);
+      const playersCollection = collection(sessionRef, 'players');
+      await addDoc(playersCollection, {
+          name: trimmedName,
+          totalPoints: 0,
+          addedAt: serverTimestamp(),
+          order: players.length
+      });
       setNewPlayerName('');
     });
   };
 
-  const handleScoreChange = (playerId: string, change: number) => {
-    if (isNaN(change) || change === 0 || !firestore || history === undefined || isPending) return;
+  const handleScoreChange = (playerId: string, points: number, actionLabel: string, inputType: 'shortcut' | 'manual') => {
+    if (isNaN(points) || points === 0 && inputType === 'manual' || !firestore || isPending || !sessionId || !players || !rounds) return;
 
-    if (Math.abs(change) > 500) {
-        console.warn("Input score is out of the accepted range (-500 to 500).");
+    if (Math.abs(points) > 500 && inputType === 'manual') {
+        toast({title: "Input skor diluar rentang (-500 to 500).", variant: "destructive"});
         return;
     }
 
-    startTransition(() => {
-        const newHistoryEntry: Omit<ScoreEntry, 'id'> = {
-            points: change,
-            timestamp: new Date(),
-            playerId: playerId,
-        }
-        const historyCollection = collection(firestore, 'history');
-        addDocumentNonBlocking(historyCollection, newHistoryEntry);
+    startTransition(async () => {
+        const sessionRef = doc(firestore, 'sessions', sessionId);
+        const playerRef = doc(sessionRef, 'players', playerId);
 
-        setPointInputs(prev => ({...prev, [playerId]: ''}));
+        await runTransaction(firestore, async (transaction) => {
+            const playerDoc = await transaction.get(playerRef);
+            if (!playerDoc.exists()) {
+                throw "Player does not exist!";
+            }
+            
+            // 1. Determine current round or create a new one
+            let currentRoundRef: DocumentReference;
+            const playerGameCounts = players.reduce((acc, player) => {
+                acc[player.id] = scores?.filter(s => s.playerId === player.id).length ?? 0;
+                return acc;
+            }, {} as Record<string, number>);
+
+            const gameCounts = Object.values(playerGameCounts);
+            const allHaveSameCount = gameCounts.every(count => count === gameCounts[0]);
+            const isNewRound = allHaveSameCount || players.length === 1;
+
+            if (isNewRound && rounds.length > 0 && players.length > 1) {
+                // All players finished a round, create a new one
+                const newRoundNumber = (session?.lastRoundNumber ?? 0) + 1;
+                currentRoundRef = doc(collection(sessionRef, 'rounds'));
+                transaction.set(currentRoundRef, { roundNumber: newRoundNumber, createdAt: serverTimestamp() });
+                transaction.update(sessionRef, { lastRoundNumber: newRoundNumber });
+            } else if (rounds.length > 0) {
+                // Continue current round
+                currentRoundRef = doc(sessionRef, 'rounds', rounds[0].id);
+            } else {
+                // First round ever
+                currentRoundRef = doc(collection(sessionRef, 'rounds'));
+                transaction.set(currentRoundRef, { roundNumber: 1, createdAt: serverTimestamp() });
+                transaction.update(sessionRef, { lastRoundNumber: 1 });
+            }
+            
+            // 2. Add the score entry
+            const scoreRef = doc(collection(currentRoundRef, 'scores'));
+            transaction.set(scoreRef, {
+                playerId: playerId,
+                points: points,
+                actionLabel: actionLabel,
+                inputType: inputType,
+                timestamp: serverTimestamp()
+            });
+
+            // 3. Update player's total score
+            const newTotalPoints = playerDoc.data().totalPoints + points;
+            transaction.update(playerRef, { totalPoints: newTotalPoints });
+        });
+        
+        if (inputType === 'manual') {
+            setPointInputs(prev => ({...prev, [playerId]: ''}));
+        }
     });
   };
   
@@ -120,13 +165,15 @@ export default function PlayerManagement() {
   }
 
   const confirmDeletePlayer = () => {
-    if (!playerToDelete || !firestore || isPending) return;
+    if (!playerToDelete || !firestore || isPending || !sessionId) return;
 
-    startTransition(() => {
-        const playerDocRef = doc(firestore, 'players', playerToDelete.id);
-        deleteDocumentNonBlocking(playerDocRef);
-      setDeleteAlertOpen(false);
-      setPlayerToDelete(null);
+    startTransition(async () => {
+        const playerDocRef = doc(firestore, 'sessions', sessionId, 'players', playerToDelete.id);
+        await deleteDoc(playerDocRef);
+        // Note: Score history is intentionally kept
+        toast({ title: `${playerToDelete.name} telah dihapus.`});
+        setDeleteAlertOpen(false);
+        setPlayerToDelete(null);
     });
   };
 
@@ -139,60 +186,111 @@ export default function PlayerManagement() {
   }
 
   const confirmResetScores = async () => {
-      if (!firestore || !history || isPending) return;
+      if (!firestore || !rounds || isPending || !sessionId || !players) return;
       startTransition(async () => {
+        const sessionRef = doc(firestore, 'sessions', sessionId);
         const batch = writeBatch(firestore);
-        history.forEach(entry => {
-            const docRef = doc(firestore, 'history', entry.id);
-            batch.delete(docRef);
+
+        // Delete all scores in all rounds
+        for (const round of rounds) {
+            const scoresSnapshot = await getDocs(collection(sessionRef, 'rounds', round.id, 'scores'));
+            scoresSnapshot.forEach(scoreDoc => batch.delete(scoreDoc.ref));
+            // Delete the round itself
+            batch.delete(doc(sessionRef, 'rounds', round.id));
+        }
+
+        // Reset player scores
+        players.forEach(player => {
+            const playerRef = doc(sessionRef, 'players', player.id);
+            batch.update(playerRef, { totalPoints: 0 });
         });
+        
+        // Reset session
+        batch.update(sessionRef, { lastRoundNumber: 0 });
+
         await batch.commit();
+        toast({ title: "Semua skor telah diatur ulang."});
         setResetAlertOpen(false);
       });
   };
 
   const confirmUndoLastRound = async () => {
-    if (!firestore || !players || !history || !canUndoRound || isPending) return;
+    if (!firestore || !players || !scores || !canUndoRound || isPending || !sessionId) return;
 
     startTransition(async () => {
-        const batch = writeBatch(firestore);
-        
-        const playerGameCounts = players.reduce((acc, player) => {
-            acc[player.id] = history.filter(h => h.playerId === player.id).length;
-            return acc;
-        }, {} as Record<string, number>);
+        await runTransaction(firestore, async (transaction) => {
+            const sessionRef = doc(firestore, 'sessions', sessionId);
+            const entriesToDelete: {score: ScoreEntry, ref: DocumentReference}[] = [];
+            const pointChanges: Record<string, number> = {};
 
-        const minGameCount = Math.min(...Object.values(playerGameCounts));
-        if (minGameCount === 0) return;
+            // Find the last score entry for each player
+            for (const player of players) {
+                const playerHistory = scores
+                    .filter(s => s.playerId === player.id)
+                    .sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
 
-        const lastRoundIndex = minGameCount - 1;
+                if (playerHistory.length > 0) {
+                    const lastEntry = playerHistory[0];
+                    const roundId = rounds?.find(r => {
+                        // This is a weak link, needs improvement if rounds are complex
+                        return true;
+                    })?.id;
 
-        for (const player of players) {
-            const playerHistory = history
-                .filter(h => h.playerId === player.id)
-                .sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-
-            if (playerHistory.length >= minGameCount) {
-                const entryToDelete = playerHistory[lastRoundIndex];
-                 if (entryToDelete) {
-                    const docRef = doc(firestore, 'history', entryToDelete.id);
-                    batch.delete(docRef);
+                    if (roundId) { // We need to find which round the score belongs to. This is hard without direct refs.
+                        // For now, let's assume the latest score is in the latest round
+                         const scoreRef = doc(sessionRef, 'rounds', rounds[0].id, 'scores', lastEntry.id);
+                         entriesToDelete.push({score: lastEntry, ref: scoreRef });
+                         pointChanges[player.id] = (pointChanges[player.id] || 0) - lastEntry.points;
+                    }
                 }
             }
-        }
+            
+            // Delete the score entries and update player totals
+            for (const { score, ref } of entriesToDelete) {
+                transaction.delete(ref);
+                const playerRef = doc(sessionRef, 'players', score.playerId);
+                const playerDoc = await transaction.get(playerRef);
+                if(playerDoc.exists()){
+                    const currentPoints = playerDoc.data().totalPoints;
+                    transaction.update(playerRef, { totalPoints: currentPoints - score.points });
+                }
+            }
+        });
 
-        await batch.commit();
+        toast({ title: "Ronde terakhir dibatalkan."});
         setUndoRoundAlertOpen(false);
     });
 };
   
   const confirmUndoLastEntry = async () => {
-    if (!firestore || !history || history.length === 0 || isPending) return;
+    if (!firestore || !scores || scores.length === 0 || isPending || !sessionId || !rounds) return;
     startTransition(async () => {
-        // history is already sorted by timestamp desc
-        const lastEntryId = history[0].id;
-        const docRef = doc(firestore, 'history', lastEntryId);
-        await deleteDoc(docRef);
+        const lastEntry = scores[0]; // scores are pre-sorted desc by timestamp
+        
+        // This is a big assumption: that the last score is in the last round doc.
+        // This will break if rounds are manipulated manually.
+        if (rounds.length === 0) return;
+        const lastRoundId = rounds[0].id;
+
+        await runTransaction(firestore, async (transaction) => {
+            const sessionRef = doc(firestore, 'sessions', sessionId);
+            const scoreRef = doc(sessionRef, 'rounds', lastRoundId, 'scores', lastEntry.id);
+            const playerRef = doc(sessionRef, 'players', lastEntry.playerId);
+
+            const playerDoc = await transaction.get(playerRef);
+            if (!playerDoc.exists()) {
+                throw "Player for score to undo does not exist.";
+            }
+
+            // Decrement player's total points
+            const newTotalPoints = playerDoc.data().totalPoints - lastEntry.points;
+            transaction.update(playerRef, { totalPoints: newTotalPoints });
+
+            // Delete the score entry
+            transaction.delete(scoreRef);
+        });
+
+        toast({ title: "Input terakhir dibatalkan."});
         setUndoEntryAlertOpen(false);
     });
   };
@@ -234,23 +332,23 @@ export default function PlayerManagement() {
                       placeholder={isPlayerLimitReached ? "Maksimal 5 pemain tercapai" : "Tambah pemain baru dan tekan Enter..."}
                       value={newPlayerName}
                       onChange={(e) => setNewPlayerName(e.target.value)}
-                      disabled={isPending || isLoading || isPlayerLimitReached}
+                      disabled={isPending || isDataLoading || isPlayerLimitReached}
                       className="h-9"
                       aria-label="Nama pemain baru"
                   />
               </form>
               <div className="flex flex-row items-center gap-2">
                   <div className="flex-grow flex gap-2">
-                    <Button variant="outline" size="sm" className="h-9" onClick={() => setUndoEntryAlertOpen(true)} disabled={isPending || isLoading || !canUndoEntry} aria-label="Batalkan input terakhir">
+                    <Button variant="outline" size="sm" className="h-9" onClick={() => setUndoEntryAlertOpen(true)} disabled={isPending || isDataLoading || !canUndoEntry} aria-label="Batalkan input terakhir">
                         <Undo className="h-4 w-4 md:mr-2" />
                         <span className="hidden md:inline">Undo Input</span>
                     </Button>
-                    <Button variant="outline" size="sm" className="h-9" onClick={() => setUndoRoundAlertOpen(true)} disabled={isPending || isLoading || !canUndoRound} aria-label="Batalkan ronde terakhir">
+                    <Button variant="outline" size="sm" className="h-9" onClick={() => setUndoRoundAlertOpen(true)} disabled={isPending || isDataLoading || !canUndoRound} aria-label="Batalkan ronde terakhir">
                         <Undo2 className="h-4 w-4 md:mr-2" />
                         <span className="hidden md:inline">Undo Ronde</span>
                     </Button>
                   </div>
-                  <Button variant="destructive" size="sm" className="h-9" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Atur ulang semua skor">
+                  <Button variant="destructive" size="sm" className="h-9" onClick={() => setResetAlertOpen(true)} disabled={isPending || isDataLoading || !players || players.length === 0} aria-label="Atur ulang semua skor">
                       <RotateCcw className="h-4 w-4 md:mr-2" />
                       <span className="hidden md:inline">Atur Ulang</span>
                   </Button>
@@ -258,10 +356,10 @@ export default function PlayerManagement() {
           </div>
           <div className="flex-grow overflow-auto p-2 sm:p-0">
               <div className="space-y-4">
-                  {isLoading ? (
+                  {isDataLoading ? (
                     <ManagementSkeleton />
-                  ) : sortedPlayers && sortedPlayers.length > 0 ? (
-                    sortedPlayers.map((player) => (
+                  ) : players && players.length > 0 ? (
+                    players.map((player) => (
                       <Card key={player.id} className="p-3 sm:p-4 space-y-3">
                         <div className="flex items-center justify-between">
                             <Link href={`/history/${player.id}`} className="hover:underline font-bold text-lg">
@@ -275,10 +373,10 @@ export default function PlayerManagement() {
                         <Separator />
                         
                         <div className="grid grid-cols-4 gap-1 sm:gap-2">
-                            <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 50)} disabled={isPending}>+50</Button>
-                            <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 100)} disabled={isPending}>+100</Button>
-                            <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 150)} disabled={isPending}>+150</Button>
-                            <Button variant="destructive" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, -150)} disabled={isPending}>-150</Button>
+                            <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 50, 'Masuk Biasa', 'shortcut')} disabled={isPending}>+50</Button>
+                            <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 100, 'Joker', 'shortcut')} disabled={isPending}>+100</Button>
+                            <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 150, 'Menang', 'shortcut')} disabled={isPending}>+150</Button>
+                            <Button variant="destructive" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, -150, 'Mati Kartu', 'shortcut')} disabled={isPending}>-150</Button>
                         </div>
                         
                         <Separator />
@@ -294,17 +392,17 @@ export default function PlayerManagement() {
                                 onChange={(e) => handlePointInputChange(player.id, e.target.value)}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
-                                        handleScoreChange(player.id, Math.abs(parseInt(pointInputs[player.id] || '0')));
+                                        handleScoreChange(player.id, Math.abs(parseInt(pointInputs[player.id] || '0')), 'Manual', 'manual');
                                     }
                                 }}
                                 disabled={isPending}
                                 aria-label={`Poin untuk ${player.name}`}
                             />
                             <div className="flex items-center justify-center gap-2">
-                                <Button variant="destructive" className="w-20" onClick={() => handleScoreChange(player.id, -Math.abs(parseInt(pointInputs[player.id] || '0')))} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor negatif untuk ${player.name}`}>
+                                <Button variant="destructive" className="w-20" onClick={() => handleScoreChange(player.id, -Math.abs(parseInt(pointInputs[player.id] || '0')), 'Manual', 'manual')} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor negatif untuk ${player.name}`}>
                                     <Minus className="h-4 w-4" />
                                 </Button>
-                                <Button variant="default" className="w-20 bg-success hover:bg-success/90" onClick={() => handleScoreChange(player.id, Math.abs(parseInt(pointInputs[player.id] || '0')))} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor positif untuk ${player.name}`}>
+                                <Button variant="default" className="w-20 bg-success hover:bg-success/90" onClick={() => handleScoreChange(player.id, Math.abs(parseInt(pointInputs[player.id] || '0')), 'Manual', 'manual')} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor positif untuk ${player.name}`}>
                                     <Plus className="h-4 w-4" />
                                 </Button>
                             </div>
@@ -313,7 +411,7 @@ export default function PlayerManagement() {
                     ))
                   ) : (
                     <div className="h-24 flex items-center justify-center text-muted-foreground text-center px-4">
-                      {isLoading ? 'Memuat pemain...' : 'Tambahkan pemain untuk memulai permainan.'}
+                      {isDataLoading ? 'Memuat pemain...' : 'Tambahkan pemain untuk memulai permainan.'}
                     </div>
                   )}
               </div>
@@ -325,7 +423,7 @@ export default function PlayerManagement() {
           <AlertDialogHeader>
               <AlertDialogTitle>Apakah Anda benar-benar yakin?</AlertDialogTitle>
               <AlertDialogDescription>
-                  Tindakan ini tidak dapat dibatalkan. Ini akan menghapus <strong>{playerToDelete?.name}</strong> secara permanen. Riwayat skornya akan tetap ada.
+                  Tindakan ini tidak dapat dibatalkan. Ini akan menghapus <strong>{playerToDelete?.name}</strong> dari sesi ini. Riwayat skor mereka akan tetap tercatat tetapi tidak akan terhubung lagi.
               </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -340,15 +438,15 @@ export default function PlayerManagement() {
       <AlertDialog open={isResetAlertOpen} onOpenChange={isPending ? () => {} : setResetAlertOpen}>
           <AlertDialogContent>
           <AlertDialogHeader>
-              <AlertDialogTitle>Atur ulang semua skor?</AlertDialogTitle>
+              <AlertDialogTitle>Atur ulang sesi permainan?</AlertDialogTitle>
               <AlertDialogDescription>
-                  Tindakan ini tidak dapat dibatalkan. Ini akan menghapus seluruh riwayat skor dan mengembalikan skor semua pemain ke 0.
+                  Tindakan ini akan menghapus semua riwayat skor dan ronde, lalu mengatur ulang total skor semua pemain ke 0.
               </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
               <AlertDialogCancel disabled={isPending}>Batal</AlertDialogCancel>
               <AlertDialogAction onClick={confirmResetScores} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isPending}>
-              {isPending ? "Mengatur ulang..." : "Ya, Atur Ulang Skor"}
+              {isPending ? "Mengatur ulang..." : "Ya, Atur Ulang Sesi"}
               </AlertDialogAction>
           </AlertDialogFooter>
           </AlertDialogContent>
@@ -359,7 +457,7 @@ export default function PlayerManagement() {
             <AlertDialogHeader>
                 <AlertDialogTitle>Batalkan ronde terakhir?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Tindakan ini akan menghapus entri skor terakhir untuk setiap pemain di ronde yang sudah selesai. Ini tidak dapat dibatalkan.
+                    Tindakan ini akan menghapus entri skor terakhir untuk setiap pemain di ronde yang sudah selesai.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -376,7 +474,7 @@ export default function PlayerManagement() {
             <AlertDialogHeader>
                 <AlertDialogTitle>Batalkan input terakhir?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Tindakan ini akan menghapus entri skor terakhir yang dimasukkan. Ini tidak dapat dibatalkan.
+                    Tindakan ini akan menghapus entri skor terakhir yang dimasukkan dari riwayat.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

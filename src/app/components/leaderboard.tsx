@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -10,42 +11,28 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
-interface PlayerWithScore extends Player {
-    score: number;
-}
-
 type ScoreChange = 'increase' | 'decrease' | 'none';
 
 export default function Leaderboard() {
-  const { players, history } = useData();
-  const [sortedPlayers, setSortedPlayers] = useState<PlayerWithScore[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { players, isDataLoading } = useData();
+  const [sortedPlayers, setSortedPlayers] = useState<Player[]>([]);
   const [scoreChanges, setScoreChanges] = useState<Record<string, ScoreChange>>({});
-  const prevPlayersRef = useRef<PlayerWithScore[]>();
+  const prevPlayersRef = useRef<Player[]>();
 
   useEffect(() => {
-    if (players !== undefined && history !== undefined) {
-      const playerScores = players.map(player => {
-        const calculatedScore = history
-          .filter(h => h.playerId === player.id)
-          .reduce((acc, curr) => acc + curr.points, 0);
-        return {
-          ...player,
-          score: calculatedScore,
-        };
-      });
-
-      playerScores.sort((a, b) => b.score - a.score);
+    if (players) {
+      const playerScores = [...players];
+      playerScores.sort((a, b) => a.totalPoints - b.totalPoints); // Lower score is better
 
       if (prevPlayersRef.current) {
           const changes: Record<string, ScoreChange> = {};
           playerScores.forEach(currentPlayer => {
               const prevPlayer = prevPlayersRef.current?.find(p => p.id === currentPlayer.id);
               if (prevPlayer) {
-                  if (currentPlayer.score > prevPlayer.score) {
-                      changes[currentPlayer.id] = 'increase';
-                  } else if (currentPlayer.score < prevPlayer.score) {
-                      changes[currentPlayer.id] = 'decrease';
+                  if (currentPlayer.totalPoints > prevPlayer.totalPoints) {
+                      changes[currentPlayer.id] = 'increase'; // Score got worse
+                  } else if (currentPlayer.totalPoints < prevPlayer.totalPoints) {
+                      changes[currentPlayer.id] = 'decrease'; // Score got better
                   }
               }
           });
@@ -59,10 +46,9 @@ export default function Leaderboard() {
       }
 
       setSortedPlayers(playerScores);
-      setIsLoading(false);
       prevPlayersRef.current = playerScores;
     }
-  }, [players, history]);
+  }, [players]);
 
   const PlayerListSkeleton = () => (
     <>
@@ -96,9 +82,9 @@ export default function Leaderboard() {
                   </TableRow>
               </TableHeader>
               <TableBody>
-                  {isLoading ? <PlayerListSkeleton /> : sortedPlayers && sortedPlayers.length > 0 ? (
+                  {isDataLoading ? <PlayerListSkeleton /> : sortedPlayers && sortedPlayers.length > 0 ? (
                       sortedPlayers.map((player, index) => {
-                          const gap = index > 0 && sortedPlayers ? sortedPlayers[index - 1].score - player.score : null;
+                          const gap = index > 0 && sortedPlayers ? player.totalPoints - sortedPlayers[index - 1].totalPoints : null;
                           const change = scoreChanges[player.id];
                           
                           const rankClass = 
@@ -113,8 +99,8 @@ export default function Leaderboard() {
                                   className={cn(
                                     "transition-colors", 
                                     rankClass,
-                                    change === 'increase' && 'animate-flash-success',
-                                    change === 'decrease' && 'animate-flash-destructive'
+                                    change === 'increase' && 'animate-flash-destructive', // Worse score is red
+                                    change === 'decrease' && 'animate-flash-success'      // Better score is green
                                     )}
                               >
                                 <TableCell className="text-center p-1 sm:p-2 font-bold text-xl">
@@ -122,12 +108,12 @@ export default function Leaderboard() {
                                 </TableCell>
                                 <TableCell className="font-medium text-sm sm:text-base p-1 sm:p-2">{player.name}</TableCell>
                                 <TableCell className={cn("text-right font-bold text-base sm:text-lg tabular-nums p-1 sm:p-2",
-                                    player.score > 0 ? 'text-success' : player.score < 0 ? 'text-destructive' : 'text-foreground'
+                                    player.totalPoints > 0 ? 'text-destructive' : player.totalPoints < 0 ? 'text-success' : 'text-foreground'
                                 )}>
-                                  {player.score > 0 ? `+${player.score}` : player.score}
+                                  {player.totalPoints}
                                 </TableCell>
                                 <TableCell className="text-right text-xs text-muted-foreground tabular-nums p-1 sm:p-2">
-                                  {gap !== null && gap > 0 ? `-${gap}` : '–'}
+                                  {gap !== null && gap > 0 ? `+${gap}` : '–'}
                                 </TableCell>
                               </TableRow>
                           );

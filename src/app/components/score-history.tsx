@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -5,6 +6,7 @@ import { useState, useEffect } from 'react';
 import type { Player, ScoreEntry } from '@/lib/types';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { id as indonesia } from 'date-fns/locale';
 import { useData } from '@/app/context/data-context';
 
 import { Button } from '@/components/ui/button';
@@ -17,35 +19,26 @@ import { cn } from '@/lib/utils';
 
 interface ScoreHistoryProps {
   playerId: string;
+  playerName: string;
 }
 
-export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
-  const { players, history } = useData();
-
-  const [player, setPlayer] = useState<Player | null>(null);
+export default function ScoreHistory({ playerId, playerName }: ScoreHistoryProps) {
+  const { scores, isDataLoading } = useData();
   const [playerHistory, setPlayerHistory] = useState<ScoreEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (players !== undefined && history !== undefined) {
-      const foundPlayer = players.find(p => p.id === playerId) || null;
-      setPlayer(foundPlayer);
-      if (foundPlayer) {
-        const foundHistory = history.filter(h => h.playerId === foundPlayer.id);
-        setPlayerHistory(foundHistory.sort((a,b) => {
-            const timeA = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
-            const timeB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
-            return timeB - timeA;
-        }));
-      }
-      setIsLoading(false);
+    if (scores) {
+      const foundHistory = scores.filter(h => h.playerId === playerId);
+      // Scores are already sorted descending from context
+      setPlayerHistory(foundHistory);
     }
-  }, [playerId, players, history]);
+  }, [playerId, scores]);
 
   const HistorySkeleton = () => (
     <>
       {[...Array(10)].map((_, i) => (
         <TableRow key={i}>
+          <TableCell className="p-1 sm:p-2"><Skeleton className="h-5 w-16" /></TableCell>
           <TableCell className="p-1 sm:p-2"><Skeleton className="h-5 w-24" /></TableCell>
           <TableCell className="p-1 sm:p-2"><Skeleton className="h-5 w-48" /></TableCell>
         </TableRow>
@@ -62,7 +55,7 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
               <CardTitle className="flex items-center justify-between gap-3 text-lg sm:text-xl">
                 <div className="flex items-center gap-2">
                   <History className="h-5 w-5 text-primary" />
-                  Riwayat Skor: {isLoading ? <Skeleton className="h-6 w-28" /> : player?.name || 'Pemain Tidak Dikenal'}
+                  Riwayat Skor: {isDataLoading ? <Skeleton className="h-6 w-28" /> : playerName}
                 </div>
                  <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" asChild aria-label="Buka Manajemen Pemain">
@@ -83,26 +76,30 @@ export default function ScoreHistory({ playerId }: ScoreHistoryProps) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[100px] sm:w-[120px] font-bold p-1 sm:p-2">Poin</TableHead>
+                      <TableHead className="w-[80px] sm:w-[100px] font-bold p-1 sm:p-2">Poin</TableHead>
+                      <TableHead className="w-[120px] font-bold p-1 sm:p-2">Aksi</TableHead>
                       <TableHead className="font-bold p-1 sm:p-2">Waktu</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {isLoading ? <HistorySkeleton /> : playerHistory && playerHistory.length > 0 ? (
-                      playerHistory.map((entry, index) => (
+                    {isDataLoading ? <HistorySkeleton /> : playerHistory.length > 0 ? (
+                      playerHistory.map((entry) => (
                         <TableRow key={entry.id}>
-                          <TableCell className={cn("font-bold text-base p-1 sm:p-2", entry.points > 0 ? "text-success" : "text-destructive")}>
+                          <TableCell className={cn("font-bold text-base p-1 sm:p-2", entry.points > 0 ? "text-destructive" : "text-success")}>
                             {entry.points > 0 ? `+${entry.points}` : entry.points}
                           </TableCell>
+                           <TableCell className="text-muted-foreground text-xs sm:text-sm p-1 sm:p-2">
+                            {entry.actionLabel}
+                           </TableCell>
                           <TableCell className="text-muted-foreground text-xs sm:text-sm p-1 sm:p-2">
-                            {entry.timestamp ? format(new Date(entry.timestamp), 'Pp') : '...'}
+                            {entry.timestamp ? format(entry.timestamp.toDate(), 'Pp', { locale: indonesia }) : '...'}
                           </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={2} className="h-24 text-center text-muted-foreground">
-                          {player ? 'Belum ada entri skor untuk pemain ini.' : 'Pemain tidak ditemukan.'}
+                        <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                          {isDataLoading ? 'Memuat...' : 'Belum ada entri skor untuk pemain ini.'}
                         </TableCell>
                       </TableRow>
                     )}

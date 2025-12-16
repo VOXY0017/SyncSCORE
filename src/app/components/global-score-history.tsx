@@ -1,8 +1,9 @@
+
 'use client';
 
 import * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
-import type { Player, ScoreEntry } from '@/lib/types';
+import type { Player, ScoreEntry, Round } from '@/lib/types';
 import { useData } from '@/app/context/data-context';
 import { CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -20,42 +21,33 @@ interface PivotData {
 }
 
 export default function GlobalScoreHistory() {
-  const { players, history } = useData();
+  const { players, rounds, scores, isDataLoading } = useData();
   const [pivotData, setPivotData] = useState<PivotData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (history === undefined || players === undefined) return;
+    if (isDataLoading || !players || !scores || !rounds) return;
 
     if (players.length > 0) {
-      const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name));
+      const sortedPlayers = [...players].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       
-      const playerGameCounts = sortedPlayers.reduce((acc, player) => {
-          acc[player.id] = history.filter(h => h.playerId === player.id).length;
-          return acc;
-      }, {} as Record<string, number>);
-      
-      const completedRounds = players.length > 0 ? Math.min(...Object.values(playerGameCounts)) : 0;
-      const maxGames = Math.max(0, ...Object.values(playerGameCounts));
-      const totalGamesToDisplay = maxGames > completedRounds ? maxGames : completedRounds;
-      
-      const gameData: PivotData['games'] = [];
-      
-      const historyByPlayer: Record<string, ScoreEntry[]> = {};
+      const scoresByPlayer: Record<string, ScoreEntry[]> = {};
       sortedPlayers.forEach(p => {
-        historyByPlayer[p.id] = history
-          .filter(h => h.playerId === p.id)
-          .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        scoresByPlayer[p.id] = scores
+          .filter(s => s.playerId === p.id)
+          .sort((a, b) => a.timestamp.toMillis() - b.timestamp.toMillis());
       });
 
-      for (let i = 0; i < totalGamesToDisplay; i++) {
+      const maxGames = Math.max(0, ...Object.values(scoresByPlayer).map(s => s.length));
+      
+      const gameData: PivotData['games'] = [];
+
+      for (let i = 0; i < maxGames; i++) {
           const gameScores: Record<string, number | null> = {};
           let highestScoreInRound: number | null = null;
           
           sortedPlayers.forEach(player => {
-              const playerHistory = historyByPlayer[player.id];
-              const scoreEntry = playerHistory && playerHistory[i];
+              const scoreEntry = scoresByPlayer[player.id]?.[i];
               if (scoreEntry) {
                   gameScores[player.id] = scoreEntry.points;
                   if (highestScoreInRound === null || scoreEntry.points > highestScoreInRound) {
@@ -75,33 +67,21 @@ export default function GlobalScoreHistory() {
 
       setPivotData({
         players: sortedPlayers,
-        games: gameData,
+        games: gameData.reverse(), // Show latest game first
       });
 
     } else {
       setPivotData({ players: [], games: [] });
     }
 
-    setIsLoading(false);
-  }, [history, players]);
+  }, [isDataLoading, players, rounds, scores]);
 
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-        const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
-        if (viewport) {
-            viewport.scrollTo({
-                top: viewport.scrollHeight,
-                behavior: 'smooth'
-            });
-        }
-    }
-  }, [pivotData]);
 
   const HistorySkeleton = () => (
     <>
       {[...Array(5)].map((_, i) => (
         <TableRow key={i}>
-            {[...Array(5)].map((_, j) => (
+            {[...Array(4)].map((_, j) => (
               <TableCell key={j} className="text-center p-1 sm:p-2"><Skeleton className="h-5 w-12 mx-auto" /></TableCell>
             ))}
         </TableRow>
@@ -115,8 +95,8 @@ export default function GlobalScoreHistory() {
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
-                {isLoading ? (
-                  [...Array(5)].map((_, i) => <TableHead key={i} className="text-center p-1 sm:p-2"><Skeleton className="h-5 w-16 mx-auto" /></TableHead>)
+                {isDataLoading ? (
+                  [...Array(4)].map((_, i) => <TableHead key={i} className="text-center p-1 sm:p-2"><Skeleton className="h-5 w-16 mx-auto" /></TableHead>)
                 ) : pivotData && pivotData.players.length > 0 ? (
                   pivotData.players.map((player) => (
                     <TableHead key={player.id} className="text-center min-w-[80px] p-1 sm:p-2">{player.name}</TableHead>
@@ -127,7 +107,7 @@ export default function GlobalScoreHistory() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {isDataLoading ? (
                 <HistorySkeleton />
               ) : pivotData && pivotData.games.length > 0 ? (
                 pivotData.games.map((game) => (
@@ -147,7 +127,7 @@ export default function GlobalScoreHistory() {
                             <span
                               className={cn(
                                 "font-bold",
-                                score > 0 ? "text-success" : "text-destructive",
+                                score > 0 ? "text-destructive" : "text-success",
                                 isHighest && "text-yellow-500 dark:text-yellow-400"
                               )}
                             >

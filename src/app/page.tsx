@@ -31,21 +31,21 @@ export default function Home({ params }: { params: { playerId: string } }) {
   return (
     <div className="min-h-screen w-full bg-custom-background bg-cover bg-center relative flex flex-col">
       <div className="absolute inset-0 bg-black/60 z-0" />
-      <div className="container flex-grow max-w-screen-lg mx-auto py-2 sm:py-4 relative z-10">
-        <main className="space-y-4">
+      <div className="container flex-grow flex flex-col max-w-screen-lg mx-auto py-2 sm:py-4 relative z-10">
+        <main className="space-y-4 flex flex-col flex-grow">
            <h1 className={cn(
               "text-center text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary via-white to-primary sm:text-4xl",
               fontPoppins.className
             )}>
               Papan Skor Markas B7
             </h1>
-          <div className="grid grid-cols-3 gap-2 sm:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-6">
               <RotationInfo />
               <TopPlayerInfo />
               <ThemeToggle />
           </div>
-          <Tabs defaultValue="leaderboard" className="w-full" id="management">
-            <Card>
+          <Tabs defaultValue="leaderboard" className="w-full flex flex-col flex-grow" id="management">
+            <Card className="flex flex-col flex-grow">
               <div className="p-2">
                  <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="leaderboard">
@@ -62,13 +62,13 @@ export default function Home({ params }: { params: { playerId: string } }) {
                     </TabsTrigger>
                   </TabsList>
               </div>
-              <TabsContent value="leaderboard">
+              <TabsContent value="leaderboard" className="flex-grow">
                 <Leaderboard />
               </TabsContent>
-              <TabsContent value="history">
+              <TabsContent value="history" className="flex-grow">
                 <GlobalScoreHistory />
               </TabsContent>
-              <TabsContent value="management">
+              <TabsContent value="management" className="flex-grow">
                 <PlayerManagement />
               </TabsContent>
             </Card>

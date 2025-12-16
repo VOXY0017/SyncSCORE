@@ -146,7 +146,7 @@ export default function PlayerManagement() {
 
   return (
     <>
-      <CardContent className="p-0">
+      <CardContent className="p-0 h-full flex flex-col">
           <div className="p-2 sm:p-4">
               <div className="flex flex-row items-center gap-2">
                   <form onSubmit={handleAddPlayer} className="flex-grow">
@@ -165,7 +165,7 @@ export default function PlayerManagement() {
                   </Button>
               </div>
           </div>
-          <div className="h-auto">
+          <div className="flex-grow">
               <Table>
               <TableBody>
                   {isLoading ? (

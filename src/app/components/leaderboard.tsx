@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Medal } from 'lucide-react';
 
 export default function Leaderboard() {
   const { players, history } = useData();
@@ -49,8 +50,8 @@ export default function Leaderboard() {
   );
 
   return (
-      <CardContent className="p-0">
-          <ScrollArea className="h-[calc(100vh-22rem)] sm:h-[calc(100vh-20rem)]">
+      <CardContent className="p-0 h-full">
+          <ScrollArea className="h-full">
               <Table>
                   <TableHeader>
                       <TableRow>

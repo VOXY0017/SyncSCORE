@@ -11,8 +11,8 @@ import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/no
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CardContent } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,7 +59,6 @@ export default function PlayerManagement() {
     const gameCounts = Object.values(playerGameCounts);
     if (gameCounts.length === 0) return false;
     
-    // Check if all players have the same number of games played
     const firstCount = gameCounts[0];
     const allHaveSameCount = gameCounts.every(count => count === firstCount);
     
@@ -199,15 +198,31 @@ export default function PlayerManagement() {
   };
 
   const ManagementSkeleton = () => (
-    <>
+    <div className="space-y-4 px-2 sm:px-0">
     {[...Array(3)].map((_, i) => (
-        <TableRow key={i}>
-            <TableCell className="p-1 sm:p-2 w-[40px]"><Skeleton className="h-8 w-8" /></TableCell>
-            <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
-            <TableCell className="text-right"><Skeleton className="h-8 w-40 ml-auto" /></TableCell>
-        </TableRow>
+        <Card key={i} className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-7 w-7" />
+          </div>
+          <Separator />
+          <div className="flex justify-around gap-2">
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+          </div>
+          <Separator />
+           <div className="flex flex-col items-center gap-2">
+              <Skeleton className="h-9 w-40" />
+              <div className="flex gap-2">
+                <Skeleton className="h-9 w-16" />
+                <Skeleton className="h-9 w-16" />
+              </div>
+          </div>
+        </Card>
     ))}
-    </>
+    </div>
   );
 
   return (
@@ -241,77 +256,67 @@ export default function PlayerManagement() {
                   </Button>
               </div>
           </div>
-          <div className="flex-grow overflow-auto">
-              <Table>
-              <TableBody>
+          <div className="flex-grow overflow-auto p-2 sm:p-0">
+              <div className="space-y-4">
                   {isLoading ? (
-                  <ManagementSkeleton />
+                    <ManagementSkeleton />
                   ) : sortedPlayers && sortedPlayers.length > 0 ? (
-                  sortedPlayers.map((player) => (
-                      <TableRow key={player.id}>
-                          <TableCell className="p-1 sm:p-2 w-[40px]">
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Hapus pemain ${player.name}`}>
-                                  <X className="h-4 w-4" />
-                              </Button>
-                          </TableCell>
-                          <TableCell className="font-medium p-1 sm:p-2 w-full">
-                              <Link href={`/history/${player.id}`} className="hover:underline">
-                                  {player.name}
-                              </Link>
-                          </TableCell>
-                          <TableCell className="text-right p-1 sm:p-2">
-                              <div className="flex flex-col items-end gap-1">
-                                <div className="flex items-center justify-end gap-1">
-                                    <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => handleScoreChange(player.id, 50)} disabled={isPending}>
-                                        <Plus className="h-4 w-4 mr-1" />50
-                                    </Button>
-                                    <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => handleScoreChange(player.id, 100)} disabled={isPending}>
-                                        <Plus className="h-4 w-4 mr-1" />100
-                                    </Button>
-                                    <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => handleScoreChange(player.id, 150)} disabled={isPending}>
-                                        <Plus className="h-4 w-4 mr-1" />150
-                                    </Button>
-                                </div>
-                                <div className="flex items-center justify-end gap-1">
-                                    <Button variant="destructive" size="sm" className="h-8 px-2" onClick={() => handleScoreChange(player.id, -150)} disabled={isPending}>
-                                        <Minus className="h-4 w-4 mr-1" />150
-                                    </Button>
-                                    <Input
-                                        type="text"
-                                        inputMode="numeric"
-                                        pattern="[0-9]*"
-                                        placeholder="Poin"
-                                        className="h-8 text-center w-[70px] px-1"
-                                        value={pointInputs[player.id] || ''}
-                                        onChange={(e) => handlePointInputChange(player.id, e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                handleScoreChange(player.id, Math.abs(parseInt(pointInputs[player.id] || '0')));
-                                            }
-                                        }}
-                                        disabled={isPending}
-                                        aria-label={`Poin untuk ${player.name}`}
-                                    />
-                                    <Button variant="outline" size="icon" className="h-8 w-8 bg-success/20 hover:bg-success/30" onClick={() => handleScoreChange(player.id, Math.abs(parseInt(pointInputs[player.id] || '0')))} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor positif untuk ${player.name}`}>
-                                        <Plus className="h-4 w-4" />
-                                    </Button>
-                                     <Button variant="outline" size="icon" className="h-8 w-8 bg-destructive/20 hover:bg-destructive/30" onClick={() => handleScoreChange(player.id, -Math.abs(parseInt(pointInputs[player.id] || '0')))} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor negatif untuk ${player.name}`}>
-                                        <Minus className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                              </div>
-                          </TableCell>
-                      </TableRow>
-                  ))
+                    sortedPlayers.map((player) => (
+                      <Card key={player.id} className="p-3 sm:p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <Link href={`/history/${player.id}`} className="hover:underline font-bold text-lg">
+                                {player.name}
+                            </Link>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Hapus pemain ${player.name}`}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+
+                        <Separator />
+                        
+                        <div className="grid grid-cols-4 gap-1 sm:gap-2">
+                            <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 50)} disabled={isPending}>+50</Button>
+                            <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 100)} disabled={isPending}>+100</Button>
+                            <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 150)} disabled={isPending}>+150</Button>
+                            <Button variant="destructive" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, -150)} disabled={isPending}>-150</Button>
+                        </div>
+                        
+                        <Separator />
+
+                        <div className="flex flex-col items-center gap-2 pt-1">
+                             <Input
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                placeholder="Input Poin"
+                                className="h-9 text-center w-40"
+                                value={pointInputs[player.id] || ''}
+                                onChange={(e) => handlePointInputChange(player.id, e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        handleScoreChange(player.id, Math.abs(parseInt(pointInputs[player.id] || '0')));
+                                    }
+                                }}
+                                disabled={isPending}
+                                aria-label={`Poin untuk ${player.name}`}
+                            />
+                            <div className="flex items-center justify-center gap-2">
+                                <Button variant="destructive" className="w-20" onClick={() => handleScoreChange(player.id, -Math.abs(parseInt(pointInputs[player.id] || '0')))} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor negatif untuk ${player.name}`}>
+                                    <Minus className="h-4 w-4" />
+                                </Button>
+                                <Button variant="default" className="w-20 bg-success hover:bg-success/90" onClick={() => handleScoreChange(player.id, Math.abs(parseInt(pointInputs[player.id] || '0')))} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor positif untuk ${player.name}`}>
+                                    <Plus className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                      </Card>
+                    ))
                   ) : (
-                  <TableRow>
-                      <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
-                      {isLoading ? 'Memuat pemain...' : 'Tambahkan pemain untuk memulai.'}
-                      </TableCell>
-                  </TableRow>
+                    <div className="h-24 flex items-center justify-center text-muted-foreground text-center px-4">
+                      {isLoading ? 'Memuat pemain...' : 'Tambahkan pemain untuk memulai permainan.'}
+                    </div>
                   )}
-              </TableBody>
-              </Table>
+              </div>
           </div>
       </CardContent>
 

@@ -166,9 +166,11 @@ export default function PlayerManagement() {
                     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
                 if (playerHistory.length >= completedRounds) {
-                    const entryToDelete = playerHistory[playerHistory.length - 1]; // This logic is simplified
-                    const docRef = doc(firestore, 'history', entryToDelete.id);
-                    batch.delete(docRef);
+                    const entryToDelete = playerHistory[playerHistory.length - 1];
+                    if (entryToDelete) {
+                      const docRef = doc(firestore, 'history', entryToDelete.id);
+                      batch.delete(docRef);
+                    }
                 }
             }
         }
@@ -181,7 +183,6 @@ export default function PlayerManagement() {
   const confirmUndoLastEntry = async () => {
     if (!firestore || !history || history.length === 0 || isPending) return;
     startTransition(async () => {
-        // history is already sorted by timestamp desc from the hook
         const lastEntryId = history[0].id;
         const docRef = doc(firestore, 'history', lastEntryId);
         await deleteDoc(docRef);
@@ -252,10 +253,18 @@ export default function PlayerManagement() {
                           </TableCell>
                           <TableCell className="text-right p-1 sm:p-2">
                               <div className="flex items-center justify-end gap-1 flex-wrap">
-                                <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 50)} disabled={isPending}>+50</Button>
-                                <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 100)} disabled={isPending}>+100</Button>
-                                <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 150)} disabled={isPending}>+150</Button>
-                                <Button variant="destructive" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, -150)} disabled={isPending}>-150</Button>
+                                <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 50)} disabled={isPending}>
+                                    <Plus className="h-4 w-4 mr-1" />50
+                                </Button>
+                                <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 100)} disabled={isPending}>
+                                    <Plus className="h-4 w-4 mr-1" />100
+                                </Button>
+                                <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 150)} disabled={isPending}>
+                                    <Plus className="h-4 w-4 mr-1" />150
+                                </Button>
+                                <Button variant="destructive" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, -150)} disabled={isPending}>
+                                    <Minus className="h-4 w-4 mr-1" />150
+                                </Button>
                                 <Input
                                 type="number"
                                 placeholder="Poin"
@@ -267,9 +276,6 @@ export default function PlayerManagement() {
                                 />
                                 <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor untuk ${player.name}`}>
                                     <Plus className="h-4 w-4" />
-                                </Button>
-                                <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Kurangi skor untuk ${player.name}`}>
-                                    <Minus className="h-4 w-4" />
                                 </Button>
                               </div>
                           </TableCell>

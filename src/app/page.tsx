@@ -44,33 +44,31 @@ export default function Home({ params }: { params: { playerId: string } }) {
               <ThemeToggle />
           </div>
           <Tabs defaultValue="leaderboard" className="w-full flex flex-col flex-grow" id="management">
-            <Card className="flex flex-col flex-grow">
-              <div className="p-2">
-                 <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="leaderboard">
-                      <Trophy className="h-4" />
-                      <span className="hidden sm:inline">Peringkat</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="history">
-                      <History className="h-4" />
-                      <span className="hidden sm:inline">Riwayat</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="management">
-                      <Users className="h-4" />
-                      <span className="hidden sm:inline">Kelola</span>
-                    </TabsTrigger>
-                  </TabsList>
-              </div>
-              <TabsContent value="leaderboard" className="flex-grow">
+            <div className="p-2">
+                <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="leaderboard">
+                    <Trophy className="h-4" />
+                    <span className="hidden sm:inline">Peringkat</span>
+                </TabsTrigger>
+                <TabsTrigger value="history">
+                    <History className="h-4" />
+                    <span className="hidden sm:inline">Riwayat</span>
+                </TabsTrigger>
+                <TabsTrigger value="management">
+                    <Users className="h-4" />
+                    <span className="hidden sm:inline">Kelola</span>
+                </TabsTrigger>
+                </TabsList>
+            </div>
+            <TabsContent value="leaderboard" className="flex-grow">
                 <Leaderboard />
-              </TabsContent>
-              <TabsContent value="history" className="flex-grow">
+            </TabsContent>
+            <TabsContent value="history" className="flex-grow">
                 <GlobalScoreHistory />
-              </TabsContent>
-              <TabsContent value="management" className="flex-grow">
+            </TabsContent>
+            <TabsContent value="management" className="flex-grow">
                 <PlayerManagement />
-              </TabsContent>
-            </Card>
+            </TabsContent>
           </Tabs>
         </main>
       </div>

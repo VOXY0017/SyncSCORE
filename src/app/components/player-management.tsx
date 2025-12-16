@@ -68,9 +68,10 @@ export default function PlayerManagement() {
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = newPlayerName.trim();
-    if (!trimmedName || !firestore || players === undefined || isPlayerLimitReached) return;
+    if (!trimmedName || !firestore || players === undefined || isPlayerLimitReached || isPending) return;
     
     if (players.find(p => p.name.toLowerCase() === trimmedName.toLowerCase())) {
+        // Optionally, add user feedback here (e.g., a toast)
         return;
     }
 
@@ -85,7 +86,14 @@ export default function PlayerManagement() {
   };
 
   const handleScoreChange = (playerId: string, change: number) => {
-    if (isNaN(change) || change === 0 || !firestore || history === undefined) return;
+    if (isNaN(change) || change === 0 || !firestore || history === undefined || isPending) return;
+
+    // Validation for manual input
+    if (Math.abs(change) > 500) {
+        // Here you could show a toast or some other feedback
+        console.warn("Input score is out of the accepted range (-500 to 500).");
+        return;
+    }
 
     startTransition(() => {
         const newHistoryEntry: Omit<ScoreEntry, 'id'> = {
@@ -105,7 +113,7 @@ export default function PlayerManagement() {
   }
 
   const confirmDeletePlayer = () => {
-    if (!playerToDelete || !firestore) return;
+    if (!playerToDelete || !firestore || isPending) return;
 
     startTransition(() => {
         const playerDocRef = doc(firestore, 'players', playerToDelete.id);
@@ -118,6 +126,7 @@ export default function PlayerManagement() {
   };
 
   const handleAlertOpenChange = (open: boolean) => {
+    if (isPending) return;
     setDeleteAlertOpen(open);
     if (!open) {
       setPlayerToDelete(null);
@@ -125,7 +134,7 @@ export default function PlayerManagement() {
   }
 
   const confirmResetScores = async () => {
-      if (!firestore || !history) return;
+      if (!firestore || !history || isPending) return;
       startTransition(async () => {
         const batch = writeBatch(firestore);
         history.forEach(entry => {
@@ -138,7 +147,7 @@ export default function PlayerManagement() {
   };
 
   const confirmUndoLastRound = async () => {
-    if (!firestore || !players || !history || !canUndo) return;
+    if (!firestore || !players || !history || !canUndo || isPending) return;
 
     startTransition(async () => {
         const batch = writeBatch(firestore);
@@ -186,15 +195,15 @@ export default function PlayerManagement() {
                           value={newPlayerName}
                           onChange={(e) => setNewPlayerName(e.target.value)}
                           disabled={isPending || isLoading || isPlayerLimitReached}
-                          className="h-8 text-sm"
+                          className="h-9 text-sm"
                           aria-label="Nama pemain baru"
                       />
                   </form>
-                   <Button variant="outline" size="sm" className="h-8" onClick={() => setUndoAlertOpen(true)} disabled={isPending || isLoading || !canUndo} aria-label="Batalkan ronde terakhir">
+                   <Button variant="outline" size="sm" className="h-9" onClick={() => setUndoAlertOpen(true)} disabled={isPending || isLoading || !canUndo} aria-label="Batalkan ronde terakhir">
                       <Undo2 className="h-4 w-4 md:mr-2" />
                       <span className="hidden md:inline">Undo</span>
                   </Button>
-                  <Button variant="outline" size="sm" className="h-8" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Atur ulang semua skor">
+                  <Button variant="outline" size="sm" className="h-9" onClick={() => setResetAlertOpen(true)} disabled={isPending || isLoading || !players || players.length === 0} aria-label="Atur ulang semua skor">
                       <RotateCcw className="h-4 w-4 md:mr-2" />
                       <span className="hidden md:inline">Atur Ulang</span>
                   </Button>
@@ -220,23 +229,23 @@ export default function PlayerManagement() {
                           </TableCell>
                           <TableCell className="text-right p-1 sm:p-2">
                               <div className="flex items-center justify-end gap-1 flex-wrap">
-                                <Button variant="outline" size="sm" className="h-8" onClick={() => handleScoreChange(player.id, 50)} disabled={isPending}>+50</Button>
-                                <Button variant="outline" size="sm" className="h-8" onClick={() => handleScoreChange(player.id, 100)} disabled={isPending}>+100</Button>
-                                <Button variant="outline" size="sm" className="h-8" onClick={() => handleScoreChange(player.id, 150)} disabled={isPending}>+150</Button>
-                                <Button variant="destructive" size="sm" className="h-8" onClick={() => handleScoreChange(player.id, -150)} disabled={isPending}>-150</Button>
+                                <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 50)} disabled={isPending}>+50</Button>
+                                <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 100)} disabled={isPending}>+100</Button>
+                                <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 150)} disabled={isPending}>+150</Button>
+                                <Button variant="destructive" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, -150)} disabled={isPending}>-150</Button>
                                 <Input
                                 type="number"
                                 placeholder="Poin"
-                                className="h-8 text-center text-sm w-[70px]"
+                                className="h-9 text-center text-sm w-[70px]"
                                 value={pointInputs[player.id] || ''}
                                 onChange={(e) => handlePointInputChange(player.id, e.target.value)}
                                 disabled={isPending}
                                 aria-label={`Poin untuk ${player.name}`}
                                 />
-                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor untuk ${player.name}`}>
+                                <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor untuk ${player.name}`}>
                                     <Plus className="h-4 w-4" />
                                 </Button>
-                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Kurangi skor untuk ${player.name}`}>
+                                <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, -parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Kurangi skor untuk ${player.name}`}>
                                     <Minus className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -264,7 +273,7 @@ export default function PlayerManagement() {
               </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-              <AlertDialogCancel>Batal</AlertDialogCancel>
+              <AlertDialogCancel disabled={isPending}>Batal</AlertDialogCancel>
               <AlertDialogAction onClick={confirmDeletePlayer} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isPending}>
               {isPending ? "Menghapus..." : "Hapus"}
               </AlertDialogAction>
@@ -272,7 +281,7 @@ export default function PlayerManagement() {
           </AlertDialogContent>
       </AlertDialog>
       
-      <AlertDialog open={isResetAlertOpen} onOpenChange={setResetAlertOpen}>
+      <AlertDialog open={isResetAlertOpen} onOpenChange={isPending ? () => {} : setResetAlertOpen}>
           <AlertDialogContent>
           <AlertDialogHeader>
               <AlertDialogTitle>Atur ulang semua skor?</AlertDialogTitle>
@@ -281,7 +290,7 @@ export default function PlayerManagement() {
               </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-              <AlertDialogCancel>Batal</AlertDialogCancel>
+              <AlertDialogCancel disabled={isPending}>Batal</AlertDialogCancel>
               <AlertDialogAction onClick={confirmResetScores} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isPending}>
               {isPending ? "Mengatur ulang..." : "Ya, Atur Ulang Skor"}
               </AlertDialogAction>
@@ -289,7 +298,7 @@ export default function PlayerManagement() {
           </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={isUndoAlertOpen} onOpenChange={setUndoAlertOpen}>
+      <AlertDialog open={isUndoAlertOpen} onOpenChange={isPending ? () => {} : setUndoAlertOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Batalkan ronde terakhir?</AlertDialogTitle>
@@ -298,7 +307,7 @@ export default function PlayerManagement() {
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogCancel>Batal</AlertDialogCancel>
+                <AlertDialogCancel disabled={isPending}>Batal</AlertDialogCancel>
                 <AlertDialogAction onClick={confirmUndoLastRound} disabled={isPending}>
                     {isPending ? "Membatalkan..." : "Ya, Batalkan"}
                 </AlertDialogAction>
@@ -308,3 +317,4 @@ export default function PlayerManagement() {
     </>
   );
 }
+

@@ -150,21 +150,46 @@ export default function PlayerManagement() {
     startTransition(async () => {
         const batch = writeBatch(firestore);
 
-        const playerHistories: Promise<void>[] = players.map(async (player) => {
-            const q = query(
-                collection(firestore, 'history'),
-                where('playerId', '==', player.id),
-                orderBy('timestamp', 'desc'),
-                limit(1)
-            );
-            const snapshot = await getDocs(q);
-            if (!snapshot.empty) {
-                const lastEntry = snapshot.docs[0];
-                batch.delete(lastEntry.ref);
-            }
-        });
+        // Client-side logic to find the last entries for each player
+        const lastEntriesToDelete: { [playerId: string]: string } = {};
+        const playerLastEntryTimestamps: { [playerId: string]: number } = {};
 
-        await Promise.all(playerHistories);
+        // Find the latest entry timestamp for each player
+        for (const player of players) {
+            const playerHistory = history
+                .filter(h => h.playerId === player.id)
+                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+            if (playerHistory.length > 0) {
+                lastEntriesToDelete[player.id] = playerHistory[0].id;
+                playerLastEntryTimestamps[player.id] = new Date(playerHistory[0].timestamp).getTime();
+            }
+        }
+        
+        // This logic assumes a round is complete if all players have an entry.
+        // We find the documents to delete based on the client-side history data.
+        const playerGameCounts = players.reduce((acc, player) => {
+            acc[player.id] = history.filter(h => h.playerId === player.id).length;
+            return acc;
+        }, {} as Record<string, number>);
+
+        const completedRounds = Math.min(...Object.values(playerGameCounts));
+
+        if (completedRounds > 0) {
+            for (const player of players) {
+                const playerHistory = history
+                    .filter(h => h.playerId === player.id)
+                    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+                if (playerHistory.length >= completedRounds) {
+                     // The entry to delete is the newest one, which is at index 0 of the sorted history
+                    const entryToDelete = playerHistory[0];
+                    const docRef = doc(firestore, 'history', entryToDelete.id);
+                    batch.delete(docRef);
+                }
+            }
+        }
+
         await batch.commit();
         setUndoRoundAlertOpen(false);
     });
@@ -173,6 +198,7 @@ export default function PlayerManagement() {
   const confirmUndoLastEntry = async () => {
     if (!firestore || !history || history.length === 0 || isPending) return;
     startTransition(async () => {
+        // history is already sorted by timestamp desc, so the first element is the latest
         const lastEntryId = history[0].id;
         const docRef = doc(firestore, 'history', lastEntryId);
         await deleteDoc(docRef);

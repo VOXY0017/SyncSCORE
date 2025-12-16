@@ -4,7 +4,7 @@ import * as React from 'react';
 import { createContext, useContext, useMemo } from 'react';
 import type { Player, ScoreEntry } from '@/lib/types';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirebase } from '@/firebase';
+import { useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 
 interface DataContextType {
@@ -17,12 +17,12 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export function DataProvider({ children }: { children: React.ReactNode }) {
     const { firestore } = useFirebase();
 
-    const playersQuery = useMemo(() => {
+    const playersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
         return query(collection(firestore, 'players'), orderBy('score', 'desc'));
     }, [firestore]);
 
-    const historyQuery = useMemo(() => {
+    const historyQuery = useMemoFirebase(() => {
         if (!firestore) return null;
         return query(collection(firestore, 'history'), orderBy('timestamp', 'desc'));
     }, [firestore]);

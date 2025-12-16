@@ -11,38 +11,26 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
-interface PlayerStats extends Player {
-  gamesPlayed: number;
-  averageScore: number;
-}
-
 export default function Leaderboard() {
   const { players, history } = useData();
-  const [sortedPlayers, setSortedPlayers] = useState<PlayerStats[]>([]);
+  const [sortedPlayers, setSortedPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (players !== undefined && history !== undefined) {
-      const playerStats: PlayerStats[] = players.map(player => {
-        const playerHistory = history.filter(h => h.playerName === player.name);
-        const gamesPlayed = playerHistory.length;
-        const totalPoints = playerHistory.reduce((acc, curr) => acc + curr.points, 0);
-        // Correctly calculate total score from history, should match player.score if history is the source of truth
-        const calculatedScore = playerHistory.reduce((acc, curr) => acc + curr.points, 0);
-        const averageScore = gamesPlayed > 0 ? parseFloat((calculatedScore / gamesPlayed).toFixed(1)) : 0;
-        
+      const playerScores = players.map(player => {
+        const calculatedScore = history
+          .filter(h => h.playerName === player.name)
+          .reduce((acc, curr) => acc + curr.points, 0);
         return {
           ...player,
-          score: calculatedScore, // Use calculated score for consistency
-          gamesPlayed,
-          averageScore
+          score: calculatedScore,
         };
       });
 
-      // Sort by score descending
-      playerStats.sort((a, b) => b.score - a.score);
+      playerScores.sort((a, b) => b.score - a.score);
 
-      setSortedPlayers(playerStats);
+      setSortedPlayers(playerScores);
       setIsLoading(false);
     }
   }, [players, history]);
@@ -53,8 +41,6 @@ export default function Leaderboard() {
             <TableRow key={i}>
                 <TableCell><Skeleton className="h-5 w-5 rounded-full" /></TableCell>
                 <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-1/2 ml-auto" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-1/2 ml-auto" /></TableCell>
                 <TableCell><Skeleton className="h-5 w-1/2 ml-auto" /></TableCell>
                 <TableCell><Skeleton className="h-5 w-1/2 ml-auto" /></TableCell>
             </TableRow>
@@ -72,8 +58,6 @@ export default function Leaderboard() {
                       <TableHead className="font-bold p-1 sm:p-2">Pemain</TableHead>
                       <TableHead className="w-[80px] text-right font-bold p-1 sm:p-2">Skor</TableHead>
                       <TableHead className="w-[50px] text-right font-bold p-1 sm:p-2">Jarak</TableHead>
-                      <TableHead className="w-[80px] text-right font-bold p-1 sm:p-2">Total Main</TableHead>
-                      <TableHead className="w-[80px] text-right font-bold p-1 sm:p-2">Rata-rata</TableHead>
                       </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -101,21 +85,13 @@ export default function Leaderboard() {
                                     <TableCell className="text-right text-xs text-muted-foreground tabular-nums p-1 sm:p-2">
                                       {gap !== null && gap > 0 ? `-${gap}` : '–'}
                                     </TableCell>
-                                    <TableCell className="text-right text-sm text-muted-foreground tabular-nums p-1 sm:p-2">
-                                      {player.gamesPlayed}x
-                                    </TableCell>
-                                    <TableCell className={cn("text-right text-sm tabular-nums p-1 sm:p-2",
-                                      player.averageScore > 0 ? 'text-success' : player.averageScore < 0 ? 'text-destructive' : 'text-muted-foreground'
-                                    )}>
-                                      {player.averageScore > 0 ? `+${player.averageScore}` : player.averageScore}
-                                    </TableCell>
                                   </TableRow>
                               );
                           })
                       )}
                         {!isLoading && (!sortedPlayers || sortedPlayers.length === 0) && (
                           <TableRow>
-                              <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                              <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                                   Belum ada pemain. Tambahkan di menu Kelola.
                               </TableCell>
                           </TableRow>

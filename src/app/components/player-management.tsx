@@ -54,12 +54,17 @@ export default function PlayerManagement() {
         acc[player.id] = history.filter(h => h.playerId === player.id).length;
         return acc;
     }, {} as Record<string, number>);
+
     if (Object.keys(playerGameCounts).length < players.length) return false;
     const gameCounts = Object.values(playerGameCounts);
     if (gameCounts.length === 0 || !gameCounts.every(count => count > 0)) return false;
-    const completedRounds = Math.min(...gameCounts);
-    return completedRounds > 0;
-  }, [players, history]);
+    
+    // Check if all players have the same number of games played
+    const firstCount = gameCounts[0];
+    const allHaveSameCount = gameCounts.every(count => count === firstCount);
+    
+    return allHaveSameCount && firstCount > 0;
+}, [players, history]);
 
   const canUndoEntry = history && history.length > 0;
 
@@ -146,39 +151,27 @@ export default function PlayerManagement() {
       });
   };
 
-    const confirmUndoLastRound = async () => {
-        if (!firestore || !players || !history || !canUndoRound || isPending) return;
+  const confirmUndoLastRound = async () => {
+    if (!firestore || !players || !history || !canUndoRound || isPending) return;
 
-        startTransition(async () => {
-            const batch = writeBatch(firestore);
-
-            const playerGameCounts = players.reduce((acc, player) => {
-                acc[player.id] = history.filter(h => h.playerId === player.id).length;
-                return acc;
-            }, {} as Record<string, number>);
-
-            const completedRounds = Math.min(...Object.values(playerGameCounts));
-
-            if (completedRounds > 0) {
-                for (const player of players) {
-                    const playerHistory = history
-                        .filter(h => h.playerId === player.id)
-                        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-                    
-                    if (playerHistory.length >= completedRounds) {
-                        const entryToDelete = playerHistory[playerHistory.length - completedRounds];
-                        if (entryToDelete) {
-                            const docRef = doc(firestore, 'history', entryToDelete.id);
-                            batch.delete(docRef);
-                        }
-                    }
-                }
+    startTransition(async () => {
+        const batch = writeBatch(firestore);
+        
+        // Find the last entry for each player
+        for (const player of players) {
+            const playerHistory = history.filter(h => h.playerId === player.id);
+            // The history is already sorted by timestamp desc, so the first element is the latest
+            if (playerHistory.length > 0) {
+                const lastEntryForPlayer = playerHistory[0];
+                const docRef = doc(firestore, 'history', lastEntryForPlayer.id);
+                batch.delete(docRef);
             }
+        }
 
-            await batch.commit();
-            setUndoRoundAlertOpen(false);
-        });
-    };
+        await batch.commit();
+        setUndoRoundAlertOpen(false);
+    });
+};
   
   const confirmUndoLastEntry = async () => {
     if (!firestore || !history || history.length === 0 || isPending) return;
@@ -194,7 +187,7 @@ export default function PlayerManagement() {
     <>
     {[...Array(3)].map((_, i) => (
         <TableRow key={i}>
-            <TableCell className="p-2 w-[40px]"><Skeleton className="h-8 w-8" /></TableCell>
+            <TableCell className="p-1 sm:p-2 w-[40px]"><Skeleton className="h-8 w-8" /></TableCell>
             <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
             <TableCell className="text-right"><Skeleton className="h-8 w-40 ml-auto" /></TableCell>
         </TableRow>
@@ -269,13 +262,20 @@ export default function PlayerManagement() {
                                         <Minus className="h-4 w-4 mr-1" />150
                                     </Button>
                                     <Input
-                                    type="number"
-                                    placeholder="Poin"
-                                    className="h-8 text-center text-sm w-[70px] px-1"
-                                    value={pointInputs[player.id] || ''}
-                                    onChange={(e) => handlePointInputChange(player.id, e.target.value)}
-                                    disabled={isPending}
-                                    aria-label={`Poin untuk ${player.name}`}
+                                        type="text"
+                                        inputMode="numeric"
+                                        pattern="[0-9-]*"
+                                        placeholder="Poin"
+                                        className="h-8 text-center text-sm w-[70px] px-1"
+                                        value={pointInputs[player.id] || ''}
+                                        onChange={(e) => handlePointInputChange(player.id, e.target.value.replace(/[^0-9-]/g, ''))}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'));
+                                            }
+                                        }}
+                                        disabled={isPending}
+                                        aria-label={`Poin untuk ${player.name}`}
                                     />
                                     <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleScoreChange(player.id, parseInt(pointInputs[player.id] || '0'))} disabled={isPending || !pointInputs[player.id]} aria-label={`Tambah skor untuk ${player.name}`}>
                                         <Plus className="h-4 w-4" />

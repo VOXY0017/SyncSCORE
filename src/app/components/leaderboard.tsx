@@ -8,7 +8,6 @@ import { useData } from '@/app/context/data-context';
 
 import { CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -73,7 +72,6 @@ export default function Leaderboard() {
 
   return (
       <CardContent className="p-0 h-full">
-        <ScrollArea className="h-full">
           <Table>
               <TableHeader>
                   <TableRow>
@@ -129,7 +127,6 @@ export default function Leaderboard() {
                   )}
               </TableBody>
           </Table>
-        </ScrollArea>
       </CardContent>
   );
 }

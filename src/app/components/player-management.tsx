@@ -14,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -351,101 +350,99 @@ export default function PlayerManagement() {
                   </Button>
               </div>
           </div>
-          <ScrollArea className="flex-grow">
-              <div className="space-y-4 p-4 pt-0">
-                  {isDataLoading ? (
-                    <ManagementSkeleton />
-                  ) : players && players.length > 0 ? (
-                    players.map((player) => (
-                      <Card key={player.id} className="p-3 sm:p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                            <Link href={`/history/${player.id}?name=${encodeURIComponent(player.name)}`} className="hover:underline font-bold text-lg">
-                                {player.name}
-                            </Link>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Hapus pemain ${player.name}`}>
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
-
-                        <Separator />
-                        
-                        <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                            {/* Left Column: Shortcut Buttons */}
-                            <div className="grid grid-cols-2 gap-1 sm:gap-2">
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 50, 'Masuk Biasa', 'shortcut')} disabled={isPending}><Award /></Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>Masuk Biasa (+50)</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 100, 'Joker', 'shortcut')} disabled={isPending}><Crown /></Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>Menang dgn Joker (+100)</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 150, 'Menang', 'shortcut')} disabled={isPending}><Zap /></Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>Menang Tanpa Main (+150)</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button variant="destructive" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, -150, 'Mati Kartu', 'shortcut')} disabled={isPending}><ShieldX /></Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>Kalah Tanpa Main (-150)</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </div>
-
-                            {/* Right Column: Manual Input */}
-                            <div className="flex flex-col items-center justify-center gap-2">
-                                <Input
-                                    type="text"
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
-                                    placeholder="Input Poin"
-                                    className="h-9 text-center w-full text-sm"
-                                    value={pointInputs[player.id] || ''}
-                                    onChange={(e) => handlePointInputChange(player.id, e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            const value = parseInt(pointInputs[player.id] || '0');
-                                            if (value !== 0) {
-                                                handleScoreChange(player.id, value, 'Manual', 'manual');
-                                            }
-                                        }
-                                    }}
-                                    disabled={isPending}
-                                    aria-label={`Poin untuk ${player.name}`}
-                                />
-                                <div className="flex items-center justify-center gap-2 w-full">
-                                    <Button variant="destructive" className="w-full" onClick={() => handleScoreChange(player.id, -Math.abs(parseInt(pointInputs[player.id] || '0')), 'Manual', 'manual')} disabled={isPending || !pointInputs[player.id]}>
-                                        <Minus className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="default" className="w-full bg-success hover:bg-success/90" onClick={() => handleScoreChange(player.id, Math.abs(parseInt(pointInputs[player.id] || '0')), 'Manual', 'manual')} disabled={isPending || !pointInputs[player.id]}>
-                                        <Plus className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                      </Card>
-                    ))
-                  ) : (
-                    <div className="h-24 flex items-center justify-center text-muted-foreground text-center px-4">
-                      {isDataLoading ? 'Memuat pemain...' : 'Tambahkan pemain untuk memulai permainan.'}
+          <div className="flex-grow space-y-4 p-4 pt-0">
+              {isDataLoading ? (
+                <ManagementSkeleton />
+              ) : players && players.length > 0 ? (
+                players.map((player) => (
+                  <Card key={player.id} className="p-3 sm:p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <Link href={`/history/${player.id}?name=${encodeURIComponent(player.name)}`} className="hover:underline font-bold text-lg">
+                            {player.name}
+                        </Link>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Hapus pemain ${player.name}`}>
+                            <X className="h-4 w-4" />
+                        </Button>
                     </div>
-                  )}
-              </div>
-          </ScrollArea>
+
+                    <Separator />
+                    
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                        {/* Left Column: Shortcut Buttons */}
+                        <div className="grid grid-cols-2 gap-1 sm:gap-2">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 50, 'Masuk Biasa', 'shortcut')} disabled={isPending}><Award /></Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Masuk Biasa (+50)</p>
+                                </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 100, 'Joker', 'shortcut')} disabled={isPending}><Crown /></Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Menang dgn Joker (+100)</p>
+                                </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="outline" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, 150, 'Menang', 'shortcut')} disabled={isPending}><Zap /></Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Menang Tanpa Main (+150)</p>
+                                </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="destructive" size="sm" className="h-9" onClick={() => handleScoreChange(player.id, -150, 'Mati Kartu', 'shortcut')} disabled={isPending}><ShieldX /></Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Kalah Tanpa Main (-150)</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
+
+                        {/* Right Column: Manual Input */}
+                        <div className="flex flex-col items-center justify-center gap-2">
+                            <Input
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                placeholder="Input Poin"
+                                className="h-9 text-center w-full text-sm"
+                                value={pointInputs[player.id] || ''}
+                                onChange={(e) => handlePointInputChange(player.id, e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        const value = parseInt(pointInputs[player.id] || '0');
+                                        if (value !== 0) {
+                                            handleScoreChange(player.id, value, 'Manual', 'manual');
+                                        }
+                                    }
+                                }}
+                                disabled={isPending}
+                                aria-label={`Poin untuk ${player.name}`}
+                            />
+                            <div className="flex items-center justify-center gap-2 w-full">
+                                <Button variant="destructive" className="w-full" onClick={() => handleScoreChange(player.id, -Math.abs(parseInt(pointInputs[player.id] || '0')), 'Manual', 'manual')} disabled={isPending || !pointInputs[player.id]}>
+                                    <Minus className="h-4 w-4" />
+                                </Button>
+                                <Button variant="default" className="w-full bg-success hover:bg-success/90" onClick={() => handleScoreChange(player.id, Math.abs(parseInt(pointInputs[player.id] || '0')), 'Manual', 'manual')} disabled={isPending || !pointInputs[player.id]}>
+                                    <Plus className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                  </Card>
+                ))
+              ) : (
+                <div className="h-24 flex items-center justify-center text-muted-foreground text-center px-4">
+                  {isDataLoading ? 'Memuat pemain...' : 'Tambahkan pemain untuk memulai permainan.'}
+                </div>
+              )}
+          </div>
         </TooltipProvider>
       </CardContent>
 

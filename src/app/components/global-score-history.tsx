@@ -6,7 +6,6 @@ import { useState, useEffect, useRef } from 'react';
 import type { Player, ScoreEntry, Round } from '@/lib/types';
 import { useData } from '@/app/context/data-context';
 import { CardContent } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -23,7 +22,6 @@ interface PivotData {
 export default function GlobalScoreHistory() {
   const { players, rounds, scores, isDataLoading } = useData();
   const [pivotData, setPivotData] = useState<PivotData | null>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isDataLoading || !players || !scores || !rounds) return;
@@ -94,7 +92,6 @@ export default function GlobalScoreHistory() {
 
   return (
       <CardContent className="p-0 h-full">
-        <ScrollArea className="h-full w-full whitespace-nowrap" ref={scrollAreaRef}>
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
@@ -155,7 +152,6 @@ export default function GlobalScoreHistory() {
               )}
             </TableBody>
           </Table>
-        </ScrollArea>
       </CardContent>
   );
 }

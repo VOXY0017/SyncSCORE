@@ -319,8 +319,9 @@ export default function PlayerManagement() {
   const ManagementSkeleton = () => (
     <div className="space-y-2">
     {[...Array(3)].map((_, i) => (
-        <Card key={i} className="p-2">
+        <Card key={i} className="p-2 flex flex-col gap-2">
             <div className="flex items-center gap-2">
+                <Skeleton className="h-7 w-7" />
                 <Skeleton className="h-6 w-24" />
                 <div className="flex-grow flex items-center justify-end gap-2">
                     <Skeleton className="h-9 w-9" />
@@ -328,12 +329,11 @@ export default function PlayerManagement() {
                     <Skeleton className="h-9 w-9" />
                     <Skeleton className="h-9 w-9" />
                 </div>
-                <Skeleton className="h-7 w-7" />
             </div>
             <div className="flex items-center gap-1 pt-2">
                 <Skeleton className="h-9 flex-grow" />
-                <Skeleton className="h-9 w-9" />
-                <Skeleton className="h-9 w-9" />
+                <Skeleton className="h-9 w-12" />
+                <Skeleton className="h-9 w-12" />
             </div>
         </Card>
     ))}
@@ -445,8 +445,8 @@ export default function PlayerManagement() {
                               />
                               <Button
                                   variant="outline"
-                                  size="icon"
-                                  className="h-9 w-9 text-success hover:bg-success/10 hover:text-success border-success/30"
+                                  size="sm"
+                                  className="h-9 text-success hover:bg-success/10 hover:text-success border-success/30"
                                   onClick={() => handleManualSubmit(player.id, 'positive')}
                                   disabled={isPending}
                               >
@@ -454,8 +454,8 @@ export default function PlayerManagement() {
                               </Button>
                               <Button
                                   variant="destructive"
-                                  size="icon"
-                                  className="h-9 w-9"
+                                  size="sm"
+                                  className="h-9"
                                   onClick={() => handleManualSubmit(player.id, 'negative')}
                                   disabled={isPending}
                               >
@@ -544,3 +544,5 @@ export default function PlayerManagement() {
     </>
   );
 }
+
+    

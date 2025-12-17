@@ -11,8 +11,7 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Card } from '@/components/ui/card';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -169,7 +168,7 @@ export default function PlayerManagement() {
   };
   
   const handlePointInputChange = (playerId: string, value: string) => {
-    const sanitizedValue = value.replace(/[^0-9]/g, '');
+    const sanitizedValue = value.replace(/[^0-9-]/g, '');
     setPointInputs(prev => ({...prev, [playerId]: sanitizedValue}));
   }
 
@@ -286,28 +285,31 @@ export default function PlayerManagement() {
     });
   };
 
-  const handleManualSubmit = (playerId: string, isNegative: boolean) => {
-    const value = parseInt(pointInputs[playerId] || '0', 10);
-    if (value !== 0) {
-      handleScoreChange(playerId, isNegative ? -value : value, 'Manual', 'manual');
-    }
+  const handleManualSubmit = (playerId: string) => {
+      const rawValue = pointInputs[playerId] || '0';
+      const value = parseInt(rawValue, 10);
+      if (value !== 0) {
+        handleScoreChange(playerId, value, 'Manual', 'manual');
+      }
   };
 
   const ManagementSkeleton = () => (
-    <div className="space-y-4 px-4">
+    <div className="space-y-2">
     {[...Array(3)].map((_, i) => (
-        <Card key={i} className="p-4 space-y-3">
-          <div className="flex items-center justify-between">
-              <Skeleton className="h-6 w-32" />
-              <Skeleton className="h-7 w-7" />
-          </div>
-          <Separator />
-          <div className="flex justify-around gap-2">
-            <Skeleton className="h-9 w-full" />
-            <Skeleton className="h-9 w-full" />
-            <Skeleton className="h-9 w-full" />
-            <Skeleton className="h-9 w-full" />
-          </div>
+        <Card key={i} className="p-2">
+            <div className="flex items-center gap-2">
+                <Skeleton className="h-6 w-24" />
+                <div className="flex-grow flex items-center justify-end gap-2">
+                    <Skeleton className="h-9 w-9" />
+                    <Skeleton className="h-9 w-9" />
+                    <Skeleton className="h-9 w-9" />
+                    <Skeleton className="h-9 w-9" />
+                    <Skeleton className="h-9 w-24" />
+                    <Skeleton className="h-9 w-9" />
+                    <Skeleton className="h-9 w-9" />
+                </div>
+                <Skeleton className="h-7 w-7" />
+            </div>
         </Card>
     ))}
     </div>
@@ -345,81 +347,76 @@ export default function PlayerManagement() {
                   </Button>
               </div>
           </div>
-          <div className="flex-grow space-y-4 p-4 pt-0 overflow-y-auto">
+          <div className="flex-grow space-y-2 p-4 pt-0 overflow-y-auto">
               {isDataLoading ? (
                 <ManagementSkeleton />
               ) : players && players.length > 0 ? (
                 players.map((player) => (
-                  <Card key={player.id} className="p-3 sm:p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                        <Link href={`/history/${player.id}?name=${encodeURIComponent(player.name)}`} className="hover:underline font-bold text-lg">
+                  <Card key={player.id} className="p-2">
+                    <div className="flex items-center w-full gap-2">
+                        <Link href={`/history/${player.id}?name=${encodeURIComponent(player.name)}`} className="hover:underline font-bold text-base flex-shrink-0 pr-2">
                             {player.name}
                         </Link>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Hapus pemain ${player.name}`}>
+                        
+                        <div className="flex-grow flex items-center justify-end gap-2">
+                          <div className="hidden sm:flex items-center gap-1">
+                              <Tooltip>
+                                  <TooltipTrigger asChild>
+                                      <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, 50, 'Masuk Biasa', 'shortcut')} disabled={isPending}><Award /></Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                      <p>Masuk Biasa (+50)</p>
+                                  </TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                  <TooltipTrigger asChild>
+                                      <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, 100, 'Joker', 'shortcut')} disabled={isPending}><Crown /></Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                      <p>Menang dgn Joker (+100)</p>
+                                  </TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                  <TooltipTrigger asChild>
+                                      <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, 150, 'Menang', 'shortcut')} disabled={isPending}><Zap /></Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                      <p>Menang Tanpa Main (+150)</p>
+                                  </TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                  <TooltipTrigger asChild>
+                                      <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, -150, 'Mati Kartu', 'shortcut')} disabled={isPending}><ShieldX /></Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                      <p>Kalah Tanpa Main (-150)</p>
+                                  </TooltipContent>
+                              </Tooltip>
+                          </div>
+
+                          <div className="flex-grow sm:flex-grow-0 flex items-center gap-1 w-full sm:w-auto">
+                              <Input
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9-]*"
+                                  placeholder="Poin"
+                                  className="h-9 text-center text-sm"
+                                  value={pointInputs[player.id] || ''}
+                                  onChange={(e) => handlePointInputChange(player.id, e.target.value)}
+                                  onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                          handleManualSubmit(player.id);
+                                      }
+                                  }}
+                                  disabled={isPending}
+                                  aria-label={`Poin untuk ${player.name}`}
+                              />
+                          </div>
+                        </div>
+
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive flex-shrink-0" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Hapus pemain ${player.name}`}>
                             <X className="h-4 w-4" />
                         </Button>
-                    </div>
-
-                    <Separator />
-                    
-                    <div className="flex items-center gap-2 sm:gap-4">
-                        {/* Shortcut Buttons */}
-                        <div className="flex items-center gap-1 sm:gap-2">
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, 50, 'Masuk Biasa', 'shortcut')} disabled={isPending}><Award /></Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Masuk Biasa (+50)</p>
-                                </TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, 100, 'Joker', 'shortcut')} disabled={isPending}><Crown /></Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Menang dgn Joker (+100)</p>
-                                </TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, 150, 'Menang', 'shortcut')} disabled={isPending}><Zap /></Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Menang Tanpa Main (+150)</p>
-                                </TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, -150, 'Mati Kartu', 'shortcut')} disabled={isPending}><ShieldX /></Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Kalah Tanpa Main (-150)</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </div>
-
-                        {/* Manual Input */}
-                         <div className="flex-grow flex items-center gap-1">
-                            <Input
-                                type="text"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
-                                placeholder="Poin"
-                                className="h-9 text-center w-full"
-                                value={pointInputs[player.id] || ''}
-                                onChange={(e) => handlePointInputChange(player.id, e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        handleManualSubmit(player.id, e.shiftKey);
-                                    }
-                                }}
-                                disabled={isPending}
-                                aria-label={`Poin untuk ${player.name}`}
-                            />
-                            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleManualSubmit(player.id, true)} disabled={isPending || !pointInputs[player.id]}><Minus /></Button>
-                            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleManualSubmit(player.id, false)} disabled={isPending || !pointInputs[player.id]}><Plus /></Button>
-                        </div>
                     </div>
                   </Card>
                 ))

@@ -5,7 +5,7 @@ import * as React from 'react';
 import { useData } from '@/app/context/data-context';
 import { Poppins } from 'next/font/google';
 
-import { ArrowRight, ArrowLeft, Gamepad2, Trophy, ChevronRight } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Gamepad2, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { ThemeToggleSwitch } from '@/app/components/theme-toggle-switch';
@@ -18,13 +18,13 @@ const fontPoppins = Poppins({
 });
 
 function RotationInfo() {
-    const { session, isDataLoading } = useData();
+    const { session, isDataLoading, players } = useData();
     
-    if (isDataLoading || !session || session.lastRoundNumber < 1) {
+    if (isDataLoading || !session || (session.lastRoundNumber < 1 && players && players.length === 0)) {
         return null;
     }
     
-    const currentRound = (session.lastRoundNumber || 0) < 1 ? 1 : session.lastRoundNumber;
+    const currentRound = (session.lastRoundNumber || 0) + 1;
     const rotationDirection = currentRound % 2 !== 0 ? 'kanan' : 'kiri';
     const Icon = rotationDirection === 'kanan' ? ArrowRight : ArrowLeft;
 
@@ -47,8 +47,8 @@ function RoundInfo() {
     if (isDataLoading || !session) {
         return <Skeleton className="h-5 w-20" />;
     }
-
-    const displayRound = (session.lastRoundNumber || 0) < 1 ? 1 : session.lastRoundNumber;
+    
+    const displayRound = (session.lastRoundNumber || 0) < 1 ? 1 : (session.lastRoundNumber + 1);
 
     return (
         <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
@@ -77,9 +77,9 @@ export default function AppHeader() {
             {/* Sub Header */}
             <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto pb-2">
                 <RoundInfo />
-                {session && (session.lastRoundNumber > 0) && <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
+                {session && (session.lastRoundNumber >= 0) && <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
                 <RotationInfo />
-                {session && (session.lastRoundNumber > 1) && <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
+                {session && (session.lastRoundNumber > 0) && <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
                 <LastRoundHighestScorerInfo />
             </div>
         </header>

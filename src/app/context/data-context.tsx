@@ -112,29 +112,39 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const lastRoundHighestScorers = useMemo(() => {
         const players = playersData || [];
         const rounds = roundsData || [];
+        const session = sessionData;
 
-        if (players.length < 2 || rounds.length < 2) {
+        if (!session || players.length < 1 || rounds.length === 0) {
             return [];
         }
 
-        // The rounds are sorted descending, so rounds[0] is the latest, rounds[1] is the one before.
-        const lastCompletedRound = rounds[1];
-        if (!lastCompletedRound || !lastCompletedRound.scores) {
+        const lastFinishedRoundNumber = session.lastRoundNumber;
+        if (lastFinishedRoundNumber === 0) {
             return [];
         }
 
-        const scoresFromPreviousRound = lastCompletedRound.scores;
+        const lastFinishedRound = rounds.find(r => r.roundNumber === lastFinishedRoundNumber);
+        if (!lastFinishedRound || !lastFinishedRound.scores || lastFinishedRound.scores.length < players.length) {
+            // The last recorded round is not actually finished
+            if (lastFinishedRoundNumber > 1) {
+                const roundBeforeThat = rounds.find(r => r.roundNumber === lastFinishedRoundNumber -1);
+                 if (roundBeforeThat && roundBeforeThat.scores) {
+                    const maxScore = Math.max(...roundBeforeThat.scores.map(s => s.points));
+                    if (maxScore <= 0) return [];
+                    return roundBeforeThat.scores.filter(s => s.points === maxScore).map(s => s.playerId);
+                 }
+            }
+            return [];
+        }
         
-        if (scoresFromPreviousRound.length > 0) {
-            const maxScoreInRound = Math.max(...scoresFromPreviousRound.map(s => s.points));
-            if (maxScoreInRound <= 0) return []; // Don't highlight if no penalty
-            const worstScorers = scoresFromPreviousRound.filter(s => s.points === maxScoreInRound);
-            return worstScorers.map(s => s.playerId);
-        }
+        const scoresFromLastRound = lastFinishedRound.scores;
+        const maxScoreInRound = Math.max(...scoresFromLastRound.map(s => s.points));
+        if (maxScoreInRound <= 0) return [];
 
-        return [];
+        const highestScorers = scoresFromLastRound.filter(s => s.points === maxScoreInRound);
+        return highestScorers.map(s => s.playerId);
 
-    }, [playersData, roundsData]);
+    }, [playersData, roundsData, sessionData]);
 
 
     const value = useMemo(() => ({

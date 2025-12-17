@@ -6,7 +6,6 @@ import { useState, useEffect } from 'react';
 import { useData } from '@/app/context/data-context';
 import type { Player } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
 
 export function LastRoundHighestScorerInfo() {
     const { players, lastRoundHighestScorers, isDataLoading, session } = useData();
@@ -37,8 +36,8 @@ export function LastRoundHighestScorerInfo() {
         return <Skeleton className="h-5 w-28" />;
     }
     
-    if (!session || session.lastRoundNumber < 2) {
-        return null; // Don't show this component before round 2 starts
+    if (!session || session.lastRoundNumber < 1) {
+        return null; // Don't show this component before round 1 is finished
     }
 
     return (

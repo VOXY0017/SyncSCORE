@@ -85,13 +85,6 @@ export default function Leaderboard() {
     </>
   );
 
-  const getRankContent = (rank: number) => {
-    if (rank === 1) return '🥇';
-    if (rank === 2) return '🥈';
-    if (rank === 3) return '🥉';
-    return rank;
-  }
-
   return (
       <CardContent className="p-0 h-full">
           <Table>
@@ -126,7 +119,7 @@ export default function Leaderboard() {
                                     )}
                               >
                                 <TableCell className="text-center p-1 sm:p-2 font-bold text-xl">
-                                  {getRankContent(player.rank)}
+                                  {player.rank}
                                 </TableCell>
                                 <TableCell className="font-medium text-sm sm:text-base p-1 sm:p-2">{player.name}</TableCell>
                                 <TableCell className={cn("text-right font-bold text-base sm:text-lg tabular-nums p-1 sm:p-2",

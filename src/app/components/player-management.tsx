@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -109,12 +110,18 @@ export default function PlayerManagement() {
         const playerRef = doc(sessionRef, 'players', playerId);
 
         await runTransaction(firestore, async (transaction) => {
+            // --- ALL READS MUST BE FIRST ---
             const playerDoc = await transaction.get(playerRef);
+            const sessionDoc = await transaction.get(sessionRef);
+
             if (!playerDoc.exists()) {
                 throw "Player does not exist!";
             }
-            
-            let currentRoundRef: DocumentReference;
+            if (!sessionDoc.exists()) {
+                throw "Session does not exist!";
+            }
+
+            // --- LOGIC USING READ DATA ---
             const scoresSoFar = scores ?? [];
             const playerGameCounts = players.reduce((acc, player) => {
                 acc[player.id] = scoresSoFar.filter(s => s.playerId === player.id).length;
@@ -131,8 +138,6 @@ export default function PlayerManagement() {
               const thisPlayerOldEntryCount = playerGameCounts[playerId] ?? 0;
               
               if (thisPlayerOldEntryCount === minEntries) {
-                // If this player was at the minimum, check if everyone else was too.
-                // If so, this entry starts a new round.
                 const everyoneElseWasAtMin = players
                   .filter(p => p.id !== playerId)
                   .every(p => (playerGameCounts[p.id] ?? 0) === minEntries);
@@ -145,27 +150,37 @@ export default function PlayerManagement() {
                 isNewRound = true;
             }
 
-
-            const lastRoundNumber = session?.lastRoundNumber ?? 0;
+            const currentSessionData = sessionDoc.data();
+            const lastRoundNumber = currentSessionData.lastRoundNumber ?? 0;
             
+            let currentRoundRef: DocumentReference;
             if (isNewRound) {
                 const newRoundNumber = lastRoundNumber + 1;
                 currentRoundRef = doc(collection(sessionRef, 'rounds'));
-                transaction.set(currentRoundRef, { roundNumber: newRoundNumber, createdAt: serverTimestamp() });
-                transaction.update(sessionRef, { lastRoundNumber: newRoundNumber });
+                // Defer the write
             } else if (rounds.length > 0) {
-                // Find the latest round (highest roundNumber)
                 const latestRound = rounds.reduce((latest, current) => (current.roundNumber > latest.roundNumber ? current : latest), rounds[0]);
                 currentRoundRef = doc(sessionRef, 'rounds', latestRound.id);
             } else {
-                 // Fallback if no rounds exist but it's not the first entry. Should not happen often.
                  const newRoundNumber = 1;
                  currentRoundRef = doc(collection(sessionRef, 'rounds'));
-                 transaction.set(currentRoundRef, { roundNumber: newRoundNumber, createdAt: serverTimestamp() });
-                 transaction.update(sessionRef, { lastRoundNumber: newRoundNumber });
+                 // Defer the write
             }
             
             const scoreRef = doc(collection(currentRoundRef, 'scores'));
+            const newTotalPoints = playerDoc.data().totalPoints + points;
+
+            // --- ALL WRITES MUST BE LAST ---
+            if (isNewRound) {
+                const newRoundNumber = lastRoundNumber + 1;
+                transaction.set(currentRoundRef, { roundNumber: newRoundNumber, createdAt: serverTimestamp() });
+                transaction.update(sessionRef, { lastRoundNumber: newRoundNumber });
+            } else if (rounds.length === 0) {
+                 const newRoundNumber = 1;
+                 transaction.set(currentRoundRef, { roundNumber: newRoundNumber, createdAt: serverTimestamp() });
+                 transaction.update(sessionRef, { lastRoundNumber: newRoundNumber });
+            }
+
             transaction.set(scoreRef, {
                 playerId: playerId,
                 points: points,
@@ -173,8 +188,6 @@ export default function PlayerManagement() {
                 inputType: inputType,
                 timestamp: serverTimestamp()
             });
-
-            const newTotalPoints = playerDoc.data().totalPoints + points;
             transaction.update(playerRef, { totalPoints: newTotalPoints });
         });
         

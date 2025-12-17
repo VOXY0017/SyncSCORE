@@ -46,16 +46,16 @@ export default function Home() {
     }, [firestore, sessionId]);
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col h-screen">
       <AppHeader />
-      <main className="flex-grow flex flex-col p-4 sm:p-6">
+      <main className="flex-grow flex flex-col p-4 sm:p-6 pt-2 sm:pt-4">
         <Tabs defaultValue="leaderboard" className="w-full flex-grow flex flex-col" id="management">
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="leaderboard">Peringkat</TabsTrigger>
                 <TabsTrigger value="history">Riwayat</TabsTrigger>
                 <TabsTrigger value="management">Kelola</TabsTrigger>
             </TabsList>
-            <div className="mt-4 flex-grow">
+            <div className="mt-4 flex-grow overflow-hidden">
               <TabsContent value="leaderboard" className="m-0 h-full">
                   <Leaderboard />
               </TabsContent>

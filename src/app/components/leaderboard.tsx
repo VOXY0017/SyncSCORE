@@ -10,6 +10,7 @@ import { CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type ScoreChange = 'increase' | 'decrease' | 'none';
 
@@ -88,70 +89,96 @@ export default function Leaderboard() {
 
   return (
       <CardContent className="p-0 h-full">
-          <Table>
-              <TableHeader>
-                  <TableRow>
-                  <TableHead className="w-[50px] text-center font-bold p-1 sm:p-2">Rank</TableHead>
-                  <TableHead className="font-bold p-1 sm:p-2">Pemain</TableHead>
-                  <TableHead className="w-[80px] text-right font-bold p-1 sm:p-2">Skor</TableHead>
-                  <TableHead className="w-[60px] text-right font-bold p-1 sm:p-2">Selisih</TableHead>
-                  <TableHead className="w-[70px] text-right font-bold p-1 sm:p-2">Hukuman</TableHead>
-                  </TableRow>
-              </TableHeader>
-              <TableBody>
-                  {isDataLoading ? <PlayerListSkeleton /> : rankedPlayers && rankedPlayers.length > 0 ? (
-                      rankedPlayers.map((player, index) => {
-                          const gap = index > 0 && rankedPlayers ? player.totalPoints - rankedPlayers[index - 1].totalPoints : null;
-                          const change = scoreChanges[player.id];
-                          
-                          let punishment = 0;
-                          if (player.rank === 3) punishment = 1;
-                          else if (player.rank === 4) punishment = 2;
-                          else if (player.rank === 5) punishment = 3;
-
-                          const rankClass = 
-                            player.rank === 1 ? "bg-yellow-400/10 hover:bg-yellow-400/20" :
-                            player.rank === 2 ? "bg-slate-400/10 hover:bg-slate-400/20" :
-                            player.rank === 3 ? "bg-orange-500/10 hover:bg-orange-500/20" :
-                            "";
-
-                          return (
-                              <TableRow 
-                                  key={player.id}
-                                  className={cn(
-                                    "transition-colors", 
-                                    rankClass,
-                                    change === 'increase' && 'animate-flash-success',
-                                    change === 'decrease' && 'animate-flash-destructive'
-                                    )}
-                              >
-                                <TableCell className="text-center p-1 sm:p-2 font-bold text-xl">
-                                  {player.rank}
-                                </TableCell>
-                                <TableCell className="font-medium text-sm sm:text-base p-1 sm:p-2">{player.name}</TableCell>
-                                <TableCell className={cn("text-right font-bold text-base sm:text-lg tabular-nums p-1 sm:p-2",
-                                    player.totalPoints > 0 ? 'text-success' : player.totalPoints < 0 ? 'text-destructive' : 'text-foreground'
-                                )}>
-                                  {player.totalPoints > 0 ? `+${player.totalPoints}` : player.totalPoints}
-                                </TableCell>
-                                <TableCell className="text-right text-xs text-muted-foreground tabular-nums p-1 sm:p-2">
-                                  {gap !== null && gap != 0 ? `${gap}` : '–'}
-                                </TableCell>
-                                <TableCell className="text-right text-xs text-muted-foreground tabular-nums p-1 sm:p-2 font-bold">
-                                  {punishment > 0 ? punishment : '–'}
-                                </TableCell>
-                              </TableRow>
-                          );
-                      })
-                  ) : (
+          <TooltipProvider>
+            <Table>
+                <TableHeader>
                     <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                            Belum ada pemain. Tambahkan di menu Kelola.
-                        </TableCell>
+                    <TableHead className="w-[50px] text-center font-bold p-1 sm:p-2">Rank</TableHead>
+                    <TableHead className="font-bold p-1 sm:p-2">Pemain</TableHead>
+                    <TableHead className="w-[80px] text-right font-bold p-1 sm:p-2">Skor</TableHead>
+                    <TableHead className="w-[60px] text-right font-bold p-1 sm:p-2">Selisih</TableHead>
+                    <TableHead className="w-[70px] text-right font-bold p-1 sm:p-2">Hukuman</TableHead>
                     </TableRow>
-                  )}
-              </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                    {isDataLoading ? <PlayerListSkeleton /> : rankedPlayers && rankedPlayers.length > 0 ? (
+                        rankedPlayers.map((player, index) => {
+                            const change = scoreChanges[player.id];
+                            
+                            const gapToAbove = index > 0 ? player.totalPoints - rankedPlayers[index - 1].totalPoints : null;
+                            const allGaps = index > 0 ? rankedPlayers.slice(0, index).map(p => ({
+                                rank: p.rank,
+                                gap: player.totalPoints - p.totalPoints
+                            })).reverse() : [];
+
+
+                            let punishment = 0;
+                            if (player.rank === 3) punishment = 1;
+                            else if (player.rank === 4) punishment = 2;
+                            else if (player.rank === 5) punishment = 3;
+
+                            const rankClass = 
+                              player.rank === 1 ? "bg-yellow-400/10 hover:bg-yellow-400/20" :
+                              player.rank === 2 ? "bg-slate-400/10 hover:bg-slate-400/20" :
+                              player.rank === 3 ? "bg-orange-500/10 hover:bg-orange-500/20" :
+                              "";
+
+                            return (
+                                <TableRow 
+                                    key={player.id}
+                                    className={cn(
+                                      "transition-colors", 
+                                      rankClass,
+                                      change === 'increase' && 'animate-flash-success',
+                                      change === 'decrease' && 'animate-flash-destructive'
+                                      )}
+                                >
+                                  <TableCell className="text-center p-1 sm:p-2 font-bold text-xl">
+                                    {player.rank}
+                                  </TableCell>
+                                  <TableCell className="font-medium text-sm sm:text-base p-1 sm:p-2">{player.name}</TableCell>
+                                  <TableCell className={cn("text-right font-bold text-base sm:text-lg tabular-nums p-1 sm:p-2",
+                                      player.totalPoints > 0 ? 'text-success' : player.totalPoints < 0 ? 'text-destructive' : 'text-foreground'
+                                  )}>
+                                    {player.totalPoints > 0 ? `+${player.totalPoints}` : player.totalPoints}
+                                  </TableCell>
+                                  <TableCell className="text-right text-xs text-muted-foreground tabular-nums p-1 sm:p-2">
+                                  {gapToAbove !== null ? (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span className="cursor-help font-bold">{gapToAbove}</span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <div className="text-xs">
+                                                <p className="font-bold mb-1">Selisih ke atas:</p>
+                                                <ul className="list-disc pl-4 space-y-1">
+                                                    {allGaps.map(({rank, gap}) => (
+                                                        <li key={rank}>
+                                                          Rank {rank}: <span className="font-bold">{gap}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                    ) : '–'}
+                                  </TableCell>
+                                  <TableCell className="text-right text-xs text-muted-foreground tabular-nums p-1 sm:p-2 font-bold">
+                                    {punishment > 0 ? punishment : '–'}
+                                  </TableCell>
+                                </TableRow>
+                            );
+                        })
+                    ) : (
+                      <TableRow>
+                          <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                              Belum ada pemain. Tambahkan di menu Kelola.
+                          </TableCell>
+                      </TableRow>
+                    )}
+                </TableBody>
+            </Table>
+          </TooltipProvider>
       </CardContent>
   );
 }

@@ -8,7 +8,7 @@ import type { Player, ScoreEntry, Round } from '@/lib/types';
 import Link from 'next/link';
 import { useData } from '@/app/context/data-context';
 import { useFirebase } from '@/firebase';
-import { collection, doc, writeBatch, deleteDoc, serverTimestamp, runTransaction, DocumentReference, getDocs, query, addDoc } from 'firebase/firestore';
+import { collection, doc, writeBatch, deleteDoc, serverTimestamp, runTransaction, DocumentReference, getDocs, query, addDoc, DocumentData } from 'firebase/firestore';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { cn } from '@/lib/utils';
 
@@ -129,24 +129,26 @@ export default function PlayerManagement() {
             }, {} as Record<string, number>);
 
             const gameCounts = Object.values(playerGameCounts);
-            const isFirstEntryEver = scoresSoFar.length === 0;
             
             let isNewRound = false;
             
             if (players.length > 1) {
               const minEntries = gameCounts.length > 0 ? Math.min(...gameCounts) : 0;
-              const thisPlayerOldEntryCount = playerGameCounts[playerId] ?? 0;
+              const currentPlayerEntryCount = playerGameCounts[playerId] ?? 0;
               
-              if (thisPlayerOldEntryCount === minEntries) {
-                const everyoneElseWasAtMin = players
-                  .filter(p => p.id !== playerId)
-                  .every(p => (playerGameCounts[p.id] ?? 0) === minEntries);
-
-                if (everyoneElseWasAtMin) {
-                  isNewRound = true;
-                }
+              if (currentPlayerEntryCount === minEntries) {
+                  // This player is "catching up" to the minimum.
+                  // Check if everyone else was at minEntries before this player's entry.
+                  // This signifies the start of a new round for everyone.
+                  const everyoneElseWasAtMin = players
+                      .filter(p => p.id !== playerId)
+                      .every(p => (playerGameCounts[p.id] ?? 0) === minEntries);
+                  
+                  if (everyoneElseWasAtMin) {
+                      isNewRound = true;
+                  }
               }
-            } else if (isFirstEntryEver || players.length === 1) {
+            } else if (players.length === 1) {
                 isNewRound = true;
             }
 
@@ -253,8 +255,9 @@ export default function PlayerManagement() {
     startTransition(async () => {
         await runTransaction(firestore, async (transaction) => {
             const sessionRef = doc(firestore, 'sessions', sessionId);
-            const entriesToDelete: {score: ScoreEntry, ref: DocumentReference}[] = [];
+            const entriesToProcess: {score: ScoreEntry, scoreRef: DocumentReference, playerRef: DocumentReference}[] = [];
 
+            // --- PREPARE REFERENCES (NO READS/WRITES YET) ---
             for (const player of players) {
                 const playerHistory = scores
                     .filter(s => s.playerId === player.id)
@@ -262,21 +265,30 @@ export default function PlayerManagement() {
 
                 if (playerHistory.length > 0) {
                     const lastEntry = playerHistory[0];
-
                     if (rounds && rounds[0]) {
-                         const scoreRef = doc(sessionRef, 'rounds', rounds[0].id, 'scores', lastEntry.id);
-                         entriesToDelete.push({score: lastEntry, ref: scoreRef });
+                        const scoreRef = doc(sessionRef, 'rounds', rounds[0].id, 'scores', lastEntry.id);
+                        const playerRef = doc(sessionRef, 'players', player.id);
+                        entriesToProcess.push({ score: lastEntry, scoreRef: scoreRef, playerRef: playerRef });
                     }
                 }
             }
+
+            // --- READ PHASE ---
+            const playerDocs = await Promise.all(
+                entriesToProcess.map(entry => transaction.get(entry.playerRef))
+            );
             
-            for (const { score, ref } of entriesToDelete) {
-                transaction.delete(ref);
-                const playerRef = doc(sessionRef, 'players', score.playerId);
-                const playerDoc = await transaction.get(playerRef);
-                if(playerDoc.exists()){
+            // --- WRITE PHASE ---
+            for (let i = 0; i < entriesToProcess.length; i++) {
+                const entry = entriesToProcess[i];
+                const playerDoc = playerDocs[i];
+
+                if (playerDoc.exists()) {
                     const currentPoints = playerDoc.data().totalPoints;
-                    transaction.update(playerRef, { totalPoints: currentPoints - score.points });
+                    const newTotalPoints = currentPoints - entry.score.points;
+                    
+                    transaction.update(entry.playerRef, { totalPoints: newTotalPoints });
+                    transaction.delete(entry.scoreRef);
                 }
             }
         });
@@ -581,3 +593,4 @@ export default function PlayerManagement() {
 
     
     
+

@@ -6,7 +6,7 @@ import { createContext, useContext, useMemo, useState, useEffect } from 'react';
 import type { Player, ScoreEntry, Session, Round } from '@/lib/types';
 import { useCollection, useDoc } from '@/firebase';
 import { useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, doc, onSnapshot, getDocs, Query } from 'firebase/firestore';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 
 // --- Default session setup ---
@@ -47,63 +47,50 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     // --- Data Hooks ---
     const { data: sessionData, isLoading: isSessionLoading } = useDoc<Session>(sessionRef);
     const { data: playersData, isLoading: arePlayersLoading } = useCollection<Player>(playersQuery);
-    const { data: rawRoundsData, isLoading: areRoundsLoading } = useCollection<Round>(roundsQuery);
+    
+    const [rawRoundsData, setRawRoundsData] = useState<Round[] | undefined>(undefined);
+    const [areRoundsLoading, setAreRoundsLoading] = useState(true);
 
     const [scores, setScores] = useState<ScoreEntry[] | undefined>(undefined);
     const [roundsWithScores, setRoundsWithScores] = useState<(Round & { scores?: ScoreEntry[] })[] | undefined>(undefined);
     const [areScoresLoading, setAreScoresLoading] = useState(true);
 
-    // This effect fetches all scores from all rounds and organizes them
+     // This is the master effect that listens to rounds and fetches scores accordingly.
     useEffect(() => {
-        if (!firestore || !sessionId || !rawRoundsData) {
-            if (!areRoundsLoading) {
-                setScores([]);
-                setRoundsWithScores([]);
-                setAreScoresLoading(false);
-            }
-            return;
-        }
+        if (!firestore || !sessionId) return;
+        
+        const roundsQuery = query(collection(firestore, 'sessions', sessionId, 'rounds'), orderBy('roundNumber', 'desc'));
 
-        if (rawRoundsData.length === 0) {
-            setAreScoresLoading(false);
-            setScores([]);
-            setRoundsWithScores([]);
-            return;
-        }
-
-        const fetchAndProcessScores = async () => {
+        const unsubscribeRounds = onSnapshot(roundsQuery, async (roundsSnapshot) => {
+            setAreRoundsLoading(true);
             setAreScoresLoading(true);
-            const processedRoundsWithScores = await Promise.all(
-                rawRoundsData.map(async (round) => {
+
+            const newRawRounds = roundsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Round));
+
+            const newRoundsWithScores = await Promise.all(
+                newRawRounds.map(async (round) => {
                     const scoresQuery = query(collection(firestore, 'sessions', sessionId, 'rounds', round.id, 'scores'), orderBy('timestamp', 'desc'));
                     const scoresSnapshot = await getDocs(scoresQuery);
-                    const scoresFromThisRound = scoresSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ScoreEntry));
-                    return { ...round, scores: scoresFromThisRound };
+                    const scoresForThisRound = scoresSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ScoreEntry));
+                    return { ...round, scores: scoresForThisRound };
                 })
             );
-            
-            const allScoresFlattened = processedRoundsWithScores.flatMap(r => r.scores || []);
+
+            const allScoresFlattened = newRoundsWithScores.flatMap(r => r.scores || []);
             allScoresFlattened.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
-
-            setRoundsWithScores(processedRoundsWithScores);
+            
+            setRawRoundsData(newRawRounds);
+            setRoundsWithScores(newRoundsWithScores);
             setScores(allScoresFlattened);
+            
+            setAreRoundsLoading(false);
             setAreScoresLoading(false);
-        };
-        
-        fetchAndProcessScores();
-
-        // Set up listeners for real-time updates. When any score collection changes, refetch all scores.
-        const unsubscribers = rawRoundsData.map(round => {
-            const scoresQuery = query(collection(firestore, 'sessions', sessionId, 'rounds', round.id, 'scores'));
-            return onSnapshot(scoresQuery, () => {
-                fetchAndProcessScores();
-            });
         });
 
         return () => {
-            unsubscribers.forEach(unsub => unsub());
+            unsubscribeRounds();
         };
-    }, [firestore, sessionId, rawRoundsData, areRoundsLoading]);
+    }, [firestore, sessionId]);
 
 
     const isDataLoading = isSessionLoading || arePlayersLoading || areRoundsLoading || areScoresLoading;
@@ -121,23 +108,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         // Find the most recently completed round
         const lastFinishedRound = rounds.find(r => r.roundNumber === session.lastRoundNumber);
         
-        if (!lastFinishedRound || !lastFinishedRound.scores || lastFinishedRound.scores.length < players.length) {
-            // The round number in the session doc might be ahead of the actual data.
-            // Let's try the round before that one if it exists.
-            const previousRoundNumber = session.lastRoundNumber - 1;
-            if (previousRoundNumber > 0) {
-                 const previousRound = rounds.find(r => r.roundNumber === previousRoundNumber);
-                 if (previousRound && previousRound.scores && previousRound.scores.length >= players.length) {
-                    const maxScore = Math.max(...previousRound.scores.map(s => s.points));
-                    if (maxScore <= 0) return [];
-                    return previousRound.scores.filter(s => s.points === maxScore).map(s => s.playerId);
-                 }
-            }
-             return [];
+        if (!lastFinishedRound || !lastFinishedRound.scores || lastFinishedRound.scores.length === 0) {
+            return [];
         }
         
         const scoresFromLastRound = lastFinishedRound.scores;
         const maxScoreInRound = Math.max(...scoresFromLastRound.map(s => s.points));
+
         if (maxScoreInRound <= 0) return [];
 
         const highestScorers = scoresFromLastRound.filter(s => s.points === maxScoreInRound);

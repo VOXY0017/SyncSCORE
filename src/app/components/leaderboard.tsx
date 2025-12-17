@@ -34,15 +34,11 @@ export default function Leaderboard() {
         });
 
 
-        // 2. Calculate ranks, handling ties
-        const playersWithRanks: PlayerWithRank[] = [];
-        let rank = 1;
-        for (let i = 0; i < sortedPlayers.length; i++) {
-            if (i > 0 && sortedPlayers[i].totalPoints < sortedPlayers[i - 1].totalPoints) {
-                rank = i + 1;
-            }
-            playersWithRanks.push({ ...sortedPlayers[i], rank });
-        }
+        // 2. Assign unique ranks based on the sorted order.
+        const playersWithRanks: PlayerWithRank[] = sortedPlayers.map((player, index) => ({
+            ...player,
+            rank: index + 1, // Assign rank based on final sorted position
+        }));
         
         // 3. Handle score change animations
         if (prevPlayersRef.current) {

@@ -9,6 +9,8 @@ import { ArrowRight, ArrowLeft, Gamepad2, Trophy, ChevronRight } from 'lucide-re
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { ThemeToggleSwitch } from '@/app/components/theme-toggle-switch';
+import { LastRoundHighestScorerInfo } from '@/app/components/last-round-info';
+
 
 const fontPoppins = Poppins({
   subsets: ['latin'],
@@ -22,7 +24,8 @@ function RotationInfo() {
         return null;
     }
     
-    const rotationDirection = session.lastRoundNumber % 2 !== 0 ? 'kanan' : 'kiri';
+    const currentRound = (session.lastRoundNumber || 0) < 1 ? 1 : session.lastRoundNumber;
+    const rotationDirection = currentRound % 2 !== 0 ? 'kanan' : 'kiri';
     const Icon = rotationDirection === 'kanan' ? ArrowRight : ArrowLeft;
 
     return (
@@ -55,27 +58,6 @@ function RoundInfo() {
     );
 }
 
-function MVPInfo() {
-    const { players, isDataLoading } = useData();
-
-    if (isDataLoading || !players || players.length === 0) {
-        return <Skeleton className="h-5 w-28" />;
-    }
-
-    const mvp = [...players].sort((a,b) => b.totalPoints - a.totalPoints)[0];
-
-    if (!mvp || mvp.totalPoints <= 0) {
-        return <div className="text-sm font-medium text-muted-foreground">Belum ada MVP</div>;
-    }
-    
-    return (
-        <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-            <Trophy className="h-4 w-4 text-yellow-500" />
-            <span className="font-bold text-foreground">{mvp.name}</span>
-        </div>
-    );
-}
-
 export default function AppHeader() {
     const { session } = useData();
     return (
@@ -97,8 +79,8 @@ export default function AppHeader() {
                 <RoundInfo />
                 {session && (session.lastRoundNumber > 0) && <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
                 <RotationInfo />
-                <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <MVPInfo />
+                {session && (session.lastRoundNumber > 1) && <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
+                <LastRoundHighestScorerInfo />
             </div>
         </header>
     );

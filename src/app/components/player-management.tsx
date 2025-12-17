@@ -213,7 +213,7 @@ export default function PlayerManagement() {
     startTransition(async () => {
         const playerDocRef = doc(firestore, 'sessions', sessionId, 'players', playerToDelete.id);
         await deleteDoc(playerDocRef);
-        toast({ title: `${playerToDelete.name} telah dihapus.`});
+        // toast({ title: `${playerToDelete.name} telah dihapus.`});
         setDeleteAlertOpen(false);
         setPlayerToDelete(null);
     });
@@ -247,7 +247,7 @@ export default function PlayerManagement() {
         batch.update(sessionRef, { lastRoundNumber: 0 });
 
         await batch.commit();
-        toast({ title: "Semua skor telah diatur ulang."});
+        // toast({ title: "Semua skor telah diatur ulang."});
         setResetAlertOpen(false);
       });
   };
@@ -305,7 +305,7 @@ export default function PlayerManagement() {
             }
         });
 
-        toast({ title: "Ronde terakhir dibatalkan."});
+        // toast({ title: "Ronde terakhir dibatalkan."});
         setUndoRoundAlertOpen(false);
     });
 };
@@ -350,7 +350,7 @@ export default function PlayerManagement() {
             transaction.delete(scoreRef);
         });
 
-        toast({ title: "Input terakhir dibatalkan."});
+        // toast({ title: "Input terakhir dibatalkan."});
         setUndoEntryAlertOpen(false);
     });
   };

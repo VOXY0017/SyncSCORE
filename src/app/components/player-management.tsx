@@ -125,18 +125,23 @@ export default function PlayerManagement() {
             
             let isNewRound = false;
             
-            if (players.length > 0) {
-                const minEntries = gameCounts.length > 0 ? Math.min(...gameCounts) : 0;
-                const thisPlayerOldEntryCount = playerGameCounts[playerId] ?? 0;
-                const playersAtMin = gameCounts.filter(c => c === minEntries).length;
+            if (players.length > 1) {
+              const minEntries = gameCounts.length > 0 ? Math.min(...gameCounts) : 0;
+              const thisPlayerOldEntryCount = playerGameCounts[playerId] ?? 0;
+              
+              if (thisPlayerOldEntryCount === minEntries) {
+                // If this player was at the minimum, check if everyone else was too.
+                // If so, this entry starts a new round.
+                const everyoneElseWasAtMin = players
+                  .filter(p => p.id !== playerId)
+                  .every(p => (playerGameCounts[p.id] ?? 0) === minEntries);
 
-                // A new round starts if this player was "behind" and now catches up to be the ONLY ONE at the new minimum count,
-                // which signifies the start of a new round for everyone else to follow.
-                if (!isFirstEntryEver && thisPlayerOldEntryCount === minEntries && playersAtMin === 1 && players.length > 1) {
-                    isNewRound = true;
-                } else if (isFirstEntryEver || players.length === 1) {
-                    isNewRound = true;
+                if (everyoneElseWasAtMin) {
+                  isNewRound = true;
                 }
+              }
+            } else if (isFirstEntryEver || players.length === 1) {
+                isNewRound = true;
             }
 
 
@@ -375,9 +380,14 @@ export default function PlayerManagement() {
                   players.map((player) => (
                     <Card key={player.id} className="p-2 flex flex-col gap-2">
                         <div className="flex items-center justify-between w-full">
-                            <Link href={`/history/${player.id}?name=${encodeURIComponent(player.name)}`} className="hover:underline font-bold text-base flex-shrink-0 pr-2">
-                                {player.name}
-                            </Link>
+                            <div className="flex items-center gap-2">
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive flex-shrink-0" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Hapus pemain ${player.name}`}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                                <Link href={`/history/${player.id}?name=${encodeURIComponent(player.name)}`} className="hover:underline font-bold text-base flex-shrink-0 pr-2">
+                                    {player.name}
+                                </Link>
+                            </div>
                             <div className="flex items-center gap-2">
                                 <Tooltip>
                                     <TooltipTrigger asChild>
@@ -413,9 +423,6 @@ export default function PlayerManagement() {
                                         <p>Kalah Tanpa Main (-150)</p>
                                     </TooltipContent>
                                 </Tooltip>
-                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive flex-shrink-0" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Hapus pemain ${player.name}`}>
-                                    <X className="h-4 w-4" />
-                                </Button>
                             </div>
                         </div>
                         <div className="flex items-center gap-1">
@@ -537,7 +544,3 @@ export default function PlayerManagement() {
     </>
   );
 }
-
-    
-
-    

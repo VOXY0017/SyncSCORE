@@ -24,8 +24,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Minus, X, RotateCcw, Undo2, Undo, Award, Crown, Zap, ShieldX } from 'lucide-react';
+import { Plus, Minus, X, RotateCcw, Undo2, Undo, Award, Crown, Zap, ShieldX, HelpCircle, ChevronsUpDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -371,6 +372,26 @@ export default function PlayerManagement() {
                       <span className="hidden md:inline">Atur Ulang</span>
                   </Button>
               </div>
+               <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="item-1" className="border-b-0">
+                    <AccordionTrigger className="text-sm py-2 hover:no-underline text-muted-foreground justify-center">
+                        <HelpCircle className="h-4 w-4 mr-2" />
+                        Panduan Tombol
+                        <ChevronsUpDown className="h-4 w-4 ml-auto" />
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground text-xs">
+                        <ul className="space-y-2">
+                            <li className="flex items-center gap-2"><Award className="h-4 w-4 text-primary"/><strong>Masuk Biasa:</strong> Menambah poin +50.</li>
+                            <li className="flex items-center gap-2"><Crown className="h-4 w-4 text-primary"/><strong>Joker:</strong> Menambah poin +100 untuk kemenangan dengan kartu Joker.</li>
+                            <li className="flex items-center gap-2"><Zap className="h-4 w-4 text-primary"/><strong>Menang:</strong> Menambah poin +150 untuk kemenangan tanpa mengeluarkan kartu.</li>
+                            <li className="flex items-center gap-2"><ShieldX className="h-4 w-4 text-destructive"/><strong>Mati Kartu:</strong> Mengurangi poin -150 jika kartu tidak bisa dikeluarkan di akhir.</li>
+                            <li className="flex items-center gap-2"><Undo className="h-4 w-4"/><strong>Undo Input:</strong> Membatalkan entri skor terakhir yang dimasukkan.</li>
+                            <li className="flex items-center gap-2"><Undo2 className="h-4 w-4"/><strong>Undo Ronde:</strong> Membatalkan seluruh skor pada ronde terakhir yang sudah selesai.</li>
+                            <li className="flex items-center gap-2"><RotateCcw className="h-4 w-4 text-destructive"/><strong>Atur Ulang:</strong> Menghapus semua skor dan ronde, mengembalikan skor pemain ke 0.</li>
+                        </ul>
+                    </AccordionContent>
+                </AccordionItem>
+                </Accordion>
           </div>
           <ScrollArea className="flex-grow">
             <div className="space-y-2 px-4 pb-4">
@@ -545,4 +566,5 @@ export default function PlayerManagement() {
   );
 }
 
+    
     

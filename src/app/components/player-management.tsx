@@ -122,28 +122,23 @@ export default function PlayerManagement() {
 
             const gameCounts = Object.values(playerGameCounts);
             const isFirstEntryEver = scoresSoFar.length === 0;
-
-            const allHaveSameCount = gameCounts.length > 1 && gameCounts.every(count => count === gameCounts[0]);
             
-            const minEntries = Math.min(...gameCounts);
-            const thisPlayerOldEntryCount = playerGameCounts[playerId] ?? 0;
-
             let isNewRound = false;
-            // A new round starts if:
-            // 1. It's the very first score entry of the game.
-            // 2. Or, if there are players, and this player's score entry makes their count equal to the minimum,
-            //    AND previously, they had fewer entries than the minimum, implying they were "behind" a round.
-            //    And critically, check if they are the last one to complete the round.
-            if (isFirstEntryEver) {
-                isNewRound = true;
-            } else if (players && players.length > 1) {
+            
+            if (players.length > 0) {
+                const minEntries = gameCounts.length > 0 ? Math.min(...gameCounts) : 0;
+                const thisPlayerOldEntryCount = playerGameCounts[playerId] ?? 0;
                 const playersAtMin = gameCounts.filter(c => c === minEntries).length;
-                if (thisPlayerOldEntryCount === minEntries && playersAtMin === 1) {
-                   isNewRound = true;
+
+                // A new round starts if this player was "behind" and now catches up to be the ONLY ONE at the new minimum count,
+                // which signifies the start of a new round for everyone else to follow.
+                if (!isFirstEntryEver && thisPlayerOldEntryCount === minEntries && playersAtMin === 1 && players.length > 1) {
+                    isNewRound = true;
+                } else if (isFirstEntryEver || players.length === 1) {
+                    isNewRound = true;
                 }
-            } else if (players && players.length === 1) {
-                 isNewRound = true;
             }
+
 
             const lastRoundNumber = session?.lastRoundNumber ?? 0;
             
@@ -153,18 +148,11 @@ export default function PlayerManagement() {
                 transaction.set(currentRoundRef, { roundNumber: newRoundNumber, createdAt: serverTimestamp() });
                 transaction.update(sessionRef, { lastRoundNumber: newRoundNumber });
             } else if (rounds.length > 0) {
-                const latestRound = rounds.find(r => r.roundNumber === lastRoundNumber);
-                if(latestRound) {
-                    currentRoundRef = doc(sessionRef, 'rounds', latestRound.id);
-                } else {
-                    // Fallback to create a round if something is out of sync.
-                    const newRoundNumber = lastRoundNumber + 1;
-                    currentRoundRef = doc(collection(sessionRef, 'rounds'));
-                    transaction.set(currentRoundRef, { roundNumber: newRoundNumber, createdAt: serverTimestamp() });
-                    transaction.update(sessionRef, { lastRoundNumber: newRoundNumber });
-                }
+                // Find the latest round (highest roundNumber)
+                const latestRound = rounds.reduce((latest, current) => (current.roundNumber > latest.roundNumber ? current : latest), rounds[0]);
+                currentRoundRef = doc(sessionRef, 'rounds', latestRound.id);
             } else {
-                 // Fallback if no rounds exist but it's not the first entry.
+                 // Fallback if no rounds exist but it's not the first entry. Should not happen often.
                  const newRoundNumber = 1;
                  currentRoundRef = doc(collection(sessionRef, 'rounds'));
                  transaction.set(currentRoundRef, { roundNumber: newRoundNumber, createdAt: serverTimestamp() });
@@ -334,11 +322,13 @@ export default function PlayerManagement() {
                     <Skeleton className="h-9 w-9" />
                     <Skeleton className="h-9 w-9" />
                     <Skeleton className="h-9 w-9" />
-                    <Skeleton className="h-9 w-24" />
-                    <Skeleton className="h-9 w-9" />
-                    <Skeleton className="h-9 w-9" />
                 </div>
                 <Skeleton className="h-7 w-7" />
+            </div>
+            <div className="flex items-center gap-1 pt-2">
+                <Skeleton className="h-9 flex-grow" />
+                <Skeleton className="h-9 w-9" />
+                <Skeleton className="h-9 w-9" />
             </div>
         </Card>
     ))}
@@ -383,90 +373,88 @@ export default function PlayerManagement() {
                   <ManagementSkeleton />
                 ) : players && players.length > 0 ? (
                   players.map((player) => (
-                    <Card key={player.id} className="p-2">
-                      <div className="flex items-center w-full gap-2">
-                          <Link href={`/history/${player.id}?name=${encodeURIComponent(player.name)}`} className="hover:underline font-bold text-base flex-shrink-0 pr-2">
-                              {player.name}
-                          </Link>
-                          
-                          <div className="flex-grow flex items-center justify-end gap-2">
-                              <Tooltip>
-                                  <TooltipTrigger asChild>
-                                      <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, 50, 'Masuk Biasa', 'shortcut')} disabled={isPending}><Award /></Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                      <p>Masuk Biasa (+50)</p>
-                                  </TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                  <TooltipTrigger asChild>
-                                      <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, 100, 'Joker', 'shortcut')} disabled={isPending}><Crown /></Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                      <p>Menang dgn Joker (+100)</p>
-                                  </TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                  <TooltipTrigger asChild>
-                                      <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, 150, 'Menang', 'shortcut')} disabled={isPending}><Zap /></Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                      <p>Menang Tanpa Main (+150)</p>
-                                  </TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                  <TooltipTrigger asChild>
-                                      <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, -150, 'Mati Kartu', 'shortcut')} disabled={isPending}>
-                                          <ShieldX />
-                                      </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                      <p>Kalah Tanpa Main (-150)</p>
-                                  </TooltipContent>
-                              </Tooltip>
-                              <div className="flex items-center gap-1">
-                                  <Input
-                                      type="text"
-                                      inputMode="numeric"
-                                      pattern="[0-9-]*"
-                                      placeholder="Poin"
-                                      className="h-9 w-20 text-center text-sm"
-                                      value={pointInputs[player.id] || ''}
-                                      onChange={(e) => handlePointInputChange(player.id, e.target.value)}
-                                      onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                              const value = parseInt(pointInputs[player.id] || '0', 10);
-                                              handleScoreChange(player.id, value, 'Manual', 'manual');
-                                          }
-                                      }}
-                                      disabled={isPending}
-                                      aria-label={`Poin untuk ${player.name}`}
-                                  />
-                                  <Button
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-9 w-9 text-success hover:bg-success/10 hover:text-success border-success/30"
-                                      onClick={() => handleManualSubmit(player.id, 'positive')}
-                                      disabled={isPending}
-                                  >
-                                      <Plus />
-                                  </Button>
-                                  <Button
-                                      variant="destructive"
-                                      size="icon"
-                                      className="h-9 w-9"
-                                      onClick={() => handleManualSubmit(player.id, 'negative')}
-                                      disabled={isPending}
-                                  >
-                                      <Minus />
-                                  </Button>
-                              </div>
+                    <Card key={player.id} className="p-2 flex flex-col gap-2">
+                        <div className="flex items-center justify-between w-full">
+                            <Link href={`/history/${player.id}?name=${encodeURIComponent(player.name)}`} className="hover:underline font-bold text-base flex-shrink-0 pr-2">
+                                {player.name}
+                            </Link>
+                            <div className="flex items-center gap-2">
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, 50, 'Masuk Biasa', 'shortcut')} disabled={isPending}><Award /></Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Masuk Biasa (+50)</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, 100, 'Joker', 'shortcut')} disabled={isPending}><Crown /></Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Menang dgn Joker (+100)</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, 150, 'Menang', 'shortcut')} disabled={isPending}><Zap /></Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Menang Tanpa Main (+150)</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, -150, 'Mati Kartu', 'shortcut')} disabled={isPending}>
+                                            <ShieldX />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Kalah Tanpa Main (-150)</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive flex-shrink-0" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Hapus pemain ${player.name}`}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                              <Input
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9-]*"
+                                  placeholder="Poin"
+                                  className="h-9 text-center text-sm"
+                                  value={pointInputs[player.id] || ''}
+                                  onChange={(e) => handlePointInputChange(player.id, e.target.value)}
+                                  onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                          const value = parseInt(pointInputs[player.id] || '0', 10);
+                                          handleScoreChange(player.id, value, 'Manual', 'manual');
+                                      }
+                                  }}
+                                  disabled={isPending}
+                                  aria-label={`Poin untuk ${player.name}`}
+                              />
+                              <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-9 w-9 text-success hover:bg-success/10 hover:text-success border-success/30"
+                                  onClick={() => handleManualSubmit(player.id, 'positive')}
+                                  disabled={isPending}
+                              >
+                                  <Plus />
+                              </Button>
+                              <Button
+                                  variant="destructive"
+                                  size="icon"
+                                  className="h-9 w-9"
+                                  onClick={() => handleManualSubmit(player.id, 'negative')}
+                                  disabled={isPending}
+                              >
+                                  <Minus />
+                              </Button>
                           </div>
-
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive flex-shrink-0" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Hapus pemain ${player.name}`}>
-                              <X className="h-4 w-4" />
-                          </Button>
-                      </div>
                     </Card>
                   ))
                 ) : (
@@ -549,5 +537,7 @@ export default function PlayerManagement() {
     </>
   );
 }
+
+    
 
     

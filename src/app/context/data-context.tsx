@@ -124,19 +124,30 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
 
         const lastFinishedRound = rounds.find(r => r.roundNumber === lastFinishedRoundNumber);
-        if (!lastFinishedRound || !lastFinishedRound.scores || lastFinishedRound.scores.length < players.length) {
-            // The last recorded round is not actually finished
-            if (lastFinishedRoundNumber > 1) {
-                const roundBeforeThat = rounds.find(r => r.roundNumber === lastFinishedRoundNumber -1);
-                 if (roundBeforeThat && roundBeforeThat.scores) {
+        
+        if (!lastFinishedRound || !lastFinishedRound.scores) {
+             return [];
+        }
+        
+        // A round is considered finished if all players have a score for it.
+        const isRoundFinished = lastFinishedRound.scores.length === players.length;
+
+        if (!isRoundFinished) {
+            // If the last round in the session doc isn't "finished" (all players haven't scored),
+            // we should look at the round before that for the MVP.
+            const roundBeforeThatNumber = lastFinishedRoundNumber - 1;
+            if (roundBeforeThatNumber > 0) {
+                const roundBeforeThat = rounds.find(r => r.roundNumber === roundBeforeThatNumber);
+                if (roundBeforeThat && roundBeforeThat.scores) {
                     const maxScore = Math.max(...roundBeforeThat.scores.map(s => s.points));
                     if (maxScore <= 0) return [];
                     return roundBeforeThat.scores.filter(s => s.points === maxScore).map(s => s.playerId);
-                 }
+                }
             }
             return [];
         }
         
+        // If the last round is finished, calculate MVP from it.
         const scoresFromLastRound = lastFinishedRound.scores;
         const maxScoreInRound = Math.max(...scoresFromLastRound.map(s => s.points));
         if (maxScoreInRound <= 0) return [];
@@ -166,3 +177,5 @@ export function useData() {
     }
     return context;
 }
+
+    

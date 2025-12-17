@@ -123,28 +123,48 @@ export default function PlayerManagement() {
             const gameCounts = Object.values(playerGameCounts);
             const isFirstEntryEver = scoresSoFar.length === 0;
 
-            const allHaveSameCount = gameCounts.length > 0 && gameCounts.every(count => count === gameCounts[0]);
-            const currentPlayerEntryCount = playerGameCounts[playerId] ?? 0;
-            const lastRoundNumber = session?.lastRoundNumber ?? 0;
+            const allHaveSameCount = gameCounts.length > 1 && gameCounts.every(count => count === gameCounts[0]);
             
+            const minEntries = Math.min(...gameCounts);
+            const thisPlayerOldEntryCount = playerGameCounts[playerId] ?? 0;
+
             let isNewRound = false;
+            // A new round starts if:
+            // 1. It's the very first score entry of the game.
+            // 2. Or, if there are players, and this player's score entry makes their count equal to the minimum,
+            //    AND previously, they had fewer entries than the minimum, implying they were "behind" a round.
+            //    And critically, check if they are the last one to complete the round.
             if (isFirstEntryEver) {
-              isNewRound = true;
-            } else if (allHaveSameCount && currentPlayerEntryCount === lastRoundNumber && players.length > 1) {
-              isNewRound = true;
-            } else if (players.length === 1 && lastRoundNumber > 0) {
-              isNewRound = true;
+                isNewRound = true;
+            } else if (players && players.length > 1) {
+                const playersAtMin = gameCounts.filter(c => c === minEntries).length;
+                if (thisPlayerOldEntryCount === minEntries && playersAtMin === 1) {
+                   isNewRound = true;
+                }
+            } else if (players && players.length === 1) {
+                 isNewRound = true;
             }
 
-
+            const lastRoundNumber = session?.lastRoundNumber ?? 0;
+            
             if (isNewRound) {
                 const newRoundNumber = lastRoundNumber + 1;
                 currentRoundRef = doc(collection(sessionRef, 'rounds'));
                 transaction.set(currentRoundRef, { roundNumber: newRoundNumber, createdAt: serverTimestamp() });
                 transaction.update(sessionRef, { lastRoundNumber: newRoundNumber });
             } else if (rounds.length > 0) {
-                currentRoundRef = doc(sessionRef, 'rounds', rounds[0].id);
+                const latestRound = rounds.find(r => r.roundNumber === lastRoundNumber);
+                if(latestRound) {
+                    currentRoundRef = doc(sessionRef, 'rounds', latestRound.id);
+                } else {
+                    // Fallback to create a round if something is out of sync.
+                    const newRoundNumber = lastRoundNumber + 1;
+                    currentRoundRef = doc(collection(sessionRef, 'rounds'));
+                    transaction.set(currentRoundRef, { roundNumber: newRoundNumber, createdAt: serverTimestamp() });
+                    transaction.update(sessionRef, { lastRoundNumber: newRoundNumber });
+                }
             } else {
+                 // Fallback if no rounds exist but it's not the first entry.
                  const newRoundNumber = 1;
                  currentRoundRef = doc(collection(sessionRef, 'rounds'));
                  transaction.set(currentRoundRef, { roundNumber: newRoundNumber, createdAt: serverTimestamp() });
@@ -265,11 +285,14 @@ export default function PlayerManagement() {
         const lastEntry = scores[0]; 
         
         if (rounds.length === 0) return;
-        const lastRoundId = rounds[0].id;
+        
+        const lastRoundForEntry = rounds.find(r => r.scores?.some(s => s.id === lastEntry.id));
+        if (!lastRoundForEntry) return;
+
 
         await runTransaction(firestore, async (transaction) => {
             const sessionRef = doc(firestore, 'sessions', sessionId);
-            const scoreRef = doc(sessionRef, 'rounds', lastRoundId, 'scores', lastEntry.id);
+            const scoreRef = doc(sessionRef, 'rounds', lastRoundForEntry.id, 'scores', lastEntry.id);
             const playerRef = doc(sessionRef, 'players', lastEntry.playerId);
 
             const playerDoc = await transaction.get(playerRef);
@@ -526,3 +549,5 @@ export default function PlayerManagement() {
     </>
   );
 }
+
+    

@@ -15,8 +15,9 @@ const DEFAULT_SESSION_ID = 'main';
 interface DataContextType {
     session: Session | null | undefined;
     players: Player[] | undefined;
-    rounds: (Round & { scores?: ScoreEntry[] })[] | undefined;
-    scores: ScoreEntry[] | undefined;
+    rounds: Round[] | undefined; // Raw rounds without scores attached
+    scores: ScoreEntry[] | undefined; // All scores from all rounds, flattened
+    roundsWithScores: (Round & { scores?: ScoreEntry[] })[] | undefined; // Rounds with scores nested
     lastRoundHighestScorers: string[];
     isDataLoading: boolean;
 }
@@ -49,15 +50,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const { data: rawRoundsData, isLoading: areRoundsLoading } = useCollection<Round>(roundsQuery);
 
     const [scores, setScores] = useState<ScoreEntry[] | undefined>(undefined);
-    const [roundsData, setRoundsData] = useState<(Round & { scores?: ScoreEntry[] })[] | undefined>(undefined);
+    const [roundsWithScores, setRoundsWithScores] = useState<(Round & { scores?: ScoreEntry[] })[] | undefined>(undefined);
     const [areScoresLoading, setAreScoresLoading] = useState(true);
 
-    // This effect fetches all scores from all rounds and attaches them.
+    // This effect fetches all scores from all rounds and organizes them
     useEffect(() => {
         if (!firestore || !sessionId || !rawRoundsData) {
             if (!areRoundsLoading) {
                 setScores([]);
-                setRoundsData([]);
+                setRoundsWithScores([]);
                 setAreScoresLoading(false);
             }
             return;
@@ -66,13 +67,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         if (rawRoundsData.length === 0) {
             setAreScoresLoading(false);
             setScores([]);
-            setRoundsData([]);
+            setRoundsWithScores([]);
             return;
         }
 
-        const fetchScoresForAllRounds = async () => {
+        const fetchAndProcessScores = async () => {
             setAreScoresLoading(true);
-            const roundsWithScores = await Promise.all(
+            const processedRoundsWithScores = await Promise.all(
                 rawRoundsData.map(async (round) => {
                     const scoresQuery = query(collection(firestore, 'sessions', sessionId, 'rounds', round.id, 'scores'), orderBy('timestamp', 'desc'));
                     const scoresSnapshot = await getDocs(scoresQuery);
@@ -81,22 +82,21 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 })
             );
             
-            const allScores = roundsWithScores.flatMap(r => r.scores || []);
-            allScores.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
+            const allScoresFlattened = processedRoundsWithScores.flatMap(r => r.scores || []);
+            allScoresFlattened.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
 
-            setRoundsData(roundsWithScores);
-            setScores(allScores);
+            setRoundsWithScores(processedRoundsWithScores);
+            setScores(allScoresFlattened);
             setAreScoresLoading(false);
         };
         
-        fetchScoresForAllRounds();
+        fetchAndProcessScores();
 
-        // Set up listeners for real-time updates
+        // Set up listeners for real-time updates. When any score collection changes, refetch all scores.
         const unsubscribers = rawRoundsData.map(round => {
-            const scoresQuery = query(collection(firestore, 'sessions', sessionId, 'rounds', round.id, 'scores'), orderBy('timestamp', 'desc'));
+            const scoresQuery = query(collection(firestore, 'sessions', sessionId, 'rounds', round.id, 'scores'));
             return onSnapshot(scoresQuery, () => {
-                // When any score changes, refetch everything to ensure consistency
-                fetchScoresForAllRounds();
+                fetchAndProcessScores();
             });
         });
 
@@ -111,43 +111,31 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     // --- Memoized Derived State ---
     const lastRoundHighestScorers = useMemo(() => {
         const players = playersData || [];
-        const rounds = roundsData || [];
+        const rounds = roundsWithScores || [];
         const session = sessionData;
 
-        if (!session || players.length < 1 || rounds.length === 0) {
+        if (!session || players.length < 1 || rounds.length === 0 || session.lastRoundNumber < 1) {
             return [];
         }
 
-        const lastFinishedRoundNumber = session.lastRoundNumber;
-        if (lastFinishedRoundNumber === 0) {
-            return [];
-        }
-
-        const lastFinishedRound = rounds.find(r => r.roundNumber === lastFinishedRoundNumber);
+        // Find the most recently completed round
+        const lastFinishedRound = rounds.find(r => r.roundNumber === session.lastRoundNumber);
         
-        if (!lastFinishedRound || !lastFinishedRound.scores) {
+        if (!lastFinishedRound || !lastFinishedRound.scores || lastFinishedRound.scores.length < players.length) {
+            // The round number in the session doc might be ahead of the actual data.
+            // Let's try the round before that one if it exists.
+            const previousRoundNumber = session.lastRoundNumber - 1;
+            if (previousRoundNumber > 0) {
+                 const previousRound = rounds.find(r => r.roundNumber === previousRoundNumber);
+                 if (previousRound && previousRound.scores && previousRound.scores.length >= players.length) {
+                    const maxScore = Math.max(...previousRound.scores.map(s => s.points));
+                    if (maxScore <= 0) return [];
+                    return previousRound.scores.filter(s => s.points === maxScore).map(s => s.playerId);
+                 }
+            }
              return [];
         }
         
-        // A round is considered finished if all players have a score for it.
-        const isRoundFinished = lastFinishedRound.scores.length === players.length;
-
-        if (!isRoundFinished) {
-            // If the last round in the session doc isn't "finished" (all players haven't scored),
-            // we should look at the round before that for the MVP.
-            const roundBeforeThatNumber = lastFinishedRoundNumber - 1;
-            if (roundBeforeThatNumber > 0) {
-                const roundBeforeThat = rounds.find(r => r.roundNumber === roundBeforeThatNumber);
-                if (roundBeforeThat && roundBeforeThat.scores) {
-                    const maxScore = Math.max(...roundBeforeThat.scores.map(s => s.points));
-                    if (maxScore <= 0) return [];
-                    return roundBeforeThat.scores.filter(s => s.points === maxScore).map(s => s.playerId);
-                }
-            }
-            return [];
-        }
-        
-        // If the last round is finished, calculate MVP from it.
         const scoresFromLastRound = lastFinishedRound.scores;
         const maxScoreInRound = Math.max(...scoresFromLastRound.map(s => s.points));
         if (maxScoreInRound <= 0) return [];
@@ -155,17 +143,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         const highestScorers = scoresFromLastRound.filter(s => s.points === maxScoreInRound);
         return highestScorers.map(s => s.playerId);
 
-    }, [playersData, roundsData, sessionData]);
+    }, [playersData, roundsWithScores, sessionData]);
 
 
     const value = useMemo(() => ({
         session: sessionData,
         players: playersData,
-        rounds: roundsData,
+        rounds: rawRoundsData, // Provide raw rounds data
         scores: scores,
+        roundsWithScores: roundsWithScores,
         lastRoundHighestScorers,
         isDataLoading,
-    }), [sessionData, playersData, roundsData, scores, lastRoundHighestScorers, isDataLoading]);
+    }), [sessionData, playersData, rawRoundsData, scores, roundsWithScores, lastRoundHighestScorers, isDataLoading]);
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }
@@ -177,5 +166,3 @@ export function useData() {
     }
     return context;
 }
-
-    

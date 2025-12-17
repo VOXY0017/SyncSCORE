@@ -120,7 +120,7 @@ export default function PlayerManagement() {
             if (!sessionDoc.exists()) {
                 throw "Session does not exist!";
             }
-
+            
             // --- LOGIC USING READ DATA ---
             const scoresSoFar = scores ?? [];
             const playerGameCounts = players.reduce((acc, player) => {
@@ -128,29 +128,31 @@ export default function PlayerManagement() {
                 return acc;
             }, {} as Record<string, number>);
 
-            const gameCounts = Object.values(playerGameCounts);
+            const allPlayerIds = players.map(p => p.id);
+            const entryCounts = allPlayerIds.map(id => playerGameCounts[id] ?? 0);
+            const minEntries = Math.min(...entryCounts, Infinity);
             
             let isNewRound = false;
-            
+            // A new round begins when a player who was at `minEntries` gets a new score,
+            // and all other players are also at `minEntries`. This means a full round has just completed.
             if (players.length > 1) {
-              const minEntries = gameCounts.length > 0 ? Math.min(...gameCounts) : 0;
-              const currentPlayerEntryCount = playerGameCounts[playerId] ?? 0;
-              
-              if (currentPlayerEntryCount === minEntries) {
-                  // This player is "catching up" to the minimum.
-                  // Check if everyone else was at minEntries before this player's entry.
-                  // This signifies the start of a new round for everyone.
-                  const everyoneElseWasAtMin = players
-                      .filter(p => p.id !== playerId)
-                      .every(p => (playerGameCounts[p.id] ?? 0) === minEntries);
-                  
-                  if (everyoneElseWasAtMin) {
-                      isNewRound = true;
-                  }
-              }
+                const currentPlayerOldEntryCount = playerGameCounts[playerId] ?? 0;
+                if (currentPlayerOldEntryCount === minEntries) {
+                    const otherPlayerCounts = allPlayerIds
+                        .filter(id => id !== playerId)
+                        .map(id => playerGameCounts[id] ?? 0);
+                    
+                    const allOthersAreAtMin = otherPlayerCounts.every(count => count === minEntries);
+                    
+                    if (allOthersAreAtMin) {
+                        isNewRound = true;
+                    }
+                }
             } else if (players.length === 1) {
+                // For a single player, every entry is a new round.
                 isNewRound = true;
             }
+
 
             const currentSessionData = sessionDoc.data();
             const lastRoundNumber = currentSessionData.lastRoundNumber ?? 0;
@@ -161,7 +163,8 @@ export default function PlayerManagement() {
                 currentRoundRef = doc(collection(sessionRef, 'rounds'));
                 // Defer the write
             } else if (rounds.length > 0) {
-                const latestRound = rounds.reduce((latest, current) => (current.roundNumber > latest.roundNumber ? current : latest), rounds[0]);
+                // Find the latest round by roundNumber. The 'rounds' from context are already sorted descending.
+                const latestRound = rounds[0];
                 currentRoundRef = doc(sessionRef, 'rounds', latestRound.id);
             } else {
                  const newRoundNumber = 1;
@@ -266,17 +269,21 @@ export default function PlayerManagement() {
                 if (playerHistory.length > 0) {
                     const lastEntry = playerHistory[0];
                     if (rounds && rounds[0]) {
-                        const scoreRef = doc(sessionRef, 'rounds', rounds[0].id, 'scores', lastEntry.id);
+                         const lastRoundForEntry = rounds.find(r => r.scores?.some(s => s.id === lastEntry.id)) ?? rounds[0];
+                        const scoreRef = doc(sessionRef, 'rounds', lastRoundForEntry.id, 'scores', lastEntry.id);
                         const playerRef = doc(sessionRef, 'players', player.id);
                         entriesToProcess.push({ score: lastEntry, scoreRef: scoreRef, playerRef: playerRef });
                     }
                 }
             }
-
+            
             // --- READ PHASE ---
             const playerDocs = await Promise.all(
                 entriesToProcess.map(entry => transaction.get(entry.playerRef))
             );
+
+            const sessionDoc = await transaction.get(sessionRef);
+            if (!sessionDoc.exists()) throw "Session not found";
             
             // --- WRITE PHASE ---
             for (let i = 0; i < entriesToProcess.length; i++) {
@@ -290,6 +297,11 @@ export default function PlayerManagement() {
                     transaction.update(entry.playerRef, { totalPoints: newTotalPoints });
                     transaction.delete(entry.scoreRef);
                 }
+            }
+             // After deleting the last round's scores, decrement the round number
+            const lastRoundNumber = sessionDoc.data().lastRoundNumber ?? 0;
+            if (lastRoundNumber > 0) {
+                transaction.update(sessionRef, { lastRoundNumber: lastRoundNumber - 1 });
             }
         });
 
@@ -590,7 +602,3 @@ export default function PlayerManagement() {
     </>
   );
 }
-
-    
-    
-

@@ -2,8 +2,8 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect, useRef } from 'react';
-import type { Player, ScoreEntry, Round } from '@/lib/types';
+import { useState, useEffect } from 'react';
+import type { Player, Round, ScoreEntry } from '@/lib/types';
 import { useData } from '@/app/context/data-context';
 import { CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,31 +20,20 @@ interface PivotData {
 }
 
 export default function GlobalScoreHistory() {
-  const { players, rounds, scores, isDataLoading } = useData();
+  const { players, roundsWithScores, isDataLoading } = useData();
   const [pivotData, setPivotData] = useState<PivotData | null>(null);
 
   useEffect(() => {
-    if (isDataLoading || !players || !scores || !rounds) return;
+    if (isDataLoading || !players || !roundsWithScores) return;
 
-    if (players.length > 0 && rounds.length > 0) {
+    if (players.length > 0 && roundsWithScores.length > 0) {
       const sortedPlayers = [...players].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       
-      const scoresByRoundId: Record<string, ScoreEntry[]> = {};
-      for (const score of scores) {
-          const roundForScore = rounds.find(r => r.scores?.some(s => s.id === score.id));
-          if (roundForScore) {
-            if (!scoresByRoundId[roundForScore.id]) {
-                scoresByRoundId[roundForScore.id] = [];
-            }
-            scoresByRoundId[roundForScore.id].push(score);
-          }
-      }
-
-      const roundData = rounds.map(round => {
+      const roundData = roundsWithScores.map(round => {
         const roundScores: Record<string, number | null> = {};
         let highestScoreInRound: number | null = null;
         
-        const scoresInThisRound = scoresByRoundId[round.id] || [];
+        const scoresInThisRound = round.scores || [];
         
         sortedPlayers.forEach(player => {
             const playerScore = scoresInThisRound.find(s => s.playerId === player.id);
@@ -74,7 +63,7 @@ export default function GlobalScoreHistory() {
       setPivotData({ players: players || [], rounds: [] });
     }
 
-  }, [isDataLoading, players, rounds, scores]);
+  }, [isDataLoading, players, roundsWithScores]);
 
 
   const HistorySkeleton = () => (

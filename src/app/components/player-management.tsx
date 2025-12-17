@@ -169,10 +169,7 @@ export default function PlayerManagement() {
   };
   
   const handlePointInputChange = (playerId: string, value: string) => {
-    const sanitizedValue = value.replace(/[^-0-9]/g, '');
-    if (sanitizedValue.slice(1).includes('-')) {
-        return;
-    }
+    const sanitizedValue = value.replace(/[^0-9]/g, '');
     setPointInputs(prev => ({...prev, [playerId]: sanitizedValue}));
   }
 
@@ -289,6 +286,13 @@ export default function PlayerManagement() {
     });
   };
 
+  const handleManualSubmit = (playerId: string, isNegative: boolean) => {
+    const value = parseInt(pointInputs[playerId] || '0', 10);
+    if (value !== 0) {
+      handleScoreChange(playerId, isNegative ? -value : value, 'Manual', 'manual');
+    }
+  };
+
   const ManagementSkeleton = () => (
     <div className="space-y-4 px-4">
     {[...Array(3)].map((_, i) => (
@@ -303,14 +307,6 @@ export default function PlayerManagement() {
             <Skeleton className="h-9 w-full" />
             <Skeleton className="h-9 w-full" />
             <Skeleton className="h-9 w-full" />
-          </div>
-          <Separator />
-           <div className="flex flex-col items-center gap-2">
-              <Skeleton className="h-9 w-40" />
-              <div className="flex gap-2">
-                <Skeleton className="h-9 w-16" />
-                <Skeleton className="h-9 w-16" />
-              </div>
           </div>
         </Card>
     ))}
@@ -404,26 +400,25 @@ export default function PlayerManagement() {
                         </div>
 
                         {/* Manual Input */}
-                        <div className="flex-grow">
+                         <div className="flex-grow flex items-center gap-1">
                             <Input
                                 type="text"
                                 inputMode="numeric"
                                 pattern="[0-9]*"
-                                placeholder="Input Poin Manual"
-                                className="h-9 text-center w-full text-sm"
+                                placeholder="Poin"
+                                className="h-9 text-center w-full"
                                 value={pointInputs[player.id] || ''}
                                 onChange={(e) => handlePointInputChange(player.id, e.target.value)}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
-                                        const value = parseInt(pointInputs[player.id] || '0');
-                                        if (value !== 0) {
-                                            handleScoreChange(player.id, value, 'Manual', 'manual');
-                                        }
+                                        handleManualSubmit(player.id, e.shiftKey);
                                     }
                                 }}
                                 disabled={isPending}
                                 aria-label={`Poin untuk ${player.name}`}
                             />
+                            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleManualSubmit(player.id, true)} disabled={isPending || !pointInputs[player.id]}><Minus /></Button>
+                            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleManualSubmit(player.id, false)} disabled={isPending || !pointInputs[player.id]}><Plus /></Button>
                         </div>
                     </div>
                   </Card>
@@ -507,6 +502,3 @@ export default function PlayerManagement() {
     </>
   );
 }
-
-    
-

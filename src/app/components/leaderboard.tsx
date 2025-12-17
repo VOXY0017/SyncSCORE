@@ -13,42 +13,64 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 type ScoreChange = 'increase' | 'decrease' | 'none';
 
+interface PlayerWithRank extends Player {
+    rank: number;
+}
+
 export default function Leaderboard() {
   const { players, isDataLoading } = useData();
-  const [sortedPlayers, setSortedPlayers] = useState<Player[]>([]);
+  const [rankedPlayers, setRankedPlayers] = useState<PlayerWithRank[]>([]);
   const [scoreChanges, setScoreChanges] = useState<Record<string, ScoreChange>>({});
   const prevPlayersRef = useRef<Player[]>();
 
   useEffect(() => {
     if (players) {
-      const playerScores = [...players];
-      playerScores.sort((a, b) => b.totalPoints - a.totalPoints); // Higher score is better
+        // 1. Sort players by score
+        const sortedPlayers = [...players].sort((a, b) => b.totalPoints - a.totalPoints);
 
-      if (prevPlayersRef.current) {
-          const changes: Record<string, ScoreChange> = {};
-          playerScores.forEach(currentPlayer => {
-              const prevPlayer = prevPlayersRef.current?.find(p => p.id === currentPlayer.id);
-              if (prevPlayer) {
-                  if (currentPlayer.totalPoints > prevPlayer.totalPoints) {
-                      changes[currentPlayer.id] = 'increase';
-                  } else if (currentPlayer.totalPoints < prevPlayer.totalPoints) {
-                      changes[currentPlayer.id] = 'decrease';
-                  }
-              }
-          });
-          setScoreChanges(changes);
+        // 2. Calculate ranks, handling ties
+        const playersWithRanks: PlayerWithRank[] = [];
+        let rank = 1;
+        for (let i = 0; i < sortedPlayers.length; i++) {
+            // If the score is the same as the previous player, they get the same rank
+            if (i > 0 && sortedPlayers[i].totalPoints < sortedPlayers[i - 1].totalPoints) {
+                rank = i + 1;
+            }
+            playersWithRanks.push({ ...sortedPlayers[i], rank });
+        }
+        
+        // 3. Handle score change animations
+        if (prevPlayersRef.current) {
+            const changes: Record<string, ScoreChange> = {};
+            playersWithRanks.forEach(currentPlayer => {
+                const prevPlayer = prevPlayersRef.current?.find(p => p.id === currentPlayer.id);
+                if (prevPlayer) {
+                    if (currentPlayer.totalPoints > prevPlayer.totalPoints) {
+                        changes[currentPlayer.id] = 'increase';
+                    } else if (currentPlayer.totalPoints < prevPlayer.totalPoints) {
+                        changes[currentPlayer.id] = 'decrease';
+                    }
+                }
+            });
+            setScoreChanges(changes);
 
-          const timer = setTimeout(() => {
-              setScoreChanges({});
-          }, 1500);
+            const timer = setTimeout(() => {
+                setScoreChanges({});
+            }, 1500);
+            
+            // This needs to be inside the prevPlayersRef.current check
+            setRankedPlayers(playersWithRanks);
+            prevPlayersRef.current = playersWithRanks;
 
-          return () => clearTimeout(timer);
-      }
+            return () => clearTimeout(timer);
+        } else {
+            setRankedPlayers(playersWithRanks);
+            prevPlayersRef.current = playersWithRanks;
+        }
 
-      setSortedPlayers(playerScores);
-      prevPlayersRef.current = playerScores;
     }
-  }, [players]);
+}, [players]);
+
 
   const PlayerListSkeleton = () => (
     <>
@@ -63,11 +85,11 @@ export default function Leaderboard() {
     </>
   );
 
-  const getRankContent = (index: number) => {
-    if (index === 0) return '🥇';
-    if (index === 1) return '🥈';
-    if (index === 2) return '🥉';
-    return index + 1;
+  const getRankContent = (rank: number) => {
+    if (rank === 1) return '🥇';
+    if (rank === 2) return '🥈';
+    if (rank === 3) return '🥉';
+    return rank;
   }
 
   return (
@@ -82,15 +104,15 @@ export default function Leaderboard() {
                   </TableRow>
               </TableHeader>
               <TableBody>
-                  {isDataLoading ? <PlayerListSkeleton /> : sortedPlayers && sortedPlayers.length > 0 ? (
-                      sortedPlayers.map((player, index) => {
-                          const gap = index > 0 && sortedPlayers ? player.totalPoints - sortedPlayers[index - 1].totalPoints : null;
+                  {isDataLoading ? <PlayerListSkeleton /> : rankedPlayers && rankedPlayers.length > 0 ? (
+                      rankedPlayers.map((player, index) => {
+                          const gap = index > 0 && rankedPlayers ? player.totalPoints - rankedPlayers[index - 1].totalPoints : null;
                           const change = scoreChanges[player.id];
                           
                           const rankClass = 
-                            index === 0 ? "bg-yellow-400/10 hover:bg-yellow-400/20" :
-                            index === 1 ? "bg-slate-400/10 hover:bg-slate-400/20" :
-                            index === 2 ? "bg-orange-500/10 hover:bg-orange-500/20" :
+                            player.rank === 1 ? "bg-yellow-400/10 hover:bg-yellow-400/20" :
+                            player.rank === 2 ? "bg-slate-400/10 hover:bg-slate-400/20" :
+                            player.rank === 3 ? "bg-orange-500/10 hover:bg-orange-500/20" :
                             "";
 
                           return (
@@ -104,7 +126,7 @@ export default function Leaderboard() {
                                     )}
                               >
                                 <TableCell className="text-center p-1 sm:p-2 font-bold text-xl">
-                                  {getRankContent(index)}
+                                  {getRankContent(player.rank)}
                                 </TableCell>
                                 <TableCell className="font-medium text-sm sm:text-base p-1 sm:p-2">{player.name}</TableCell>
                                 <TableCell className={cn("text-right font-bold text-base sm:text-lg tabular-nums p-1 sm:p-2",

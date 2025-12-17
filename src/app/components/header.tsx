@@ -8,8 +8,8 @@ import { Poppins } from 'next/font/google';
 import { ArrowRight, ArrowLeft, Gamepad2, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { ThemeToggleSwitch } from '@/app/components/theme-toggle-switch';
 import { LastRoundHighestScorerInfo } from '@/app/components/last-round-info';
+import { CosmicThemeToggle } from './cosmic-theme-toggle';
 
 
 const fontPoppins = Poppins({
@@ -71,7 +71,7 @@ export default function AppHeader() {
                     Papan Skor
                 </h1>
                 <div className="flex items-center gap-1">
-                    <ThemeToggleSwitch />
+                    <CosmicThemeToggle />
                 </div>
             </div>
             {/* Sub Header */}

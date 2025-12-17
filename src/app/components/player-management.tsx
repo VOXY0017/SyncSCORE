@@ -312,28 +312,41 @@ export default function PlayerManagement() {
   
   const confirmUndoLastEntry = async () => {
     if (!firestore || !scores || scores.length === 0 || isPending || !sessionId || !rounds) return;
+    
     startTransition(async () => {
         const lastEntry = scores[0]; 
-        
-        if (rounds.length === 0) return;
+        if (!lastEntry) {
+            toast({ title: "Tidak ada input untuk dibatalkan.", variant: "destructive" });
+            setUndoEntryAlertOpen(false);
+            return;
+        }
         
         const lastRoundForEntry = rounds.find(r => r.scores?.some(s => s.id === lastEntry.id));
-        if (!lastRoundForEntry) return;
-
+        if (!lastRoundForEntry) {
+            toast({ title: "Gagal menemukan ronde untuk entri terakhir.", variant: "destructive" });
+            setUndoEntryAlertOpen(false);
+            return;
+        }
 
         await runTransaction(firestore, async (transaction) => {
             const sessionRef = doc(firestore, 'sessions', sessionId);
             const scoreRef = doc(sessionRef, 'rounds', lastRoundForEntry.id, 'scores', lastEntry.id);
             const playerRef = doc(sessionRef, 'players', lastEntry.playerId);
 
+            // --- READ PHASE ---
             const playerDoc = await transaction.get(playerRef);
+
             if (!playerDoc.exists()) {
-                throw "Player for score to undo does not exist.";
+                throw "Player for the score to undo does not exist.";
             }
 
+            // --- WRITE PHASE ---
+            // To undo, we subtract the points from the total.
+            // If points were +50, new total is current - 50.
+            // If points were -150, new total is current - (-150) = current + 150.
             const newTotalPoints = playerDoc.data().totalPoints - lastEntry.points;
+            
             transaction.update(playerRef, { totalPoints: newTotalPoints });
-
             transaction.delete(scoreRef);
         });
 
@@ -602,3 +615,5 @@ export default function PlayerManagement() {
     </>
   );
 }
+
+    

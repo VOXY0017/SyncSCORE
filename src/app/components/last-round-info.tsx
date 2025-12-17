@@ -44,7 +44,7 @@ export function LastRoundHighestScorerInfo() {
         <div className='flex flex-col items-start leading-none'>
             <p className="text-xs text-muted-foreground font-medium">MVP</p>
             <div className="flex items-center gap-1">
-                <p className="font-bold text-sm line-clamp-1 text-destructive">
+                <p className="font-bold text-sm line-clamp-1 text-primary">
                     {getDisplayText()}
                 </p>
             </div>

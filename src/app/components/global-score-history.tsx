@@ -95,12 +95,12 @@ export default function GlobalScoreHistory() {
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
-                <TableHead className="w-[80px] text-center p-1 sm:p-2">Ronde</TableHead>
+                <TableHead className="w-[60px] text-center p-1 sm:p-2">Ronde</TableHead>
                 {isDataLoading ? (
                   [...Array(3)].map((_, i) => <TableHead key={i} className="text-center p-1 sm:p-2"><Skeleton className="h-5 w-16 mx-auto" /></TableHead>)
                 ) : pivotData && pivotData.players.length > 0 ? (
                   pivotData.players.map((player) => (
-                    <TableHead key={player.id} className="text-center min-w-[80px] p-1 sm:p-2">{player.name}</TableHead>
+                    <TableHead key={player.id} className="text-center min-w-[70px] p-1 sm:p-2">{player.name}</TableHead>
                   ))
                 ) : (
                     <TableHead className="text-center p-2 w-full">Riwayat Skor</TableHead>
@@ -121,7 +121,7 @@ export default function GlobalScoreHistory() {
                         <TableCell 
                           key={`${round.roundNumber}-${player.id}`} 
                           className={cn(
-                            "text-center p-1 sm:p-2 text-sm transition-colors",
+                            "text-center p-0 sm:p-2 text-xs sm:text-sm transition-colors",
                             isHighest && "bg-yellow-400/10"
                           )}
                         >

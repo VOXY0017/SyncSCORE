@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -8,6 +9,7 @@ import { useData } from '@/app/context/data-context';
 import { useFirebase } from '@/firebase';
 import { collection, doc, writeBatch, deleteDoc, serverTimestamp, runTransaction, DocumentReference, getDocs, query, addDoc } from 'firebase/firestore';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +28,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Plus, Minus, X, RotateCcw, Undo2, Undo, Award, Crown, Zap, ShieldX } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const DEFAULT_SESSION_ID = 'main';
 
@@ -47,7 +50,7 @@ export default function PlayerManagement() {
   
   const [pointInputs, setPointInputs] = useState<Record<string, string>>({});
   
-  const isPlayerLimitReached = players ? players.length >= 5 : false;
+  const isPlayerLimitReached = players ? players.length >= 8 : false;
 
   const canUndoRound = React.useMemo(() => {
     if (!players || players.length < 2 || !scores) return false;
@@ -93,7 +96,7 @@ export default function PlayerManagement() {
   };
 
   const handleScoreChange = (playerId: string, points: number, actionLabel: string, inputType: 'shortcut' | 'manual') => {
-    if (isNaN(points) || points === 0 && inputType === 'manual' || !firestore || isPending || !sessionId || !players || !rounds) return;
+    if (isNaN(points) || (points === 0 && inputType === 'manual') || !firestore || isPending || !sessionId || !players || !rounds) return;
 
     if (Math.abs(points) > 500 && inputType === 'manual') {
         toast({title: "Input skor diluar rentang (-500 to 500).", variant: "destructive"});
@@ -285,11 +288,15 @@ export default function PlayerManagement() {
     });
   };
 
-  const handleManualSubmit = (playerId: string) => {
+  const handleManualSubmit = (playerId: string, sign: 'positive' | 'negative') => {
       const rawValue = pointInputs[playerId] || '0';
-      const value = parseInt(rawValue, 10);
+      let value = parseInt(rawValue.replace('-', ''), 10);
+      
+      if (isNaN(value)) value = 0;
+
       if (value !== 0) {
-        handleScoreChange(playerId, value, 'Manual', 'manual');
+        const finalValue = sign === 'negative' ? -Math.abs(value) : Math.abs(value);
+        handleScoreChange(playerId, finalValue, 'Manual', 'manual');
       }
   };
 
@@ -322,7 +329,7 @@ export default function PlayerManagement() {
           <div className="p-4 space-y-2">
               <form onSubmit={handleAddPlayer} className="flex-grow">
                   <Input
-                      placeholder={isPlayerLimitReached ? "Maksimal 5 pemain tercapai" : "Tambah pemain baru dan tekan Enter..."}
+                      placeholder={isPlayerLimitReached ? "Maksimal 8 pemain tercapai" : "Tambah pemain baru dan tekan Enter..."}
                       value={newPlayerName}
                       onChange={(e) => setNewPlayerName(e.target.value)}
                       disabled={isPending || isDataLoading || isPlayerLimitReached}
@@ -347,19 +354,19 @@ export default function PlayerManagement() {
                   </Button>
               </div>
           </div>
-          <div className="flex-grow space-y-2 p-4 pt-0 overflow-y-auto">
-              {isDataLoading ? (
-                <ManagementSkeleton />
-              ) : players && players.length > 0 ? (
-                players.map((player) => (
-                  <Card key={player.id} className="p-2">
-                    <div className="flex items-center w-full gap-2">
-                        <Link href={`/history/${player.id}?name=${encodeURIComponent(player.name)}`} className="hover:underline font-bold text-base flex-shrink-0 pr-2">
-                            {player.name}
-                        </Link>
-                        
-                        <div className="flex-grow flex items-center justify-end gap-2">
-                          <div className="hidden sm:flex items-center gap-1">
+          <ScrollArea className="flex-grow">
+            <div className="space-y-2 px-4 pb-4">
+                {isDataLoading ? (
+                  <ManagementSkeleton />
+                ) : players && players.length > 0 ? (
+                  players.map((player) => (
+                    <Card key={player.id} className="p-2">
+                      <div className="flex items-center w-full gap-2">
+                          <Link href={`/history/${player.id}?name=${encodeURIComponent(player.name)}`} className="hover:underline font-bold text-base flex-shrink-0 pr-2">
+                              {player.name}
+                          </Link>
+                          
+                          <div className="flex-grow flex items-center justify-end gap-2">
                               <Tooltip>
                                   <TooltipTrigger asChild>
                                       <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, 50, 'Masuk Biasa', 'shortcut')} disabled={isPending}><Award /></Button>
@@ -386,46 +393,66 @@ export default function PlayerManagement() {
                               </Tooltip>
                               <Tooltip>
                                   <TooltipTrigger asChild>
-                                      <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, -150, 'Mati Kartu', 'shortcut')} disabled={isPending}><ShieldX /></Button>
+                                      <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => handleScoreChange(player.id, -150, 'Mati Kartu', 'shortcut')} disabled={isPending}>
+                                          <ShieldX />
+                                      </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
                                       <p>Kalah Tanpa Main (-150)</p>
                                   </TooltipContent>
                               </Tooltip>
+                              <div className="flex items-center gap-1">
+                                  <Input
+                                      type="text"
+                                      inputMode="numeric"
+                                      pattern="[0-9-]*"
+                                      placeholder="Poin"
+                                      className="h-9 w-20 text-center text-sm"
+                                      value={pointInputs[player.id] || ''}
+                                      onChange={(e) => handlePointInputChange(player.id, e.target.value)}
+                                      onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                              const value = parseInt(pointInputs[player.id] || '0', 10);
+                                              handleScoreChange(player.id, value, 'Manual', 'manual');
+                                          }
+                                      }}
+                                      disabled={isPending}
+                                      aria-label={`Poin untuk ${player.name}`}
+                                  />
+                                  <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-9 w-9 text-success hover:bg-success/10 hover:text-success border-success/30"
+                                      onClick={() => handleManualSubmit(player.id, 'positive')}
+                                      disabled={isPending}
+                                  >
+                                      <Plus />
+                                  </Button>
+                                  <Button
+                                      variant="destructive"
+                                      size="icon"
+                                      className="h-9 w-9"
+                                      onClick={() => handleManualSubmit(player.id, 'negative')}
+                                      disabled={isPending}
+                                  >
+                                      <Minus />
+                                  </Button>
+                              </div>
                           </div>
 
-                          <div className="flex-grow sm:flex-grow-0 flex items-center gap-1 w-full sm:w-auto">
-                              <Input
-                                  type="text"
-                                  inputMode="numeric"
-                                  pattern="[0-9-]*"
-                                  placeholder="Poin"
-                                  className="h-9 text-center text-sm"
-                                  value={pointInputs[player.id] || ''}
-                                  onChange={(e) => handlePointInputChange(player.id, e.target.value)}
-                                  onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                          handleManualSubmit(player.id);
-                                      }
-                                  }}
-                                  disabled={isPending}
-                                  aria-label={`Poin untuk ${player.name}`}
-                              />
-                          </div>
-                        </div>
-
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive flex-shrink-0" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Hapus pemain ${player.name}`}>
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </div>
-                  </Card>
-                ))
-              ) : (
-                <div className="h-24 flex items-center justify-center text-muted-foreground text-center px-4">
-                  {isDataLoading ? 'Memuat pemain...' : 'Tambahkan pemain untuk memulai permainan.'}
-                </div>
-              )}
-          </div>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive flex-shrink-0" onClick={() => { setPlayerToDelete(player); setDeleteAlertOpen(true); }} disabled={isPending} aria-label={`Hapus pemain ${player.name}`}>
+                              <X className="h-4 w-4" />
+                          </Button>
+                      </div>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="h-24 flex items-center justify-center text-muted-foreground text-center px-4">
+                    {isDataLoading ? 'Memuat pemain...' : 'Tambahkan pemain untuk memulai permainan.'}
+                  </div>
+                )}
+            </div>
+          </ScrollArea>
         </TooltipProvider>
       </div>
 
